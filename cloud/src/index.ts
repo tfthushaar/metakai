@@ -64,6 +64,7 @@ async function sha256(text: string): Promise<string> {
 async function userId(req: Request, env: Env): Promise<string> {
   const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
   if (!token) throw new HttpError(401, 'Sign in required.');
+  if (!env.ID_PEPPER) throw new HttpError(503, 'Leaderboards are being set up. Try again soon.');
   if (env.DEV_AUTH === '1' && token.startsWith('dev:')) return sha256(`${token}:${env.ID_PEPPER}`);
   try {
     const { payload } = await jwtVerify(token, GOOGLE_JWKS, {

@@ -13,6 +13,5 @@ GOOGLE_CLIENT_ID = "510560795620-br9d6gv72om2rfgk4rmrdkjhssebh1ac.apps.googleuse
 [[d1_databases]]
 binding = "DB"
 database_name = "metakai-ranks"
-# Filled in by `npx wrangler d1 create metakai-ranks`.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "ad477ad5-92ca-4315-a8e4-86f940a92997"
 migrations_dir = "migrations"
