@@ -58,6 +58,19 @@ export interface DriveSettings {
 
 export const DEFAULT_DRIVE: DriveSettings = { enabled: false, email: null, lastSyncedAt: null, remoteVersion: null };
 
+export interface LeaderboardSettings {
+  joined: boolean;
+  displayName: string | null;
+  country: string | null;
+  lastUploadAt: string | null;
+  /** Fingerprint of the last uploaded scores, to skip unchanged uploads. */
+  lastUploadKey: string | null;
+  /** Rounded body stats last sent, so bucket changes (e.g. weight class) are re-sent. */
+  lastProfileKey: string | null;
+}
+
+export const DEFAULT_LEADERBOARD: LeaderboardSettings = { joined: false, displayName: null, country: null, lastUploadAt: null, lastUploadKey: null, lastProfileKey: null };
+
 interface SettingsState {
   appearance: Appearance;
   accent: AccentId;
@@ -79,6 +92,7 @@ interface SettingsState {
   textScale: TextScale;
   /** Skips entrance and layout animations. */
   reduceMotion: boolean;
+  leaderboard: LeaderboardSettings;
   adaptiveTargets: boolean;
   carbCycling: boolean;
   drive: DriveSettings;
@@ -110,6 +124,7 @@ export const useSettings = create<SettingsState>()(
       startTab: 'index',
       textScale: 'default',
       reduceMotion: false,
+      leaderboard: DEFAULT_LEADERBOARD,
       adaptiveTargets: true,
       carbCycling: false,
       drive: DEFAULT_DRIVE,
@@ -128,7 +143,7 @@ export const useSettings = create<SettingsState>()(
     {
       name: 'metakai.settings',
       storage: createJSONStorage(() => kvStorage),
-      version: 8,
+      version: 9,
       migrate: (state, version) => {
         const s = state as Record<string, unknown>;
         if (version < 2) {
@@ -155,6 +170,7 @@ export const useSettings = create<SettingsState>()(
           s.textScale = 'default';
           s.reduceMotion = false;
         }
+        if (version < 9) s.leaderboard = DEFAULT_LEADERBOARD;
         return s as never;
       },
     },

@@ -1,8 +1,9 @@
-import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google-signin/google-signin';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { File } from 'expo-file-system';
 import { create } from 'zustand';
 
 import { photoDirectory, restoreBackup, snapshotJson } from './backup';
+import { clearGoogleToken, configureGoogle, googleError, googleTokens, signInWithGoogle, signOutGoogle } from './google';
 import { getDb, notify, subscribe, SYNCED_TABLES } from './db/database';
 import { DEFAULT_DRIVE, useSettings, type DriveSettings } from './store/settings';
 
@@ -23,49 +24,29 @@ export type DriveStatus = 'idle' | 'syncing' | 'error';
 // Starts dirty so each launch uploads once, covering edits made just before the app was closed.
 export const useDrive = create<{ status: DriveStatus; error: string | null; dirty: boolean }>(() => ({ status: 'idle', error: null, dirty: true }));
 
-let configured = false;
-function configure() {
-  if (configured) return;
-  GoogleSignin.configure({ scopes: [SCOPE] });
-  configured = true;
-}
-
 const driveSettings = () => useSettings.getState().drive;
 const setDrive = (patch: Partial<DriveSettings>) => useSettings.getState().set({ drive: { ...driveSettings(), ...patch } });
 
-function friendly(e: unknown): string {
-  if (isErrorWithCode(e)) {
-    if (e.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) return 'Google Play services are needed for Drive backup.';
-    if (e.code === statusCodes.IN_PROGRESS) return 'Sign-in is already open.';
-    if (String(e.code) === '10' || /DEVELOPER_ERROR/.test(e.message)) return 'Google Drive backup is not set up in this build yet.';
-  }
-  return e instanceof Error ? e.message : 'Google Drive is unavailable right now.';
-}
+const friendly = (e: unknown) => googleError(e, 'Google Drive backup');
 
 /** Opens Google sign-in and asks for Drive app-folder access. Returns the email, or null if cancelled. */
 export async function connectDrive(): Promise<string | null> {
-  configure();
+  const user = await signInWithGoogle('Google Drive backup');
+  if (!user) return null;
   try {
-    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-    const res = await GoogleSignin.signIn();
-    if (res.type !== 'success') return null;
-    if (!res.data.scopes.includes(SCOPE)) {
+    if (!user.scopes.includes(SCOPE)) {
       const added = await GoogleSignin.addScopes({ scopes: [SCOPE] });
       if (!added || added.type !== 'success') return null;
     }
-    return res.data.user.email;
+    return user.user.email;
   } catch (e) {
     throw new Error(friendly(e));
   }
 }
 
 export async function disconnectDrive() {
-  configure();
-  try {
-    await GoogleSignin.signOut();
-  } catch {
-    // Already signed out.
-  }
+  // Leaderboards share the Google sign-in, so only sign out when nothing else needs it.
+  if (!useSettings.getState().leaderboard.joined) await signOutGoogle();
   useSettings.getState().set({ drive: DEFAULT_DRIVE });
 }
 
@@ -74,13 +55,14 @@ export async function disconnectDrive() {
 let token: string | null = null;
 
 async function accessToken(fresh = false): Promise<string> {
-  configure();
-  if (fresh && token) await GoogleSignin.clearCachedAccessToken(token).catch(() => {});
+  configureGoogle();
+  if (fresh && token) await clearGoogleToken(token);
   if (fresh || !token) {
-    if (!GoogleSignin.hasPreviousSignIn()) throw new Error('Sign in to Google again to keep backing up.');
-    const silent = await GoogleSignin.signInSilently();
-    if (silent.type !== 'success') throw new Error('Sign in to Google again to keep backing up.');
-    token = (await GoogleSignin.getTokens()).accessToken;
+    try {
+      token = (await googleTokens()).accessToken;
+    } catch {
+      throw new Error('Sign in to Google again to keep backing up.');
+    }
   }
   return token;
 }

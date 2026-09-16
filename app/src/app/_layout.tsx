@@ -117,6 +117,9 @@ function RootStack() {
           <Stack.Screen name="rank-run" />
           <Stack.Screen name="achievements" />
           <Stack.Screen name="share-card" options={modal} />
+          <Stack.Screen name="leaderboard" />
+          <Stack.Screen name="leaderboard-join" />
+          <Stack.Screen name="leaderboard-account" />
           <Stack.Screen name="interval-timer" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
           <Stack.Screen name="recovery" />
           <Stack.Screen name="health" />

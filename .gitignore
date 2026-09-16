@@ -15,3 +15,6 @@ app/.claude/
 # OAuth client files downloaded from Google Cloud
 client_secret*.json
 __pycache__/
+
+# Public build-time values (no secrets)
+!app/.env

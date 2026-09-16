@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
 import { StyleSheet, View } from 'react-native';
 
 import { subscribe } from '../../core/db/database';
@@ -14,6 +15,8 @@ import { PressableScale } from '../../ui/PressableScale';
 import { Text } from '../../ui/Text';
 import { toast } from '../../ui/Toast';
 import { ACHIEVEMENT_TABLES, earnedAchievements, syncAchievements } from '../achievements/repo';
+import { leaderboardsAvailable, syncScores } from '../leaderboards/api';
+import { useSettings } from '../../core/store/settings';
 import { ACHIEVEMENTS } from '../../lib/achievements';
 import { tierFor } from '../../lib/ranks';
 import { AchievementBadge, CATEGORY_COLOR, TierBadge } from './components';
@@ -38,6 +41,7 @@ export function RanksSection() {
   const router = useRouter();
   const { physique, run, physiqueOn, runOn } = useRanks();
   const achievementsOn = useFeature('achievements');
+  const lbJoined = useSettings((st) => st.leaderboard.joined);
   const earned = useQuery(['achievements'], earnedAchievements);
   const recent = [...earned.entries()]
     .sort((a, b) => b[1].localeCompare(a[1]))
@@ -74,6 +78,22 @@ export function RanksSection() {
               </Card>
             )}
           </View>
+        )}
+        {leaderboardsAvailable && (physiqueOn || runOn) && (
+          <Card onPress={() => router.push('/leaderboard')}>
+            <View style={styles.row}>
+              <View style={[styles.lbIcon, { backgroundColor: colors.accentSoft }]}>
+                <Icon name="trophy" size={18} color={colors.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text variant="headline">Leaderboards</Text>
+                <Text variant="footnote" tone="secondary">
+                  {lbJoined ? 'See where you stand' : 'Compare with other people'}
+                </Text>
+              </View>
+              <Icon name="chevronRight" size={18} color={colors.textTertiary} />
+            </View>
+          </Card>
         )}
         {achievementsOn && (
           <Card onPress={() => router.push('/achievements')}>
@@ -181,5 +201,41 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
   recent: { flexDirection: 'row', gap: 4 },
   todayRow: { flexDirection: 'row' },
+  lbIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   todayItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: SPACE.md, padding: SPACE.lg },
 });
+
+/** Keeps leaderboard scores current: after rank changes and when the app comes to the foreground. */
+export function LeaderboardSync() {
+  const joined = useSettings((st) => st.leaderboard.joined);
+  const person = usePerson();
+  const personRef = useRef(person);
+  personRef.current = person;
+
+  useEffect(() => {
+    if (!joined || !leaderboardsAvailable) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const run = () => {
+      const p = personRef.current;
+      if (!p) return;
+      const s = useSettings.getState();
+      const physique = s.enabledModules.includes('rank_physique') ? currentPhysiqueRank(p) : null;
+      const runRank = s.enabledModules.includes('rank_run') ? currentRunRank(p) : null;
+      syncScores(p, physique, runRank).catch(() => {});
+    };
+    const schedule = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(run, 10_000);
+    };
+    schedule();
+    const unsubscribe = subscribe([...RANK_TABLES], schedule);
+    const sub = AppState.addEventListener('change', (state) => state === 'active' && schedule());
+    return () => {
+      if (timer) clearTimeout(timer);
+      unsubscribe();
+      sub.remove();
+    };
+  }, [joined]);
+
+  return null;
+}

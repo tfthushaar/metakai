@@ -12,7 +12,7 @@ import { activeWorkout, startWorkout } from '../../modules/workouts/repo';
 import { EASE_OUT, SPRING } from '../../ui/motion';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { useLive } from '../../modules/gps/tracker';
-import { AchievementWatcher } from '../../modules/ranks/RanksSummary';
+import { AchievementWatcher, LeaderboardSync } from '../../modules/ranks/RanksSummary';
 import { BarBackground } from '../../ui/BarBackground';
 import { Icon, type IconName } from '../../ui/Icon';
 import { PressableScale } from '../../ui/PressableScale';
@@ -178,6 +178,7 @@ export default function TabsLayout() {
   return (
     <>
       <AchievementWatcher />
+      <LeaderboardSync />
       <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, animation: 'fade' }}>
         <Tabs.Screen name="index" options={{ title: 'Today' }} />
         <Tabs.Screen name="food" options={{ title: 'Food', href: foodEnabled ? undefined : null }} />

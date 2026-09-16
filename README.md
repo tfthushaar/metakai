@@ -68,6 +68,10 @@ Three principles shape the app:
 - **Run pass:** 1 km to marathon times are age-graded against world bests for your age and sex, so every runner is ranked fairly. It shows your age-grade class and how many people your age you're faster than.
 - **Achievements:** over 50 badges across training, running, nutrition, body, consistency and ranks, with progress toward the ones you haven't earned yet.
 - **Share cards:** any earned badge or pass rank can be shared as an image.
+- **Leaderboards (optional):** see where you rank against other users, filtered by sex, age group, weight class, height band, country or friends.
+  - Joining shares only a display name, optional country, rounded body buckets and your scores.
+  - Running boards count GPS-recorded runs only.
+  - Suspicious jumps are held for review, and leaving deletes everything from the server.
 
 ### Personalisation
 - **Features:** turn any feature on or off, or start from a preset.
@@ -96,6 +100,7 @@ flowchart LR
   end
 
   DB -. "optional backup<br/>(your account)" .-> Drive[("Google Drive<br/>app data folder")]
+  Modules -. "opt-in scores only" .-> Ranks["Leaderboard API<br/>Cloudflare Worker + D1"]
   Modules -. "meal text only<br/>(your key)" .-> AI["Gemini / Groq"]
   Modules -. "barcode number" .-> OFF["Open Food Facts"]
 ```
@@ -103,7 +108,7 @@ flowchart LR
 - **Offline-first:** every screen reads from the local SQLite database through small repositories, and screens re-render when the tables they use change.
 - **Feature registry:** each module declares its dependencies and permissions. Screens, tabs, Today cards and shortcuts check it before rendering.
 - **Pure logic:** calculations live in `src/lib` as dependency-free, unit-tested functions, including energy and macros, predictions, 1RM and progression, body composition, GPS track maths, population strength norms and age grading, readiness, achievements and AI rate budgets.
-- **No backend:** the only network calls are the optional ones shown above, made directly from the phone.
+- **Minimal backend:** the optional leaderboard is a small Cloudflare Worker with a D1 (SQLite) database in `cloud/`. It verifies Google sign-in, stores only derived scores, and precomputes score distributions every six hours to stay within the free tier. Every other network call goes directly from the phone to the service shown.
 
 ## Quick start
 
@@ -152,6 +157,20 @@ Tagged pushes (`v*`) build and publish a signed APK through GitHub Actions when 
 
 No client ID goes into the code.
 
+**Leaderboard server in your own build:**
+
+```bash
+cd cloud
+npm install
+npx wrangler login
+npx wrangler d1 create metakai-ranks     # put the database_id in wrangler.toml
+npm run migrate
+npx wrangler secret put ID_PEPPER        # any long random string
+npm run deploy
+```
+
+Then set `EXPO_PUBLIC_RANKS_API` in `app/.env` to the Worker URL. `GOOGLE_CLIENT_ID` in `wrangler.toml` and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in `app/.env` must be the same OAuth web client. To test locally, create `cloud/.dev.vars` with `ID_PEPPER` and `DEV_AUTH=1`, run `npm run dev`, and point `app/.env.local` at it with `EXPO_PUBLIC_RANKS_DEV_TOKEN=dev:you`.
+
 ## Project structure
 
 ```
@@ -163,6 +182,7 @@ app/
   src/ui/         Design system components
   plugins/        Expo config plugins (release signing)
 docs/             Product plan and website (privacy policy, terms)
+cloud/            Leaderboard API (Cloudflare Workers + D1)
 scripts/          Icon and exercise data generators
 .github/          CI and release workflows
 ```
@@ -175,7 +195,7 @@ scripts/          Icon and exercise data generators
 | UI | Reanimated, Gesture Handler, react-native-svg, Lucide icons, Inter |
 | State and storage | Zustand, expo-sqlite (SQLite and key-value), expo-secure-store |
 | Device | expo-location with task manager, expo-camera, expo-notifications, expo-local-authentication, react-native-view-shot |
-| Cloud (optional) | Google Sign-In and Drive REST API, Gemini and Groq APIs |
+| Cloud (optional) | Google Sign-In and Drive REST API, Gemini and Groq APIs, Cloudflare Workers + D1 |
 | Quality | Jest, TypeScript strict mode, GitHub Actions |
 
 ## Privacy

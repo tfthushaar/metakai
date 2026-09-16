@@ -10,6 +10,7 @@ import { durationLabel } from '../lib/geo';
 import { ageGradeLabel, RUN_DISTANCES } from '../lib/ranks';
 import { ScoreBar, StatPill, TierBadge, TierLadder } from '../modules/ranks/components';
 import { CONSISTENCY_WEEKS, currentRunRank } from '../modules/ranks/repo';
+import { leaderboardsAvailable } from '../modules/leaderboards/api';
 import { usePerson } from '../modules/ranks/usePerson';
 import { Button } from '../ui/Button';
 import { Card, SectionHeader } from '../ui/Card';
@@ -90,6 +91,12 @@ export default function RankRun() {
           </View>
         )}
       </Card>
+
+      {leaderboardsAvailable && (
+        <View style={{ marginTop: SPACE.md }}>
+          <Button title="Leaderboard" icon="trophy" variant="gray" onPress={() => router.push({ pathname: '/leaderboard', params: { board: 'run' } })} />
+        </View>
+      )}
 
       <SectionHeader title="Distances" />
       <Card index={1} padded={false}>

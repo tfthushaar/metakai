@@ -248,6 +248,8 @@ export interface LiftBest {
   /** Estimated 1RM including bodyweight for bodyweight lifts. */
   oneRmKg: number;
   dateKey: string;
+  /** Workouts in the ranking window that included this lift. */
+  sessions?: number;
 }
 
 export interface GroupRank {

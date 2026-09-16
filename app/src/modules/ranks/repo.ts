@@ -17,8 +17,8 @@ const db = () => getDb();
 /** Best estimated 1RM for each key lift since a date. Bodyweight lifts include bodyweight. */
 export function keyLiftBests(bodyweightKg: number, sinceDays = LIFT_WINDOW_DAYS): LiftBest[] {
   const ids = Object.keys(KEY_LIFTS);
-  const rows = db().getAllSync<{ exercise_id: string; weight_kg: number | null; reps: number; date_key: string }>(
-    `SELECT we.exercise_id, s.weight_kg, s.reps, w.date_key
+  const rows = db().getAllSync<{ exercise_id: string; workout_id: string; weight_kg: number | null; reps: number; date_key: string }>(
+    `SELECT we.exercise_id, w.id AS workout_id, s.weight_kg, s.reps, w.date_key
      FROM workout_sets s
      JOIN workout_exercises we ON we.id = s.workout_exercise_id
      JOIN workouts w ON w.id = s.workout_id
@@ -28,7 +28,10 @@ export function keyLiftBests(bodyweightKg: number, sinceDays = LIFT_WINDOW_DAYS)
     [addDays(dateKey(), -sinceDays), ...ids],
   );
   const best = new Map<string, LiftBest>();
+  const sessions = new Map<string, Set<string>>();
   for (const r of rows) {
+    if (!sessions.has(r.exercise_id)) sessions.set(r.exercise_id, new Set());
+    sessions.get(r.exercise_id)!.add(r.workout_id);
     const lift = KEY_LIFTS[r.exercise_id];
     const load = lift.bodyweight ? bodyweightKg + (r.weight_kg ?? 0) : (r.weight_kg ?? 0);
     if (load <= 0) continue;
@@ -36,7 +39,7 @@ export function keyLiftBests(bodyweightKg: number, sinceDays = LIFT_WINDOW_DAYS)
     const prev = best.get(r.exercise_id);
     if (!prev || oneRmKg > prev.oneRmKg) best.set(r.exercise_id, { exerciseId: r.exercise_id, oneRmKg, dateKey: r.date_key });
   }
-  return [...best.values()];
+  return [...best.values()].map((b) => ({ ...b, sessions: sessions.get(b.exerciseId)?.size ?? 0 }));
 }
 
 const GROUP_OF_MUSCLE = new Map<string, RankGroup>();

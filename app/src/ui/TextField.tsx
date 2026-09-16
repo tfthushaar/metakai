@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
 import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
+import { TEXT_SCALE, useSettings } from '../core/store/settings';
 import { useTheme } from '../core/theme/ThemeProvider';
 import { RADIUS, TYPE } from '../core/theme/typography';
 import { Text } from './Text';
@@ -12,6 +13,7 @@ export interface TextFieldProps extends TextInputProps {
 
 export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField({ label, suffix, style, ...rest }, ref) {
   const { colors } = useTheme();
+  const k = TEXT_SCALE[useSettings((s) => s.textScale)] ?? 1;
   return (
     <View style={{ gap: 6 }}>
       {label && (
@@ -26,7 +28,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
           selectionColor={colors.accent}
           cursorColor={colors.accent}
           underlineColorAndroid="transparent"
-          style={[TYPE.body, styles.input, { color: colors.text }, style]}
+          style={[TYPE.body, styles.input, { color: colors.text }, k !== 1 && { fontSize: TYPE.body.fontSize! * k }, style]}
           {...rest}
         />
         {suffix && (

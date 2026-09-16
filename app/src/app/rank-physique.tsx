@@ -12,6 +12,7 @@ import { COHORTS, compareLift, KEY_LIFTS, RANK_GROUP_LABEL, type Cohort, type Gr
 import { displayWeight, weightUnit } from '../lib/units';
 import { RadarChart, ScoreBar, StatPill, TierBadge, TierLadder } from '../modules/ranks/components';
 import { currentPhysiqueRank } from '../modules/ranks/repo';
+import { leaderboardsAvailable } from '../modules/leaderboards/api';
 import { usePerson } from '../modules/ranks/usePerson';
 import { Button } from '../ui/Button';
 import { Card, SectionHeader } from '../ui/Card';
@@ -122,6 +123,12 @@ export default function RankPhysique() {
           values={rank.groups.map((g) => ({ label: RANK_GROUP_LABEL[g.group], value: g.score, color: g.best ? g.tier.color : colors.fill }))}
         />
       </Card>
+
+      {leaderboardsAvailable && (
+        <View style={{ marginTop: SPACE.md }}>
+          <Button title="Leaderboard" icon="trophy" variant="gray" onPress={() => router.push({ pathname: '/leaderboard', params: { board: 'physique' } })} />
+        </View>
+      )}
 
       <SectionHeader title="Compare with" />
       <View style={styles.chips}>

@@ -1,0 +1,24 @@
+{
+  "name": "metakai-ranks",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Opt-in leaderboards for Metakai on Cloudflare Workers and D1.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "migrate": "wrangler d1 migrations apply metakai-ranks --remote",
+    "migrate:local": "wrangler d1 migrations apply metakai-ranks --local",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260916.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1",
+    "wrangler": "^4.133.0"
+  },
+  "dependencies": {
+    "jose": "^6.2.12"
+  }
+}
