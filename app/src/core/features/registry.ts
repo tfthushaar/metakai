@@ -98,7 +98,7 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
     group: 'Training',
     requires: [],
     permissions: [],
-    status: 'planned',
+    status: 'available',
   },
   cardio: {
     id: 'cardio',

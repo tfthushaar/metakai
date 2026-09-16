@@ -334,3 +334,15 @@ export function sumMacros(items: MacroSource[]): Macros {
     { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
   );
 }
+
+const PLURAL: Record<string, string> = {
+  piece: 'pieces', slice: 'slices', cup: 'cups', scoop: 'scoops', glass: 'glasses', can: 'cans', bowl: 'bowls',
+  plate: 'plates', handful: 'handfuls', serving: 'servings', pack: 'packs', bar: 'bars', bottle: 'bottles', cube: 'cubes', pint: 'pints',
+};
+
+/** "2 pieces", "1 katori", "150 g". */
+export function formatAmount(quantity: number, unit: string): string {
+  const q = Number.isInteger(quantity) ? String(quantity) : String(+quantity.toFixed(2));
+  const u = quantity > 1 && PLURAL[unit] ? PLURAL[unit] : unit;
+  return `${q} ${u}`;
+}

@@ -1,4 +1,15 @@
 import type { LucideProps } from 'lucide-react-native';
+import ArrowDown from 'lucide-react-native/icons/arrow-down';
+import ArrowUp from 'lucide-react-native/icons/arrow-up';
+import Ellipsis from 'lucide-react-native/icons/ellipsis';
+import Pencil from 'lucide-react-native/icons/pencil';
+import Play from 'lucide-react-native/icons/play';
+import Search from 'lucide-react-native/icons/search';
+import Settings from 'lucide-react-native/icons/settings';
+import Star from 'lucide-react-native/icons/star';
+import Timer from 'lucide-react-native/icons/timer';
+import Trophy from 'lucide-react-native/icons/trophy';
+import Zap from 'lucide-react-native/icons/zap';
 import Activity from 'lucide-react-native/icons/activity';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
 import Check from 'lucide-react-native/icons/check';
@@ -32,6 +43,17 @@ import X from 'lucide-react-native/icons/x';
 
 const ICONS = {
   activity: Activity,
+  arrowDown: ArrowDown,
+  arrowUp: ArrowUp,
+  more: Ellipsis,
+  pencil: Pencil,
+  play: Play,
+  search: Search,
+  settings: Settings,
+  star: Star,
+  timer: Timer,
+  trophy: Trophy,
+  zap: Zap,
   arrowRight: ArrowRight,
   check: Check,
   chevronLeft: ChevronLeft,

@@ -56,7 +56,7 @@ export function ListRow({ title, subtitle, value, icon, iconColor, onPress, acce
     <View style={styles.row}>
       {icon && (
         <View style={[styles.iconBadge, { backgroundColor: iconColor ?? colors.accent }]}>
-          <Icon name={icon} size={17} color={iconColor === colors.fill ? colors.text : '#FFFFFF'} strokeWidth={2.2} />
+          <Icon name={icon} size={17} color={iconColor === colors.fill ? colors.text : contrastOn(iconColor ?? colors.accent)} strokeWidth={2.2} />
         </View>
       )}
       <View style={styles.rowText}>
@@ -85,6 +85,14 @@ export function ListRow({ title, subtitle, value, icon, iconColor, onPress, acce
       {content}
     </PressableScale>
   );
+}
+
+/** Black or white, whichever reads better on the given hex colour. */
+function contrastOn(hex: string): string {
+  const h = hex.replace('#', '').slice(0, 6);
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance > 0.6 ? '#000000' : '#FFFFFF';
 }
 
 const styles = StyleSheet.create({

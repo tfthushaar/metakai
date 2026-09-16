@@ -10,3 +10,4 @@ node_modules/
 *.p12
 supabase/.temp/
 supabase/.branches/
+app/.claude/

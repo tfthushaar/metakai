@@ -64,8 +64,8 @@ export function RulerPicker({ min, max, step, value, onChange, majorEvery = 10, 
 
   const renderItem = useCallback(
     ({ item }: { item: number }) => {
-      const major = item % majorEvery === 0;
       const v = min + item * step;
+      const major = Math.round(v / step) % majorEvery === 0;
       return (
         <Tick
           major={major}

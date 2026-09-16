@@ -3,6 +3,8 @@ import { create } from 'zustand';
 import { useAuth } from '../auth/auth';
 import { supabase } from '../auth/supabase';
 import { getDb, notify, SYNCED_TABLES, type TableName } from '../db/database';
+import { getActivePhase, getProfile } from '../db/repo';
+import { useSettings } from '../store/settings';
 
 export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline';
 
@@ -119,6 +121,9 @@ export function syncNow(): Promise<void> {
         await pull(table);
       }
       useSync.setState({ status: 'idle', lastSyncedAt: new Date().toISOString() });
+      // A returning user on a new device already has a plan in the cloud; skip onboarding.
+      const settings = useSettings.getState();
+      if (!settings.onboarded && getProfile() && getActivePhase()) settings.set({ onboarded: true });
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       const offline = /network|fetch/i.test(message);

@@ -15,9 +15,11 @@ export interface CardProps {
   padded?: boolean;
   /** Stagger index for the entrance animation. */
   index?: number;
+  /** Style for the outer (animated) wrapper, e.g. flex sizing inside a grid. */
+  containerStyle?: StyleProp<ViewStyle>;
 }
 
-export function Card({ children, onPress, style, padded = true, index }: CardProps) {
+export function Card({ children, onPress, style, padded = true, index, containerStyle }: CardProps) {
   const { colors } = useTheme();
   const cardStyle = [styles.card, { backgroundColor: colors.surface }, padded && styles.padded, style];
   const content = onPress ? (
@@ -27,8 +29,12 @@ export function Card({ children, onPress, style, padded = true, index }: CardPro
   ) : (
     <View style={cardStyle}>{children}</View>
   );
-  if (index == null) return content;
-  return <Animated.View entering={enterUp(index)}>{content}</Animated.View>;
+  if (index == null) return containerStyle ? <View style={containerStyle}>{content}</View> : content;
+  return (
+    <Animated.View entering={enterUp(index)} style={containerStyle}>
+      {content}
+    </Animated.View>
+  );
 }
 
 export function SectionHeader({ title, action }: { title: string; action?: ReactNode }) {

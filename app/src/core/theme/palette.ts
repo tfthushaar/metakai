@@ -58,7 +58,7 @@ const LIGHT = {
   warning: '#E08600',
   danger: '#E5262A',
   overlay: 'rgba(0,0,0,0.35)',
-  tabBar: 'rgba(250,250,252,0.86)',
+  tabBar: 'rgba(250,250,252,0.97)',
 };
 
 const DARK: Record<DarkStyle, typeof LIGHT> = {
@@ -75,7 +75,7 @@ const DARK: Record<DarkStyle, typeof LIGHT> = {
     warning: '#FF9F0A',
     danger: '#FF453A',
     overlay: 'rgba(0,0,0,0.6)',
-    tabBar: 'rgba(10,10,12,0.82)',
+    tabBar: 'rgba(16,16,18,0.97)',
   },
   graphite: {
     background: '#111113',
@@ -90,7 +90,7 @@ const DARK: Record<DarkStyle, typeof LIGHT> = {
     warning: '#FF9F0A',
     danger: '#FF453A',
     overlay: 'rgba(0,0,0,0.55)',
-    tabBar: 'rgba(24,24,27,0.84)',
+    tabBar: 'rgba(28,28,31,0.97)',
   },
 };
 

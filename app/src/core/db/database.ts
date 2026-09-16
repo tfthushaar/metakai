@@ -3,7 +3,19 @@ import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
 
 import { MIGRATIONS } from './migrations';
 
-export type TableName = 'profile' | 'phases' | 'weight_entries' | 'log_entries' | 'custom_foods' | 'water_entries';
+export type TableName =
+  | 'profile'
+  | 'phases'
+  | 'weight_entries'
+  | 'log_entries'
+  | 'custom_foods'
+  | 'water_entries'
+  | 'custom_exercises'
+  | 'routines'
+  | 'routine_items'
+  | 'workouts'
+  | 'workout_exercises'
+  | 'workout_sets';
 
 export const SYNCED_TABLES: TableName[] = [
   'profile',
@@ -12,6 +24,12 @@ export const SYNCED_TABLES: TableName[] = [
   'log_entries',
   'custom_foods',
   'water_entries',
+  'custom_exercises',
+  'routines',
+  'routine_items',
+  'workouts',
+  'workout_exercises',
+  'workout_sets',
 ];
 
 let db: SQLiteDatabase | null = null;
@@ -70,4 +88,13 @@ export function clearAllData() {
     database.execSync('DELETE FROM sync_state');
   });
   notify(...SYNCED_TABLES);
+}
+
+/** Marks every row as unsynced so a later sign-in (possibly another account) uploads it all again. */
+export function resetSyncState() {
+  const database = getDb();
+  database.withTransactionSync(() => {
+    for (const t of SYNCED_TABLES) database.execSync(`UPDATE ${t} SET synced_at = NULL, user_id = NULL`);
+    database.execSync('DELETE FROM sync_state');
+  });
 }

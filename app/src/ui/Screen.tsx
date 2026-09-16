@@ -1,7 +1,6 @@
-import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   interpolate,
   useAnimatedScrollHandler,
@@ -13,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '../core/theme/ThemeProvider';
 import { SPACE } from '../core/theme/typography';
+import { BarBackground } from './BarBackground';
 import { Icon } from './Icon';
 import { PressableScale } from './PressableScale';
 import { Text } from './Text';
@@ -36,7 +36,7 @@ const COMPACT_HEIGHT = 44;
 
 /** Scroll screen with an iOS-style large title that condenses into a blurred bar. */
 export function Screen({ title, subtitle, children, accessory, back, tabBar, contentStyle, footer }: ScreenProps) {
-  const { colors, dark } = useTheme();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const scrollY = useSharedValue(0);
@@ -92,13 +92,7 @@ export function Screen({ title, subtitle, children, accessory, back, tabBar, con
 
       <View style={[styles.bar, { paddingTop: insets.top, height: insets.top + COMPACT_HEIGHT }]} pointerEvents="box-none">
         <Animated.View style={[StyleSheet.absoluteFill, barStyle]} pointerEvents="none">
-          <BlurView
-            intensity={60}
-            tint={dark ? 'dark' : 'light'}
-            experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : undefined}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.tabBar }]} />
+          <BarBackground />
           <View style={[styles.hairline, { backgroundColor: colors.separator }]} />
         </Animated.View>
         <View style={styles.barContent} pointerEvents="box-none">

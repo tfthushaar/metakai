@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
-import Svg, { Circle, ClipPath, Defs, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, G, Line, Path, Text as SvgText } from 'react-native-svg';
 
 import { useTheme } from '../core/theme/ThemeProvider';
 import { FONT } from '../core/theme/typography';
@@ -11,7 +11,8 @@ import type { TrendPoint } from '../lib/trend';
 import { kgToLb, type UnitSystem } from '../lib/units';
 import { EASE_OUT } from './motion';
 
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedG = Animated.createAnimatedComponent(G);
 
 export interface WeightChartProps {
   trend: TrendPoint[];
@@ -71,6 +72,9 @@ export function WeightChart({ trend, prediction = [], goalKg, startDate, endDate
     const line = (pts: { date: string; v: number }[]) =>
       pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.date).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
 
+    const trendPts = visibleTrend.map((p) => [x(p.date), y(p.trend)]);
+    let trendLength = 0;
+    for (let i = 1; i < trendPts.length; i++) trendLength += Math.hypot(trendPts[i][0] - trendPts[i - 1][0], trendPts[i][1] - trendPts[i - 1][1]);
     const trendPath = line(visibleTrend.map((p) => ({ date: p.date, v: p.trend })));
     const expectedPath = line(visiblePred.map((p) => ({ date: p.date, v: p.expected })));
     const bandPath = visiblePred.length
@@ -86,6 +90,7 @@ export function WeightChart({ trend, prediction = [], goalKg, startDate, endDate
       x,
       y,
       trendPath,
+      trendLength: Math.max(1, trendLength),
       expectedPath,
       bandPath,
       dots: visibleTrend.filter((p) => p.kg != null),
@@ -102,7 +107,9 @@ export function WeightChart({ trend, prediction = [], goalKg, startDate, endDate
     reveal.value = withTiming(1, { duration: 1000, easing: EASE_OUT });
   }, [model?.trendPath, reveal]);
 
-  const clipProps = useAnimatedProps(() => ({ width: Math.max(0, reveal.value * width) }));
+  const trendLength = model?.trendLength ?? 1;
+  const drawProps = useAnimatedProps(() => ({ strokeDashoffset: trendLength * (1 - reveal.value) }));
+  const fadeProps = useAnimatedProps(() => ({ opacity: Math.min(1, reveal.value * 1.6) }));
 
   const labelStyle = { fontFamily: FONT.medium, fontSize: 11 };
 
@@ -110,12 +117,6 @@ export function WeightChart({ trend, prediction = [], goalKg, startDate, endDate
     <View style={{ height }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
       {model && (
         <Svg width={width} height={height}>
-          <Defs>
-            <ClipPath id="reveal">
-              <AnimatedRect x={0} y={0} height={height} animatedProps={clipProps} />
-            </ClipPath>
-          </Defs>
-
           {!compact && model.ticks.map((t, i) => (
             <G key={i}>
               <Line
@@ -163,7 +164,7 @@ export function WeightChart({ trend, prediction = [], goalKg, startDate, endDate
             />
           )}
 
-          <G clipPath="url(#reveal)">
+          <AnimatedG animatedProps={fadeProps}>
             {model.bandPath !== '' && <Path d={model.bandPath} fill={colors.accentSoft} />}
             {model.expectedPath !== '' && (
               <Path d={model.expectedPath} stroke={colors.accent} strokeOpacity={0.55} strokeWidth={1.5} strokeDasharray="5 5" fill="none" />
@@ -171,10 +172,19 @@ export function WeightChart({ trend, prediction = [], goalKg, startDate, endDate
             {model.dots.map((p) => (
               <Circle key={p.date} cx={model.x(p.date)} cy={model.y(p.kg!)} r={2.6} fill={colors.textTertiary} />
             ))}
-            {model.trendPath !== '' && (
-              <Path d={model.trendPath} stroke={colors.text} strokeWidth={2.6} strokeLinejoin="round" strokeLinecap="round" fill="none" />
-            )}
-          </G>
+          </AnimatedG>
+          {model.trendPath !== '' && (
+            <AnimatedPath
+              d={model.trendPath}
+              stroke={colors.text}
+              strokeWidth={2.6}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              fill="none"
+              strokeDasharray={`${model.trendLength} ${model.trendLength}`}
+              animatedProps={drawProps}
+            />
+          )}
 
           {model.lastTrend && (
             <Circle
