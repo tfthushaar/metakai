@@ -87,23 +87,12 @@ Three principles shape the app:
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  subgraph Phone["Android phone"]
-    direction TB
-    UI["Screens<br/>(Expo Router)"] --> Modules["Feature modules<br/>food · workouts · cardio · gps · ranks<br/>achievements · recovery · health · body · habits"]
-    Modules --> Lib["Pure logic<br/>targets · predictions · strength · ranks<br/>geo · readiness · achievements · rate limits"]
-    Modules --> DB[("SQLite<br/>all user data")]
-    Modules --> KV[("Key-value store<br/>settings · layouts")]
-    Modules --> Secure[("Secure storage<br/>AI keys")]
-    GPS["Location foreground service"] --> DB
-  end
-
-  DB -. "optional backup<br/>(your account)" .-> Drive[("Google Drive<br/>app data folder")]
-  Modules -. "opt-in scores only" .-> Ranks["Leaderboard API<br/>Cloudflare Worker + D1"]
-  Modules -. "meal text only<br/>(your key)" .-> AI["Gemini / Groq"]
-  Modules -. "barcode number" .-> OFF["Open Food Facts"]
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.svg">
+    <img src="docs/assets/architecture-light.svg" alt="Metakai architecture: screens, feature modules, pure logic and local storage all run on the phone. Leaderboards, Gemini and Groq, Open Food Facts and Google Drive are optional connections." width="100%">
+  </picture>
+</p>
 
 - **Offline-first:** every screen reads from the local SQLite database through small repositories, and screens re-render when the tables they use change.
 - **Feature registry:** each module declares its dependencies and permissions. Screens, tabs, Today cards and shortcuts check it before rendering.
