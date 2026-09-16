@@ -631,6 +631,36 @@ Account & auth · profile · **goal & phase engine** · Today screen (container)
 - **Gym check-in:** attendance calendar, weekly gym streak, optional geofence auto check-in
 - **Accountability partner (later):** read-only view of selected stats for a friend
 
+### 8.8.1 Rank passes & achievements (approved 2026-09-17)
+
+Two toggleable features, plus an Achievements section that collects badges from the whole app.
+
+**Physique pass** (feature `rank_physique`)
+- Ranks each muscle group: chest, back, shoulders, biceps, triceps, quads, hamstrings, glutes, calves, core.
+- Score = **strength** (best estimated 1RM on key lifts for the group, relative to bodyweight, adjusted for sex and age, weighted by how directly the lift trains the group) **+ consistency** (weeks the group was trained over the last 12 weeks). Volume is not scored.
+- Tiers: Iron → Bronze → Silver → Gold → Platinum → Diamond → Champion, three divisions each.
+- Overall physique rank with a balance factor (weak groups pull it down).
+- For each group: percentile vs the average person of the same sex, age, weight and height (published norms, offline), multiple of an untrained person's strength, standing vs app users (cloud), and where you differ from your own average.
+
+**Run pass** (feature `rank_run`)
+- 1K, 5K, 10K, half and marathon from best efforts, **age-graded** (World Masters Athletics tables) so ages and sexes compare fairly, plus weekly consistency.
+- Only **GPS-recorded** runs count for leaderboards; manual runs count for personal rank only.
+
+**Leaderboards** (cloud, opt-in)
+- Filters: overall, sex, age group, weight class, height band, country, friends (invite code).
+- Shows your rank, percentile, the distribution and the top 100 by user-chosen display name (length and profanity checks, unique).
+- Upload only derived data: display name, random id, sex, age group, weight class, height band, country, per-group scores and tiers, age-graded GPS best efforts. Never logs, routes, photos or exact body stats. Delete everything with one tap.
+- Anti-cheat: minimum sessions per lift, plausibility limits on strength-to-bodyweight, jump detection, outlier hold, GPS-only runs, rate limits.
+
+**Backend:** Cloudflare Workers + D1 free tier (100k requests/day, 5M rows read/day, 100k writes/day, no inactivity pausing). Scores upload at most daily when changed; an hourly cron precomputes percentile histograms per filter bucket. Sign-in reuses Google (server stores only a hash of the Google subject).
+
+**Achievements**
+- One section for every badge in the app: training, cardio/GPS, nutrition, body, habits, rank tiers and PRs.
+- Each achievement is a card with an earned date and progress toward locked ones, and can be shared as an image.
+- No seasons or reward tracks; badges are the reward.
+
+**Phases:** (1) offline ranks + passes + achievements + share cards, (2) Cloudflare leaderboards with filters and anti-cheat, (3) friends via invite codes.
+
 ### 8.9 Quality of life
 - Home screen widgets: remaining macros, next workout, weight trend, quick log
 - Notifications per module (weigh-in, meals, protein nudge, workout day, rest timer, photo day, supplements, habits, phase transitions)
@@ -842,6 +872,7 @@ Each module folder owns its screens, components, queries, dashboard cards and re
 | **v0.6 Advanced training & food** | Calisthenics skill trees, weak-point focus, physique proportions, voice set logging, form check video, meal planning + grocery list + meal prep, food budget, education hub |
 | **v0.7 AI & sharing** | AI coach chat, AI program and meal-plan builders, meal photo AI, label OCR, voice food logging, coach sharing, share cards, phase recaps, Strong / Hevy / MFP import |
 | **v0.8 Experimental** | Pose rep counter + range of motion, gym geofence check-in, accountability partner, gamification badges |
+| **v0.9 Rank passes** | Physique and Run passes (offline ranks vs population norms), Achievements with shareable cards, customisable layouts, then Cloudflare leaderboards with filters |
 | **v1.0** | Export, account deletion, guest → account merge, safety review, polish. iOS and Play Store only if paid. |
 
 ---
