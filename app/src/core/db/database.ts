@@ -21,7 +21,8 @@ export type TableName =
   | 'progress_photos'
   | 'habits'
   | 'habit_logs'
-  | 'saved_meals';
+  | 'saved_meals'
+  | 'splits';
 
 export const SYNCED_TABLES: TableName[] = [
   'profile',
@@ -42,6 +43,7 @@ export const SYNCED_TABLES: TableName[] = [
   'habits',
   'habit_logs',
   'saved_meals',
+  'splits',
 ];
 
 let db: SQLiteDatabase | null = null;

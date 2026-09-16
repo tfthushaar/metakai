@@ -6,6 +6,8 @@ Build the body you want. Metakai tracks food, weight and progress for cutting, b
 - **Goal engine:** cut, lean bulk, bulk, recomp or maintain, with calorie and macro targets from Mifflin-St Jeor or Katch-McArdle and safety floors.
 - **Predictions:** a week-by-week weight simulation with a forecast band, a smoothed trend weight, a goal date, and whether you are ahead of or behind plan.
 - **Gym:** an 876-exercise library, workout logger with previous performance, warm-ups, PR detection and a rest timer, plus routines and a plate calculator.
+- **Fast workout logging:** type what you did ("bench 3x8 60", "deadlift 100x5 120x3") and it's matched to exercises and saved in one tap. Every workout gets an estimated calorie burn.
+- **Splits and progressive overload:** pick a preset split (Push/Pull/Legs, Upper/Lower, Full body, PHUL, Arnold, Bro split) or build your own, choose exercises for each muscle group, and see which lifts are progressing, holding or slipping. Weekly workouts, calories burned and lifts progressing also show on the Today screen.
 - **Body & progress:** measurements, body fat (tape, calipers or manual), lean mass and FFMI, private progress photos with a before/after slider, and milestone cards with predicted dates.
 - **Habits & reminders:** automatic and manual daily habits, scheduled reminders, app lock, and a customisable Today layout.
 - **Smart planning:** ten goal types (including diet breaks, mini cuts, reverse diets and event prep), a physique planner that turns a target body into a phase timeline, adaptive maintenance calories, weekly check-ins, training-day carbs, double progression with deload hints, weekly muscle volume, strength standards and barcode scanning.
@@ -21,7 +23,7 @@ Download the latest APK from [Releases](https://github.com/tfthushaar/metakai/re
 
 ## Status and what's left
 
-**Built and on-device tested (v0.1–v0.4):** everything listed above. The app works fully offline.
+**Built and on-device tested (v0.1–v0.5):** everything listed above. The app works fully offline.
 
 ### Needs the repo owner (can't be done without your accounts)
 
@@ -32,10 +34,10 @@ Download the latest APK from [Releases](https://github.com/tfthushaar/metakai/re
 
 ### Not built yet (roadmap)
 
-- **v0.5 Cardio, recovery and health:** cardio log and interval timers (HIIT, EMOM, Tabata), GPS runs and walks, Health Connect (steps, heart rate, sleep), recovery map, readiness score and soreness, sleep and stress tracking, wellbeing check-ins and journal, supplements, health markers (blood pressure, bloodwork), injury and pain log, mobility routines, home screen widgets.
-- **v0.6 Advanced training and food:** built-in programs (PPL, Upper/Lower, GZCLP, 5/3/1-style) with scheduled deload weeks, calisthenics skill trees, weak-point focus and physique proportions (shoulder-to-waist, symmetry), SVG body heatmap, voice set logging, form-check video, meal planning with grocery lists and meal prep, food budget, dietary-preference filtering and "what should I eat" suggestions, an offline education hub.
-- **v0.7 AI and sharing:** AI coach chat, AI program and meal-plan builders, meal photo estimates, nutrition label OCR, voice food logging, coach and trainer sharing links, shareable cards and phase recaps, import from Strong, Hevy and MyFitnessPal.
-- **v0.8 Experimental:** camera rep counter, gym geofence check-in, accountability partner, badges.
+- **v0.6 Cardio, recovery and health:** cardio log and interval timers (HIIT, EMOM, Tabata), GPS runs and walks, Health Connect (steps, heart rate, sleep), recovery map, readiness score and soreness, sleep and stress tracking, wellbeing check-ins and journal, supplements, health markers (blood pressure, bloodwork), injury and pain log, mobility routines, home screen widgets.
+- **v0.7 Advanced training and food:** built-in programs with set percentages and scheduled deload weeks (GZCLP, 5/3/1-style), calisthenics skill trees, weak-point focus and physique proportions (shoulder-to-waist, symmetry), SVG body heatmap, voice set logging, form-check video, meal planning with grocery lists and meal prep, food budget, dietary-preference filtering and "what should I eat" suggestions, an offline education hub.
+- **v0.8 AI and sharing:** AI coach chat, AI program and meal-plan builders, meal photo estimates, nutrition label OCR, voice food logging, coach and trainer sharing links, shareable cards and phase recaps, import from Strong, Hevy and MyFitnessPal.
+- **v0.9 Experimental:** camera rep counter, gym geofence check-in, accountability partner, badges.
 - **v1.0:** full data export and import, an editable multi-phase planner (future phases on a timeline), cloud backup of progress photos, guest-to-account merge polish, final safety review. Play Store ($25) and iOS ($99/year) releases are optional and paid.
 
 ### Known limitations
@@ -43,6 +45,7 @@ Download the latest APK from [Releases](https://github.com/tfthushaar/metakai/re
 - The built-in food database covers about 150 common Indian and international foods. Unknown foods need AI (requires Supabase), a barcode scan, or quick add.
 - Progress photos stay on the phone that took them and are not synced yet.
 - Exercise demo images load from a CDN, so they need a connection the first time.
+- Calories burned from lifting are estimates based on MET values, bodyweight, duration and set density. Treat them as a rough guide.
 - Android bars use a solid background; true blur is iOS-only in this Expo SDK.
 
 ## Repo layout

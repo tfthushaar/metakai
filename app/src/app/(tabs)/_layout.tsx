@@ -50,6 +50,7 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               router.push('/workout');
             },
           },
+          { icon: 'check' as IconName, label: 'Log finished workout', onPress: () => router.push('/quick-workout') },
         ]
       : []),
   ];

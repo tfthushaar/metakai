@@ -10,6 +10,7 @@ import { RADIUS, SPACE, TYPE } from '../core/theme/typography';
 import { ExerciseThumb } from '../modules/workouts/components';
 import { EQUIPMENT_LABEL, MUSCLE_GROUPS, MUSCLE_LABEL, searchExercises, type Equipment, type Exercise } from '../modules/workouts/exercises';
 import { useExercisePicker } from '../modules/workouts/picker';
+import { GROUP_LABEL, GROUP_MUSCLES, type SplitGroup } from '../modules/workouts/splits';
 import { addCustomExercise, allExercises } from '../modules/workouts/repo';
 import { Button } from '../ui/Button';
 import { Chip } from '../ui/Chip';
@@ -47,7 +48,7 @@ export default function Exercises() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { mode } = useLocalSearchParams<{ mode?: 'pick' }>();
+  const { mode, group: splitGroup } = useLocalSearchParams<{ mode?: 'pick'; group?: SplitGroup }>();
   const picking = mode === 'pick';
   const onPick = useExercisePicker((s) => s.onPick);
   const clearPicker = useExercisePicker((s) => s.clear);
@@ -60,7 +61,12 @@ export default function Exercises() {
 
   useEffect(() => () => clearPicker(), [clearPicker]);
 
-  const results = useMemo(() => searchExercises(all, query, group, equipment), [all, query, group, equipment]);
+  const results = useMemo(() => {
+    const found = searchExercises(all, query, group, equipment);
+    if (!splitGroup || !GROUP_MUSCLES[splitGroup]) return found;
+    const muscles = GROUP_MUSCLES[splitGroup];
+    return found.filter((e) => e.primary.some((m) => muscles.includes(m)));
+  }, [all, query, group, equipment, splitGroup]);
 
   const press = (e: Exercise) => {
     if (!picking) {
@@ -91,7 +97,7 @@ export default function Exercises() {
         <PressableScale onPress={() => router.back()} hitSlop={10} style={styles.headerButton}>
           <Icon name={picking ? 'close' : 'chevronLeft'} size={24} color={colors.accent} strokeWidth={2.4} />
         </PressableScale>
-        <Text variant="headline">{picking ? 'Add exercises' : 'Exercises'}</Text>
+        <Text variant="headline">{picking ? (splitGroup ? `Add ${GROUP_LABEL[splitGroup]} exercises` : 'Add exercises') : 'Exercises'}</Text>
         <View style={styles.headerButton} />
       </View>
 
@@ -113,7 +119,7 @@ export default function Exercises() {
         )}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={{ flexGrow: 0 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={{ flexGrow: 0, display: splitGroup ? 'none' : 'flex' }}>
         {MUSCLE_GROUPS.map((g) => (
           <Chip key={g.id} label={g.label} selected={group === g.id} onPress={() => setGroup(group === g.id ? null : g.id)} />
         ))}

@@ -289,4 +289,20 @@ export const MIGRATIONS: string[] = [
   ALTER TABLE custom_foods ADD COLUMN barcode TEXT;
   CREATE INDEX custom_foods_barcode ON custom_foods (barcode);
   `,
+  `
+  CREATE TABLE splits (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT,
+    name TEXT NOT NULL,
+    preset TEXT,
+    active INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    synced_at TEXT
+  );
+  ALTER TABLE routines ADD COLUMN split_id TEXT;
+  ALTER TABLE routines ADD COLUMN muscle_groups TEXT NOT NULL DEFAULT '[]';
+  ALTER TABLE workouts ADD COLUMN kcal REAL;
+  `,
 ];

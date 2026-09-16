@@ -72,7 +72,7 @@ export default function WorkoutSummary() {
     { label: 'Duration', value: formatDurationWords(duration) },
     { label: 'Volume', value: `${formatVolume(volume, units)} ${weightUnit(units)}` },
     { label: 'Sets', value: String(working.length) },
-    { label: 'Exercises', value: String(workout.exercises.length) },
+    { label: 'Burned', value: workout.kcal != null ? `≈ ${Math.round(workout.kcal)} kcal` : '—' },
   ];
 
   return (

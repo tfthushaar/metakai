@@ -19,11 +19,15 @@ import { ThemeProvider, useTheme } from '../core/theme/ThemeProvider';
 import { ToastHost } from '../ui/Toast';
 import { AppLockGate } from '../core/AppLock';
 import { syncReminders } from '../core/reminders';
+import { backfillWorkoutCalories } from '../modules/workouts/repo';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ duration: 250, fade: true });
 
 getDb();
+try {
+  backfillWorkoutCalories();
+} catch {}
 startAuth();
 
 function useBackgroundSync() {
@@ -100,6 +104,9 @@ function RootStack() {
           <Stack.Screen name="compare" options={{ animation: 'fade' }} />
           <Stack.Screen name="milestones" />
           <Stack.Screen name="habits" />
+          <Stack.Screen name="split" />
+          <Stack.Screen name="overload" />
+          <Stack.Screen name="quick-workout" options={modal} />
           <Stack.Screen name="physique" />
           <Stack.Screen name="checkin" />
           <Stack.Screen name="volume" />

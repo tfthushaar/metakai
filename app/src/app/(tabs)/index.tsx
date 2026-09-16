@@ -17,7 +17,7 @@ import { MacroInline, MacroSummary } from '../../modules/food/components';
 import { sumMacros } from '../../modules/food/parse';
 import { HabitsCard } from '../../modules/habits/HabitsCard';
 import { ElapsedText } from '../../modules/workouts/components';
-import { activeWorkout, listWorkouts, startWorkout } from '../../modules/workouts/repo';
+import { activeWorkout, listWorkouts, overloadSummary, routinesForWeekday, startWorkout, trainingStats } from '../../modules/workouts/repo';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { Icon } from '../../ui/Icon';
@@ -60,6 +60,11 @@ export default function Today() {
   const habitsOn = useFeature('habits');
   const active = useQuery(['workouts'], activeWorkout);
   const lastWorkout = useQuery(['workouts', 'workout_sets'], () => listWorkouts(1)[0] ?? null);
+  const todayDay = useQuery(['routines', 'routine_items', 'splits'], () => routinesForWeekday(new Date().getDay()).find((r) => r.items.length > 0) ?? null);
+  const weekTraining = useQuery(['workouts', 'workout_sets'], () => trainingStats(addDays(dateKey(), -6)));
+  const overloadRows = useQuery(['workouts', 'workout_sets'], () => overloadSummary(addDays(dateKey(), -56)));
+  const overloadTotal = overloadRows.filter((o) => o.status !== 'new').length;
+  const overloadUp = overloadRows.filter((o) => o.status === 'progressing').length;
   const today = dateKey();
 
   const body = useBody();
@@ -204,28 +209,65 @@ export default function Today() {
               <Icon name="dumbbell" size={20} color={active ? colors.onAccent : colors.text} />
             </View>
             <View style={{ flex: 1 }}>
+              <Text variant="footnote" tone="secondary">
+                {active ? 'In progress' : todayDay ? 'Today' : 'Training'}
+              </Text>
               <Text variant="headline" numberOfLines={1}>
-                {active ? active.name : 'Training'}
+                {active ? active.name : todayDay ? todayDay.name : lastWorkout ? `Last: ${lastWorkout.name}` : 'No workouts yet'}
               </Text>
               {active ? (
                 <ElapsedText since={active.startedAt} variant="footnote" color={colors.textSecondary} />
               ) : (
-                <Text variant="footnote" tone="secondary" numberOfLines={1}>
-                  {lastWorkout ? `Last: ${lastWorkout.name} · ${relativeDay(lastWorkout.dateKey)}` : 'No workouts logged yet'}
-                </Text>
+                !todayDay &&
+                lastWorkout && (
+                  <Text variant="footnote" tone="secondary" numberOfLines={1}>
+                    {relativeDay(lastWorkout.dateKey)}
+                  </Text>
+                )
               )}
             </View>
+            {!active && (
+              <PressableScale feedback="selection" onPress={() => router.push('/quick-workout')} style={[styles.round, { backgroundColor: colors.fill }]}>
+                <Icon name="check" size={18} color={colors.text} />
+              </PressableScale>
+            )}
             <Button
               title={active ? 'Resume' : 'Start'}
-              icon={active ? 'play' : 'plus'}
+              icon="play"
               size="sm"
               variant={active ? 'filled' : 'tinted'}
               full={false}
               onPress={() => {
-                startWorkout();
+                startWorkout({ routineId: todayDay?.id });
                 router.push('/workout');
               }}
             />
+          </View>
+          <View style={[styles.trainStats, { borderTopColor: colors.separator }]}>
+            <View style={styles.trainStat}>
+              <Text variant="headline" tabular>
+                {weekTraining.workouts}
+              </Text>
+              <Text variant="caption" tone="secondary">
+                this week
+              </Text>
+            </View>
+            <View style={styles.trainStat}>
+              <Text variant="headline" tabular>
+                {weekTraining.kcal.toLocaleString('en-US')}
+              </Text>
+              <Text variant="caption" tone="secondary">
+                kcal burned
+              </Text>
+            </View>
+            <View style={styles.trainStat}>
+              <Text variant="headline" tabular color={overloadUp > 0 ? colors.success : colors.text}>
+                {overloadTotal ? `${overloadUp}/${overloadTotal}` : '—'}
+              </Text>
+              <Text variant="caption" tone="secondary">
+                lifts up
+              </Text>
+            </View>
           </View>
         </Card>
     ) : null,
@@ -293,5 +335,7 @@ const styles = StyleSheet.create({
   mealRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.sm },
   weightHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
   goalRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  trainStats: { flexDirection: 'row', marginTop: SPACE.md, paddingTop: SPACE.md, borderTopWidth: StyleSheet.hairlineWidth },
+  trainStat: { flex: 1, alignItems: 'center', gap: 2 },
   round: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
 });
