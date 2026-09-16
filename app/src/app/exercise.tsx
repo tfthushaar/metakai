@@ -2,7 +2,9 @@ import { useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { useBody } from '../core/goals/useBody';
 import { useQuery } from '../core/db/useQuery';
+import { LEVELS, liftForExercise, strengthStandard } from '../lib/training';
 import { useTheme } from '../core/theme/ThemeProvider';
 import { SPACE } from '../core/theme/typography';
 import { formatShort, relativeDay } from '../lib/dates';
@@ -25,6 +27,9 @@ export default function ExerciseDetail() {
   const history = useQuery([...TABLES], () => exerciseHistory(id), [id]);
   const records = useQuery([...TABLES], () => exerciseRecords(id), [id]);
   const wu = weightUnit(units);
+  const { profile, currentKg } = useBody();
+  const lift = liftForExercise(id);
+  const standard = lift && profile && currentKg != null && records.best1RM > 0 ? strengthStandard(profile.sex, lift, records.best1RM, currentKg) : null;
 
   const trend = useMemo(
     () =>
@@ -87,6 +92,28 @@ export default function ExerciseDetail() {
               </Text>
             </Card>
           </View>
+
+          {standard && profile && currentKg != null && (
+            <>
+              <SectionHeader title="Strength level" />
+              <Card>
+                <View style={styles.levelHeader}>
+                  <Text variant="title2">{standard.level}</Text>
+                  <Text variant="subhead" tone="secondary" tabular>{`${standard.ratio.toFixed(2)}× bodyweight`}</Text>
+                </View>
+                <View style={styles.levels}>
+                  {LEVELS.map((l, i) => (
+                    <View key={l} style={[styles.levelBar, { backgroundColor: i <= standard.levelIndex ? colors.accent : colors.fill }]} />
+                  ))}
+                </View>
+                <Text variant="footnote" tone="secondary">
+                  {standard.nextLevel
+                    ? `${standard.nextLevel} at about ${formatWeight(standard.nextKg!, units)} ${wu} for your bodyweight`
+                    : 'Top of the scale for your bodyweight'}
+                </Text>
+              </Card>
+            </>
+          )}
 
           {trend.length > 1 && (
             <>
@@ -181,6 +208,9 @@ export default function ExerciseDetail() {
 }
 
 const styles = StyleSheet.create({
+  levelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  levels: { flexDirection: 'row', gap: 4, marginVertical: SPACE.md },
+  levelBar: { flex: 1, height: 6, borderRadius: 3 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm, marginTop: SPACE.lg },
   tag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
   stats: { flexDirection: 'row', gap: SPACE.sm, marginTop: SPACE.xl },

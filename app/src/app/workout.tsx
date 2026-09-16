@@ -27,6 +27,7 @@ import {
   getWorkout,
   moveWorkoutExercise,
   previousSets,
+  progressionAdvice,
   removeWorkoutExercise,
   renameWorkout,
   setCompleted,
@@ -216,6 +217,10 @@ function ExerciseCard({ workoutId, startedAt, item, isFirst, isLast }: { workout
   const exercise = useMemo(() => getExercise(item.exerciseId), [item.exerciseId]);
   const previous = useMemo(() => previousSets(item.exerciseId, workoutId), [item.exerciseId, workoutId]);
   const records = useMemo(() => exerciseRecords(item.exerciseId, startedAt, workoutId), [item.exerciseId, startedAt, workoutId]);
+  const advice = useMemo(
+    () => (item.repMin != null && item.repMax != null ? progressionAdvice(item.exerciseId, item.repMin, item.repMax, workoutId) : null),
+    [item.exerciseId, item.repMin, item.repMax, workoutId],
+  );
   const previousWorking = previous.filter((s) => s.kind !== 'warmup');
   const previousWarmup = previous.filter((s) => s.kind === 'warmup');
   const restSeconds = item.restS ?? gym.restSeconds;
@@ -248,8 +253,14 @@ function ExerciseCard({ workoutId, startedAt, item, isFirst, isLast }: { workout
             <Text variant="headline" numberOfLines={1}>
               {exercise.name}
             </Text>
-            <Text variant="caption" tone="secondary">
-              {records.best1RM > 0 ? `Best e1RM ${formatWeight(records.best1RM, units)} ${weightUnit(units)}` : 'No history yet'}
+            <Text variant="caption" tone={advice && advice.kind !== 'start' ? (advice.kind === 'deload' ? 'warning' : 'accent') : 'secondary'} numberOfLines={2}>
+              {advice && advice.kind !== 'start'
+                ? `${advice.kind === 'increase' ? '↑ ' : advice.kind === 'deload' ? '↓ ' : ''}${formatWeight(advice.weightKg, units)} ${weightUnit(units)} × ${advice.reps} · ${advice.reason}`
+                : item.repMin != null
+                  ? `Target ${item.repMin}–${item.repMax} reps`
+                  : records.best1RM > 0
+                    ? `Best e1RM ${formatWeight(records.best1RM, units)} ${weightUnit(units)}`
+                    : 'No history yet'}
             </Text>
           </View>
         </PressableScale>

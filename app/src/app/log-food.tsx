@@ -15,7 +15,8 @@ import { parseWithAi } from '../modules/food/ai';
 import { MacroInline } from '../modules/food/components';
 import type { Food } from '../modules/food/foods';
 import { listSavedMeals, saveMeal, type SavedMeal } from '../modules/food/savedMeals';
-import { formatAmount, parseMeal, sumMacros, unitOptions, withQuantity, type ParsedItem } from '../modules/food/parse';
+import { formatAmount, parseMeal, resolveItem, sumMacros, unitOptions, withQuantity, type ParsedItem } from '../modules/food/parse';
+import { useScanHandoff } from '../modules/food/barcode';
 import { Button } from '../ui/Button';
 import { Chip } from '../ui/Chip';
 import { haptic } from '../ui/haptics';
@@ -192,6 +193,7 @@ export default function LogFood() {
   const customFoods = useQuery(['custom_foods'], listCustomFoods);
   const frequent = useQuery(['log_entries'], () => frequentFoods(10));
   const savedMeals = useQuery(['saved_meals'], listSavedMeals);
+  const openScanner = useScanHandoff((st) => st.open);
   const [mealName, setMealName] = useState<string | null>(null);
   const extraFoods = useMemo<Food[]>(
     () =>
@@ -363,8 +365,33 @@ export default function LogFood() {
             style={[TYPE.title3, { fontFamily: TYPE.body.fontFamily, color: colors.text, minHeight: 88, textAlignVertical: 'top' }]}
           />
           <View style={styles.inputActions}>
+            <PressableScale
+              feedback="selection"
+              accessibilityLabel="Scan barcode"
+              onPress={() => {
+                openScanner((food) => {
+                  const f: Food = {
+                    id: `custom:${food.id}`,
+                    name: food.name,
+                    aliases: [],
+                    per100: { kcal: food.kcal, protein: food.protein, carbs: food.carbs, fat: food.fat, fiber: food.fiber },
+                    units: (food.servingGrams ? { serving: food.servingGrams, g: 1 } : { g: 1 }) as Record<string, number>,
+                    defaultUnit: food.servingGrams ? 'serving' : 'g',
+                  };
+                  setExtraItems((list) => [...list, resolveItem(food.name, f, food.servingGrams ? 1 : 100, food.servingGrams ? 'serving' : 'g')]);
+                  haptic.success();
+                });
+                router.push('/scan');
+              }}
+              style={[styles.scanButton, { backgroundColor: colors.fill }]}
+            >
+              <Icon name="search" size={16} color={colors.text} />
+              <Text variant="subhead" weight="semibold">
+                Scan
+              </Text>
+            </PressableScale>
             <Text variant="footnote" tone="tertiary" style={{ flex: 1 }}>
-              {canUseAi ? 'Matched offline as you type.' : 'Matched offline. Sign in to analyze with AI.'}
+              {canUseAi ? 'Matched offline as you type.' : 'Matched offline as you type.'}
             </Text>
             {canUseAi && (
               <Button title={ai ? 'AI applied' : 'Analyze with AI'} icon="sparkles" size="sm" variant="tinted" full={false} loading={aiLoading} disabled={!text.trim() || !!ai} onPress={runAi} />
@@ -455,6 +482,7 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   close: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   inputCard: { borderRadius: RADIUS.xl, padding: SPACE.lg, gap: SPACE.md },
+  scanButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 34, borderRadius: RADIUS.pill },
   inputActions: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm },
   item: { borderRadius: RADIUS.lg, overflow: 'hidden' },

@@ -1,10 +1,13 @@
 import { StyleSheet, View } from 'react-native';
 
-import { bodyInput, useBody } from '../core/goals/useBody';
-import { updatePhase } from '../core/db/repo';
+import { useBody } from '../core/goals/useBody';
+import { useSettings } from '../core/store/settings';
+import { Toggle } from '../ui/Toggle';
+import { ListRow } from '../ui/List';
+import { MACRO_KEYS, updatePhase } from '../core/db/repo';
 import { useTheme } from '../core/theme/ThemeProvider';
 import { SPACE } from '../core/theme/typography';
-import { computeTargets, type MacroTargets } from '../lib/targets';
+import { type MacroTargets } from '../lib/targets';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { haptic } from '../ui/haptics';
@@ -24,9 +27,12 @@ const FIELDS: { key: keyof MacroTargets; label: string; unit: string; step: numb
 
 export default function Targets() {
   const { colors } = useTheme();
-  const { profile, phase, targets, currentKg } = useBody();
+  const adaptiveOn = useSettings((st) => st.adaptiveTargets);
+  const carbCycling = useSettings((st) => st.carbCycling);
+  const setSettings = useSettings((st) => st.set);
+  const { profile, phase, targets, recommended, currentKg, adaptive, dayType } = useBody();
 
-  if (!profile || !phase || !targets || currentKg == null) {
+  if (!profile || !phase || !targets || !recommended || currentKg == null) {
     return (
       <Screen title="Targets" back>
         <Text tone="secondary">Set a goal first.</Text>
@@ -34,9 +40,8 @@ export default function Targets() {
     );
   }
 
-  const recommended = computeTargets({ ...bodyInput(profile, currentKg), goal: phase.goalType, ratePctWeek: phase.ratePctWeek });
   const overrides = phase.overrides;
-  const hasOverrides = Object.keys(overrides).length > 0;
+  const hasOverrides = MACRO_KEYS.some((k) => overrides[k] != null);
 
   const set = (key: keyof MacroTargets, value: number) => {
     haptic.selection();
@@ -49,7 +54,9 @@ export default function Targets() {
     <Screen title="Targets" back>
       <Card>
         <Text variant="subhead" tone="secondary">
-          {`Recommended from your goal, weight and activity. Estimated maintenance is ${recommended.tdee} kcal; BMR ${recommended.bmr} kcal.`}
+          {adaptive?.applied
+            ? `Maintenance measured from your last ${adaptive.daysUsed} logged days: ${recommended.tdee} kcal. Targets adjust as you log.`
+            : `Recommended from your goal, weight and activity. Estimated maintenance is ${recommended.tdee} kcal; BMR ${recommended.bmr} kcal.`}
         </Text>
       </Card>
 
@@ -79,13 +86,30 @@ export default function Targets() {
         })}
       </ListGroup>
 
+      <ListGroup header="Smart adjustments">
+        <ListRow
+          title="Adaptive maintenance"
+          subtitle={
+            adaptive
+              ? `Measured ${adaptive.tdee} kcal from ${adaptive.daysUsed} days of logs and weigh-ins`
+              : 'Needs about 2 weeks of food logs and weigh-ins'
+          }
+          accessory={<Toggle value={adaptiveOn} onChange={(v) => setSettings({ adaptiveTargets: v })} />}
+        />
+        <ListRow
+          title="Training-day carbs"
+          subtitle={dayType ? `Today is a ${dayType} day. More carbs on training days, fewer on rest days; same weekly total.` : 'More carbs on training days, fewer on rest days'}
+          accessory={<Toggle value={carbCycling} onChange={(v) => setSettings({ carbCycling: v })} />}
+        />
+      </ListGroup>
+
       <Text variant="footnote" tone="secondary" style={{ marginTop: SPACE.md, paddingHorizontal: SPACE.lg }} tabular>
         {`Macros add up to ${Math.round(targets.protein * 4 + targets.carbs * 4 + targets.fat * 9)} kcal`}
       </Text>
 
       {hasOverrides && (
         <View style={{ marginTop: SPACE.xl }}>
-          <Button title="Reset to recommended" variant="gray" onPress={() => updatePhase(phase.id, { overrides: {} })} />
+          <Button title="Reset to recommended" variant="gray" onPress={() => updatePhase(phase.id, { overrides: { reverseStartKcal: overrides.reverseStartKcal, reverseStepKcal: overrides.reverseStepKcal } })} />
         </View>
       )}
     </Screen>

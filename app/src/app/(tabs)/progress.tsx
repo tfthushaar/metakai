@@ -224,8 +224,11 @@ export default function Progress() {
         </View>
       )}
 
-      {(milestonesOn || bodyOn || photosOn) && (
+      {(phase || milestonesOn || bodyOn || photosOn) && (
         <ListGroup header="Body & progress" index={2}>
+          {phase && (
+            <ListRow icon="check" iconColor={colors.success} title="Weekly check-in" subtitle="How this week went and what to adjust" onPress={() => router.push('/checkin')} />
+          )}
           {milestonesOn && phase && (
             <ListRow
               icon="trophy"

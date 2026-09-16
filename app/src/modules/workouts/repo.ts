@@ -1,6 +1,8 @@
 import { getDb, newId, notify, nowIso, type TableName } from '../../core/db/database';
 import { dateKey } from '../../lib/dates';
+import { useSettings } from '../../core/store/settings';
 import { estimate1RM } from '../../lib/strength';
+import { doubleProgression, incrementFor, type ProgressionAdvice, type SessionSet } from '../../lib/training';
 import { BUILTIN_EXERCISES, builtinExercise, type Equipment, type Exercise } from './exercises';
 
 export type SetKind = 'warmup' | 'working' | 'drop' | 'failure';
@@ -20,6 +22,8 @@ export interface WorkoutExercise {
   id: string;
   exerciseId: string;
   position: number;
+  repMin: number | null;
+  repMax: number | null;
   restS: number | null;
   notes: string | null;
   sets: WorkoutSet[];
@@ -54,6 +58,8 @@ export interface Routine {
   id: string;
   name: string;
   notes: string | null;
+  /** 0 = Sunday … 6 = Saturday. */
+  weekdays: number[];
   items: RoutineItem[];
 }
 
@@ -130,6 +136,7 @@ interface RoutineRow {
   id: string;
   name: string;
   notes: string | null;
+  weekdays: string;
 }
 interface RoutineItemRow {
   id: string;
@@ -153,9 +160,15 @@ const toItem = (r: RoutineItemRow): RoutineItem => ({
 });
 
 export function listRoutines(): Routine[] {
-  const routines = db().getAllSync<RoutineRow>('SELECT id, name, notes FROM routines WHERE deleted_at IS NULL ORDER BY position, created_at');
+  const routines = db().getAllSync<RoutineRow>('SELECT id, name, notes, weekdays FROM routines WHERE deleted_at IS NULL ORDER BY position, created_at');
   const items = db().getAllSync<RoutineItemRow>('SELECT * FROM routine_items WHERE deleted_at IS NULL ORDER BY position');
-  return routines.map((r) => ({ ...r, items: items.filter((i) => i.routine_id === r.id).map(toItem) }));
+  return routines.map((r) => ({
+    id: r.id,
+    name: r.name,
+    notes: r.notes,
+    weekdays: JSON.parse(r.weekdays || '[]'),
+    items: items.filter((i) => i.routine_id === r.id).map(toItem),
+  }));
 }
 
 export function getRoutine(id: string): Routine | null {
@@ -194,6 +207,16 @@ export function addRoutineItems(routineId: string, exerciseIds: string[]) {
 function touchRoutine(id: string) {
   db().runSync('UPDATE routines SET updated_at = ? WHERE id = ?', [nowIso(), id]);
   changed('routines');
+}
+
+export function setRoutineWeekdays(id: string, weekdays: number[]) {
+  db().runSync('UPDATE routines SET weekdays = ?, updated_at = ? WHERE id = ?', [JSON.stringify([...new Set(weekdays)].sort()), nowIso(), id]);
+  changed('routines');
+}
+
+/** Routines scheduled for a weekday (0 = Sunday). */
+export function routinesForWeekday(weekday: number): Routine[] {
+  return listRoutines().filter((r) => r.weekdays.includes(weekday));
 }
 
 export function renameRoutine(id: string, name: string) {
@@ -262,6 +285,8 @@ interface WorkoutExerciseRow {
   workout_id: string;
   exercise_id: string;
   position: number;
+  rep_min: number | null;
+  rep_max: number | null;
   rest_s: number | null;
   notes: string | null;
 }
@@ -320,6 +345,8 @@ export function getWorkout(id: string): WorkoutDetail | null {
       id: e.id,
       exerciseId: e.exercise_id,
       position: e.position,
+      repMin: e.rep_min,
+      repMax: e.rep_max,
       restS: e.rest_s,
       notes: e.notes,
       sets: sets.filter((s) => s.workout_exercise_id === e.id).map(toSet),
@@ -353,17 +380,40 @@ function insertSet(workoutId: string, weId: string, position: number, kind: SetK
   );
 }
 
-function insertExercise(workoutId: string, exerciseId: string, position: number, setCount: number, repHint: number | null, restS: number | null) {
+/** Working sets from the most recent finished sessions of an exercise, newest first. */
+export function recentSessions(exerciseId: string, excludeWorkoutId?: string, limit = 4): SessionSet[][] {
+  return exerciseHistory(exerciseId, limit + 1)
+    .filter((s) => s.workoutId !== excludeWorkoutId)
+    .slice(0, limit)
+    .map((s) => s.sets.filter((x) => x.kind !== 'warmup').map((x) => ({ weightKg: x.weightKg, reps: x.reps })));
+}
+
+export function progressionAdvice(exerciseId: string, repMin: number, repMax: number, excludeWorkoutId?: string): ProgressionAdvice {
+  const exercise = getExercise(exerciseId);
+  const increment = incrementFor(exercise.primary, exercise.equipment, useSettings.getState().gym.incrementKg);
+  return doubleProgression({ history: recentSessions(exerciseId, excludeWorkoutId), repMin, repMax, increment });
+}
+
+function insertExercise(
+  workoutId: string,
+  exerciseId: string,
+  position: number,
+  setCount: number,
+  range: { repMin: number; repMax: number } | null,
+  restS: number | null,
+) {
   const weId = newId();
   const now = nowIso();
   db().runSync(
-    'INSERT INTO workout_exercises (id, workout_id, exercise_id, position, rest_s, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [weId, workoutId, exerciseId, position, restS, now, now],
+    'INSERT INTO workout_exercises (id, workout_id, exercise_id, position, rep_min, rep_max, rest_s, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [weId, workoutId, exerciseId, position, range?.repMin ?? null, range?.repMax ?? null, restS, now, now],
   );
   const prev = previousSets(exerciseId, workoutId).filter((s) => s.kind !== 'warmup');
+  const advice = range ? progressionAdvice(exerciseId, range.repMin, range.repMax, workoutId) : null;
   for (let i = 0; i < setCount; i++) {
     const p = prev[i] ?? prev[prev.length - 1];
-    insertSet(workoutId, weId, i, 'working', p?.weightKg ?? null, p?.reps ?? repHint);
+    const useAdvice = advice && advice.kind !== 'start';
+    insertSet(workoutId, weId, i, 'working', useAdvice ? advice.weightKg : (p?.weightKg ?? null), useAdvice ? advice.reps : (p?.reps ?? range?.repMin ?? null));
   }
 }
 
@@ -384,7 +434,7 @@ export function startWorkout(opts: { name?: string; routineId?: string } = {}): 
       now,
       now,
     ]);
-    routine?.items.forEach((item, i) => insertExercise(id, item.exerciseId, i, item.sets, item.repMin, item.restS));
+    routine?.items.forEach((item, i) => insertExercise(id, item.exerciseId, i, item.sets, { repMin: item.repMin, repMax: item.repMax }, item.restS));
   });
   changed(...WORKOUT_TABLES);
   return id;

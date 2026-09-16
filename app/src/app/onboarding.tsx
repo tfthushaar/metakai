@@ -11,7 +11,7 @@ import { useTheme } from '../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../core/theme/typography';
 import { addDays, dateKey, formatLong } from '../lib/dates';
 import { ACTIVITY_LABEL, type ActivityLevel, type Sex } from '../lib/energy';
-import { AVAILABLE_GOALS, GOALS, recommendGoal, type Experience, type GoalType } from '../lib/goals';
+import { CORE_GOALS, GOALS, recommendGoal, type Experience, type GoalType } from '../lib/goals';
 import { predict } from '../lib/prediction';
 import { computeTargets } from '../lib/targets';
 import { cmToFtIn, kgToLb, lbToKg, type UnitSystem } from '../lib/units';
@@ -328,7 +328,7 @@ export default function Onboarding() {
       case 'goal':
         return (
           <View style={{ gap: SPACE.md }}>
-            {AVAILABLE_GOALS.map((g) => (
+            {CORE_GOALS.map((g) => (
               <OptionCard
                 key={g.type}
                 title={g.title}

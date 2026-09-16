@@ -25,7 +25,12 @@ export interface TargetInput extends BodyInput {
   ratePctWeek: number;
   /** Measured TDEE from logged data; replaces the formula estimate when present. */
   adaptiveTdee?: number | null;
+  /** Reverse diet: calories start here and rise by stepKcal each week until maintenance. */
+  reverse?: { startKcal: number; stepKcal: number; weeksElapsed: number } | null;
 }
+
+/** Small surplus that supports strength work without a real bulk. */
+export const STRENGTH_SURPLUS_KCAL = 150;
 
 const round5 = (n: number) => Math.round(n / 5) * 5;
 
@@ -38,6 +43,11 @@ export function computeTargets(input: TargetInput): TargetResult {
   const weeklyKg = signedRate(input.goal, input.ratePctWeek) * input.weightKg;
   let dailyAdjustment = (weeklyKg * KCAL_PER_KG) / 7;
   if (input.goal === 'recomp') dailyAdjustment = -0.05 * tdee;
+  if (input.goal === 'strength') dailyAdjustment = STRENGTH_SURPLUS_KCAL;
+  if (input.goal === 'reverse' && input.reverse) {
+    const planned = input.reverse.startKcal + input.reverse.stepKcal * Math.max(0, Math.floor(input.reverse.weeksElapsed));
+    dailyAdjustment = Math.min(0, planned - tdee);
+  }
 
   if (def.direction !== 0 && input.ratePctWeek > def.warnRate) {
     warnings.push(

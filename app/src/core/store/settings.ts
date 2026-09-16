@@ -75,6 +75,8 @@ interface SettingsState {
   reminders: Record<ReminderId, Reminder>;
   todayOrder: TodayCardId[];
   todayHidden: TodayCardId[];
+  adaptiveTargets: boolean;
+  carbCycling: boolean;
 
   set: (patch: Partial<Omit<SettingsState, 'set' | 'toggleModule' | 'applyPreset'>>) => void;
   toggleModule: (id: ModuleId, on: boolean) => void;
@@ -99,6 +101,8 @@ export const useSettings = create<SettingsState>()(
       reminders: DEFAULT_REMINDERS,
       todayOrder: TODAY_CARDS.map((c) => c.id),
       todayHidden: [],
+      adaptiveTargets: true,
+      carbCycling: false,
 
       set: (patch) => set(patch),
       toggleModule: (id, on) => {
@@ -113,7 +117,7 @@ export const useSettings = create<SettingsState>()(
     {
       name: 'metakai.settings',
       storage: createJSONStorage(() => kvStorage),
-      version: 3,
+      version: 4,
       migrate: (state, version) => {
         const s = state as Record<string, unknown>;
         if (version < 2) {
@@ -126,6 +130,10 @@ export const useSettings = create<SettingsState>()(
           s.reminders = DEFAULT_REMINDERS;
           s.todayOrder = TODAY_CARDS.map((c) => c.id);
           s.todayHidden = [];
+        }
+        if (version < 4) {
+          s.adaptiveTargets = true;
+          s.carbCycling = false;
         }
         return s as never;
       },

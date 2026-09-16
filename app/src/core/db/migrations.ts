@@ -282,4 +282,11 @@ export const MIGRATIONS: string[] = [
     synced_at TEXT
   );
   `,
+  `
+  ALTER TABLE workout_exercises ADD COLUMN rep_min INTEGER;
+  ALTER TABLE workout_exercises ADD COLUMN rep_max INTEGER;
+  ALTER TABLE routines ADD COLUMN weekdays TEXT NOT NULL DEFAULT '[]';
+  ALTER TABLE custom_foods ADD COLUMN barcode TEXT;
+  CREATE INDEX custom_foods_barcode ON custom_foods (barcode);
+  `,
 ];

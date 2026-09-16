@@ -1,12 +1,13 @@
 {
   "name": "metakai",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
     "@supabase/supabase-js": "^2.116.0",
     "expo": "~57.0.22",
     "expo-blur": "~57.0.3",
+    "expo-camera": "~57.0.5",
     "expo-constants": "~57.0.18",
     "expo-crypto": "~57.0.3",
     "expo-file-system": "~57.0.7",

@@ -19,6 +19,7 @@ import {
   moveRoutineItem,
   removeRoutineItem,
   renameRoutine,
+  setRoutineWeekdays,
   startWorkout,
   updateRoutineItem,
   type RoutineItem,
@@ -32,6 +33,7 @@ import { Screen } from '../ui/Screen';
 import { Text } from '../ui/Text';
 
 const REST_OPTIONS = [60, 90, 120, 180];
+const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 function Stepper({ label, value, onChange, min = 1 }: { label: string; value: number; onChange: (v: number) => void; min?: number }) {
   const { colors } = useTheme();
@@ -159,6 +161,31 @@ export default function RoutineEditor() {
         style={[TYPE.title1, styles.name, { color: colors.text, backgroundColor: colors.surface }]}
       />
 
+      <Text variant="footnote" tone="secondary" style={{ marginTop: SPACE.lg, marginBottom: SPACE.sm, paddingHorizontal: SPACE.sm }}>
+        TRAINING DAYS
+      </Text>
+      <View style={styles.days}>
+        {DAYS.map((d, i) => {
+          const selected = routine?.weekdays.includes(i) ?? false;
+          return (
+            <PressableScale
+              key={i}
+              feedback="selection"
+              onPress={() => {
+                const routineId = ensureRoutine();
+                const current = getRoutine(routineId)?.weekdays ?? [];
+                setRoutineWeekdays(routineId, selected ? current.filter((x) => x !== i) : [...current, i]);
+              }}
+              style={[styles.day, { backgroundColor: selected ? colors.text : colors.surface }]}
+            >
+              <Text variant="subhead" weight="semibold" color={selected ? colors.background : colors.text}>
+                {d}
+              </Text>
+            </PressableScale>
+          );
+        })}
+      </View>
+
       <View style={{ gap: SPACE.md, marginTop: SPACE.lg }}>
         {items.map((item, i) => (
           <ItemCard key={item.id} routineId={id!} item={item} first={i === 0} last={i === items.length - 1} />
@@ -182,5 +209,7 @@ const styles = StyleSheet.create({
   controls: { flexDirection: 'row', justifyContent: 'space-between' },
   stepper: { flexDirection: 'row', alignItems: 'center', borderRadius: RADIUS.pill, paddingHorizontal: 4, height: 34 },
   stepperButton: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  days: { flexDirection: 'row', justifyContent: 'space-between' },
+  day: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   rest: { height: 34, paddingHorizontal: 12, borderRadius: RADIUS.pill, justifyContent: 'center' },
 });

@@ -67,7 +67,7 @@ export default function Today() {
   const water = useQuery(['water_entries'], () => waterTotal(today), [today]);
   const eaten = useMemo(() => sumMacros(log), [log]);
 
-  const { phase, targets, currentKg, weeklyChange, trend, progress, etaDate, aheadKg } = body;
+  const { phase, targets, currentKg, weeklyChange, trend, progress, etaDate, aheadKg, phaseEnded, dayType } = body;
   const goalDef = phase ? GOALS[phase.goalType] : null;
   const wu = weightUnit(units);
 
@@ -84,6 +84,11 @@ export default function Today() {
     macros: foodOn && targets ? (
         <Card index={idx('macros')} onPress={() => router.navigate('/(tabs)/food')}>
           <MacroSummary eaten={eaten} targets={targets} />
+          {dayType && (
+            <Text variant="caption" tone="tertiary" style={{ marginTop: SPACE.md }}>
+              {dayType === 'training' ? 'Training day · extra carbs today' : 'Rest day · fewer carbs today'}
+            </Text>
+          )}
         </Card>
     ) : null,
     logPrompt: foodOn ? (
@@ -250,6 +255,15 @@ export default function Today() {
 
   return (
     <Screen title="Today" subtitle={`${greeting()} · ${formatShort(today)}`} tabBar accessory={<SyncBadge />}>
+      {phaseEnded && phase && (
+        <Card index={0} style={{ marginBottom: SPACE.md, borderColor: colors.accent, borderWidth: 1.5 }} onPress={() => router.push('/goal')}>
+          <Text variant="headline">{`${GOALS[phase.goalType].title} complete`}</Text>
+          <Text variant="subhead" tone="secondary" style={{ marginTop: 2 }}>
+            {phase.goalType === 'diet_break' ? 'Ready to get back to your plan? Tap to choose your next phase.' : 'Tap to choose your next phase.'}
+          </Text>
+        </Card>
+      )}
+
       {visibleCards
         .filter((id) => blocks[id])
         .map((id, i) => (

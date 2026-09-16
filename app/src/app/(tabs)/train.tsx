@@ -29,6 +29,7 @@ export default function Train() {
   const history = useQuery([...TABLES], () => listWorkouts(12));
   const weekStart = addDays(dateKey(), -6);
   const weekCount = useQuery([...TABLES], () => workoutsSince(weekStart), [weekStart]);
+  const todayRoutines = routines.filter((r) => r.weekdays.includes(new Date().getDay()) && r.items.length > 0);
   const weekVolume = history.filter((w) => w.dateKey >= weekStart).reduce((s, w) => s + w.volumeKg, 0);
 
   const start = (routineId?: string) => {
@@ -71,7 +72,7 @@ export default function Train() {
           <View style={styles.stats}>
             <View style={{ flex: 1 }}>
               <Text variant="footnote" tone="secondary">
-                Last 7 days
+                {todayRoutines.length ? `Today · ${todayRoutines.map((r) => r.name).join(', ')}` : 'Last 7 days'}
               </Text>
               <Text variant="title1" tabular>{`${weekCount} ${weekCount === 1 ? 'workout' : 'workouts'}`}</Text>
             </View>
@@ -84,7 +85,11 @@ export default function Train() {
           </View>
           <View style={{ flexDirection: 'row', gap: SPACE.sm, marginTop: SPACE.lg }}>
             <View style={{ flex: 1 }}>
-              <Button title="Start workout" icon="dumbbell" onPress={() => start()} />
+              {todayRoutines.length > 0 ? (
+                <Button title={`Start ${todayRoutines[0].name}`} icon="play" onPress={() => start(todayRoutines[0].id)} />
+              ) : (
+                <Button title="Start workout" icon="dumbbell" onPress={() => start()} />
+              )}
             </View>
           </View>
         </Card>
@@ -127,7 +132,8 @@ export default function Train() {
 
       <ListGroup index={routines.length + 2}>
         <ListRow icon="dumbbell" title="Exercise library" subtitle="876 exercises with demos and your history" onPress={() => router.push('/exercises')} />
-        <ListRow icon="ruler" iconColor={colors.text} title="Plate calculator" onPress={() => router.push('/plates')} />
+        <ListRow icon="activity" iconColor={colors.text} title="Muscle volume" subtitle="Weekly sets per muscle" onPress={() => router.push('/volume')} />
+        <ListRow icon="ruler" iconColor={colors.fill} title="Plate calculator" onPress={() => router.push('/plates')} />
       </ListGroup>
 
       {history.length > 0 && (

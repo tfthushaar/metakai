@@ -96,7 +96,7 @@ export const GOALS: Record<GoalType, GoalDefinition> = {
     maxRate: 0,
     defaultRate: 0,
     warnRate: 0,
-    available: false,
+    available: true,
   },
   diet_break: {
     type: 'diet_break',
@@ -107,7 +107,7 @@ export const GOALS: Record<GoalType, GoalDefinition> = {
     maxRate: 0,
     defaultRate: 0,
     warnRate: 0,
-    available: false,
+    available: true,
   },
   mini_cut: {
     type: 'mini_cut',
@@ -118,7 +118,7 @@ export const GOALS: Record<GoalType, GoalDefinition> = {
     maxRate: 1.25,
     defaultRate: 1.0,
     warnRate: 1.25,
-    available: false,
+    available: true,
   },
   strength: {
     type: 'strength',
@@ -129,7 +129,7 @@ export const GOALS: Record<GoalType, GoalDefinition> = {
     maxRate: 0,
     defaultRate: 0,
     warnRate: 0,
-    available: false,
+    available: true,
   },
   event_prep: {
     type: 'event_prep',
@@ -140,11 +140,20 @@ export const GOALS: Record<GoalType, GoalDefinition> = {
     maxRate: 1.25,
     defaultRate: 0.75,
     warnRate: 1.0,
-    available: false,
+    available: true,
   },
 };
 
 export const AVAILABLE_GOALS = Object.values(GOALS).filter((g) => g.available);
+
+/** The everyday goals offered during onboarding; the rest are phases chosen later. */
+export const CORE_GOALS = (['cut', 'lean_bulk', 'bulk', 'recomp', 'maintain'] as GoalType[]).map((g) => GOALS[g]);
+
+/** Goals that run for a fixed length of time. */
+export const TIMED_GOALS: Partial<Record<GoalType, number[]>> = {
+  diet_break: [7, 14],
+  mini_cut: [14, 28, 42],
+};
 
 /** Suggested lean-bulk rate by training experience (% body weight / week). */
 export const BULK_RATE_BY_EXPERIENCE: Record<Experience, number> = {

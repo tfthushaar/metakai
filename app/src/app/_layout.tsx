@@ -100,6 +100,10 @@ function RootStack() {
           <Stack.Screen name="compare" options={{ animation: 'fade' }} />
           <Stack.Screen name="milestones" />
           <Stack.Screen name="habits" />
+          <Stack.Screen name="physique" />
+          <Stack.Screen name="checkin" />
+          <Stack.Screen name="volume" />
+          <Stack.Screen name="scan" options={{ animation: 'slide_from_bottom' }} />
           <Stack.Screen name="goal" />
           <Stack.Screen name="targets" />
           <Stack.Screen name="settings" />

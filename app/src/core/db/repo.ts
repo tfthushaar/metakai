@@ -15,6 +15,14 @@ export interface Profile {
   dietaryPrefs: string[];
 }
 
+/** Manual macro targets plus goal-specific settings stored with a phase. */
+export type PhaseOverrides = Partial<MacroTargets> & {
+  reverseStartKcal?: number;
+  reverseStepKcal?: number;
+};
+
+export const MACRO_KEYS = ['kcal', 'protein', 'carbs', 'fat', 'fiber'] as const;
+
 export interface Phase {
   id: string;
   goalType: GoalType;
@@ -24,7 +32,7 @@ export interface Phase {
   startKg: number;
   targetKg: number | null;
   ratePctWeek: number;
-  overrides: Partial<MacroTargets>;
+  overrides: PhaseOverrides;
 }
 
 export interface WeightEntry {
@@ -73,6 +81,7 @@ export interface CustomFood {
   fiber: number;
   servingName: string | null;
   servingGrams: number | null;
+  barcode?: string | null;
 }
 
 /* ---------------- profile ---------------- */
@@ -162,7 +171,7 @@ export function listPhases(): Phase[] {
 }
 
 /** Starts a new active phase, completing the previous one. */
-export function startPhase(p: Omit<Phase, 'id' | 'status' | 'endDate'>): Phase {
+export function startPhase(p: Omit<Phase, 'id' | 'status' | 'endDate'> & { endDate?: string | null }): Phase {
   const db = getDb();
   const id = newId();
   const now = nowIso();
@@ -172,13 +181,13 @@ export function startPhase(p: Omit<Phase, 'id' | 'status' | 'endDate'>): Phase {
       [p.startDate, now],
     );
     db.runSync(
-      `INSERT INTO phases (id, goal_type, status, start_date, start_kg, target_kg, rate_pct_week, overrides, created_at, updated_at)
-       VALUES (?, ?, 'active', ?, ?, ?, ?, ?, ?, ?)`,
-      [id, p.goalType, p.startDate, p.startKg, p.targetKg, p.ratePctWeek, JSON.stringify(p.overrides), now, now],
+      `INSERT INTO phases (id, goal_type, status, start_date, end_date, start_kg, target_kg, rate_pct_week, overrides, created_at, updated_at)
+       VALUES (?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, p.goalType, p.startDate, p.endDate ?? null, p.startKg, p.targetKg, p.ratePctWeek, JSON.stringify(p.overrides), now, now],
     );
   });
   notify('phases');
-  return { ...p, id, status: 'active', endDate: null };
+  return { ...p, id, status: 'active', endDate: p.endDate ?? null };
 }
 
 export function updatePhase(id: string, patch: Partial<Pick<Phase, 'targetKg' | 'ratePctWeek' | 'overrides'>>) {
@@ -390,6 +399,7 @@ interface CustomFoodRow {
   fiber: number;
   serving_name: string | null;
   serving_grams: number | null;
+  barcode: string | null;
 }
 
 export function listCustomFoods(): CustomFood[] {
@@ -405,6 +415,7 @@ export function listCustomFoods(): CustomFood[] {
       fiber: r.fiber,
       servingName: r.serving_name,
       servingGrams: r.serving_grams,
+      barcode: r.barcode,
     }));
 }
 
@@ -412,9 +423,9 @@ export function addCustomFood(f: Omit<CustomFood, 'id'>): CustomFood {
   const id = newId();
   const now = nowIso();
   getDb().runSync(
-    `INSERT INTO custom_foods (id, name, kcal, protein, carbs, fat, fiber, serving_name, serving_grams, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [id, f.name, f.kcal, f.protein, f.carbs, f.fat, f.fiber, f.servingName, f.servingGrams, now, now],
+    `INSERT INTO custom_foods (id, name, kcal, protein, carbs, fat, fiber, serving_name, serving_grams, barcode, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [id, f.name, f.kcal, f.protein, f.carbs, f.fat, f.fiber, f.servingName, f.servingGrams, f.barcode ?? null, now, now],
   );
   notify('custom_foods');
   return { ...f, id };
