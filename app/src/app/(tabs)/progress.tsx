@@ -5,6 +5,9 @@ import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeabl
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 
 import { useBody } from '../../core/goals/useBody';
+import { useMilestones } from '../../core/goals/useMilestones';
+import { listBodyComp, listPhotos } from '../../modules/body/repo';
+import { ListGroup, ListRow } from '../../ui/List';
 import { dailyTotals, deleteWeight, listWeights, restoreWeight, type WeightEntry } from '../../core/db/repo';
 import { useQuery } from '../../core/db/useQuery';
 import { useFeature, useSettings } from '../../core/store/settings';
@@ -99,6 +102,16 @@ export default function Progress() {
   const units = useSettings((s) => s.units);
   const predictionsOn = useFeature('predictions');
   const foodOn = useFeature('food');
+  const milestonesOn = useFeature('milestones');
+  const measurementsOn = useFeature('measurements');
+  const bodyCompOn = useFeature('body_comp');
+  const bodyOn = measurementsOn || bodyCompOn;
+  const photosOn = useFeature('photos');
+  const milestones = useMilestones();
+  const nextMilestone = milestones?.find((m) => !m.reachedDate);
+  const bodyComp = useQuery(['body_comp_entries'], listBodyComp);
+  const latestBf = bodyComp[bodyComp.length - 1];
+  const photoCount = useQuery(['progress_photos'], () => listPhotos().length);
   const [range, setRange] = useState<Range>('3m');
   const body = useBody();
   const weights = useQuery(['weight_entries'], listWeights);
@@ -209,6 +222,43 @@ export default function Progress() {
             <Stat label="Maintenance" value={targets ? `${targets.tdee}` : '—'} detail="Estimated kcal / day" />
           )}
         </View>
+      )}
+
+      {(milestonesOn || bodyOn || photosOn) && (
+        <ListGroup header="Body & progress" index={2}>
+          {milestonesOn && phase && (
+            <ListRow
+              icon="trophy"
+              title="Milestones"
+              subtitle={
+                nextMilestone
+                  ? `Next ${displayWeight(nextMilestone.targetKg, units)} ${wu}${nextMilestone.predictedDate ? ` · ${formatShort(nextMilestone.predictedDate)}` : ''}`
+                  : milestones && milestones.length
+                    ? 'All milestones reached'
+                    : 'Checkpoints for your plan'
+              }
+              onPress={() => router.push('/milestones')}
+            />
+          )}
+          {bodyOn && (
+            <ListRow
+              icon="ruler"
+              iconColor={colors.text}
+              title="Body"
+              subtitle={latestBf ? `Body fat ${latestBf.bfPct.toFixed(1)}%` : 'Measurements, body fat and FFMI'}
+              onPress={() => router.push('/body')}
+            />
+          )}
+          {photosOn && (
+            <ListRow
+              icon="user"
+              iconColor={colors.fill}
+              title="Photos"
+              subtitle={photoCount ? `${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}` : 'Private progress photos'}
+              onPress={() => router.push('/photos')}
+            />
+          )}
+        </ListGroup>
       )}
 
       {foodOn && targets && (

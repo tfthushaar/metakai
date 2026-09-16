@@ -5,6 +5,9 @@ Build the body you want. Metakai tracks food, weight and progress for cutting, b
 - **Food logging in plain language:** "2 rotis, 1 katori dal, 150g paneer" becomes an itemised list with calories and macros. Matching runs offline against a built-in food database; AI (Gemini, with Groq as fallback) handles foods the database doesn't know.
 - **Goal engine:** cut, lean bulk, bulk, recomp or maintain, with calorie and macro targets from Mifflin-St Jeor or Katch-McArdle and safety floors.
 - **Predictions:** a week-by-week weight simulation with a forecast band, a smoothed trend weight, a goal date, and whether you are ahead of or behind plan.
+- **Gym:** an 876-exercise library, workout logger with previous performance, warm-ups, PR detection and a rest timer, plus routines and a plate calculator.
+- **Body & progress:** measurements, body fat (tape, calipers or manual), lean mass and FFMI, private progress photos with a before/after slider, and milestone cards with predicted dates.
+- **Habits & reminders:** automatic and manual daily habits, scheduled reminders, app lock, and a customisable Today layout.
 - **Modular:** switch features on and off, or start from a preset.
 - **Offline-first:** local SQLite, with optional Supabase sync and sign-in (Google, email, magic link).
 - **Themes:** light, dark and system modes, six accent colours, and true-black or graphite dark styles.

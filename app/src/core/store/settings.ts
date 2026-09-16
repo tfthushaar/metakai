@@ -18,6 +18,39 @@ export interface GymSettings {
   keepAwake: boolean;
 }
 
+export interface Reminder {
+  on: boolean;
+  hour: number;
+  minute: number;
+  /** 1 = Sunday … 7 = Saturday; only for weekly reminders. */
+  weekday?: number;
+}
+
+export type ReminderId = 'weighIn' | 'logFood' | 'photos';
+
+export const DEFAULT_REMINDERS: Record<ReminderId, Reminder> = {
+  weighIn: { on: false, hour: 7, minute: 30 },
+  logFood: { on: false, hour: 21, minute: 0 },
+  photos: { on: false, hour: 8, minute: 0, weekday: 1 },
+};
+
+export type TodayCardId = 'macros' | 'logPrompt' | 'weight' | 'habits' | 'training' | 'water';
+
+export const TODAY_CARDS: { id: TodayCardId; name: string; module?: ModuleId }[] = [
+  { id: 'macros', name: 'Calories & macros', module: 'food' },
+  { id: 'logPrompt', name: 'Log food & meals', module: 'food' },
+  { id: 'weight', name: 'Weight & goal' },
+  { id: 'habits', name: 'Habits', module: 'habits' },
+  { id: 'training', name: 'Training', module: 'workouts' },
+  { id: 'water', name: 'Water', module: 'water' },
+];
+
+/** Saved order plus any cards added in later versions. */
+export function orderedTodayCards(order: TodayCardId[]): TodayCardId[] {
+  const known = order.filter((id) => TODAY_CARDS.some((c) => c.id === id));
+  return [...known, ...TODAY_CARDS.map((c) => c.id).filter((id) => !known.includes(id))];
+}
+
 export const DEFAULT_GYM: GymSettings = {
   barKg: 20,
   plates: [25, 20, 15, 10, 5, 2.5, 1.25].map((weight) => ({ weight, pairs: 4 })),
@@ -38,6 +71,10 @@ interface SettingsState {
   onboarded: boolean;
   waterGoalMl: number;
   gym: GymSettings;
+  appLock: boolean;
+  reminders: Record<ReminderId, Reminder>;
+  todayOrder: TodayCardId[];
+  todayHidden: TodayCardId[];
 
   set: (patch: Partial<Omit<SettingsState, 'set' | 'toggleModule' | 'applyPreset'>>) => void;
   toggleModule: (id: ModuleId, on: boolean) => void;
@@ -58,6 +95,10 @@ export const useSettings = create<SettingsState>()(
       onboarded: false,
       waterGoalMl: 3000,
       gym: DEFAULT_GYM,
+      appLock: false,
+      reminders: DEFAULT_REMINDERS,
+      todayOrder: TODAY_CARDS.map((c) => c.id),
+      todayHidden: [],
 
       set: (patch) => set(patch),
       toggleModule: (id, on) => {
@@ -72,13 +113,19 @@ export const useSettings = create<SettingsState>()(
     {
       name: 'metakai.settings',
       storage: createJSONStorage(() => kvStorage),
-      version: 2,
+      version: 3,
       migrate: (state, version) => {
         const s = state as Record<string, unknown>;
         if (version < 2) {
           s.gym = DEFAULT_GYM;
           const modules = (s.enabledModules as string[]) ?? [];
           if (!modules.includes('workouts')) s.enabledModules = [...modules, 'workouts'];
+        }
+        if (version < 3) {
+          s.appLock = false;
+          s.reminders = DEFAULT_REMINDERS;
+          s.todayOrder = TODAY_CARDS.map((c) => c.id);
+          s.todayHidden = [];
         }
         return s as never;
       },

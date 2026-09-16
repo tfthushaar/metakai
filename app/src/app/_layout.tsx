@@ -1,7 +1,8 @@
 import '../core/auth/supabase';
 
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
-import { Stack } from 'expo-router';
+import * as Notifications from 'expo-notifications';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
@@ -16,6 +17,8 @@ import { useSettings } from '../core/store/settings';
 import { syncNow } from '../core/sync/sync';
 import { ThemeProvider, useTheme } from '../core/theme/ThemeProvider';
 import { ToastHost } from '../ui/Toast';
+import { AppLockGate } from '../core/AppLock';
+import { syncReminders } from '../core/reminders';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ duration: 250, fade: true });
@@ -39,8 +42,21 @@ function useBackgroundSync() {
   }, [session]);
 }
 
+function useNotificationLinks() {
+  const router = useRouter();
+  useEffect(() => {
+    syncReminders().catch(() => {});
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const url = response.notification.request.content.data?.url;
+      if (typeof url === 'string' && url.startsWith('metakai://')) router.push(`/${url.slice('metakai://'.length)}` as never);
+    });
+    return () => sub.remove();
+  }, [router]);
+}
+
 function RootStack() {
   const { colors, dark } = useTheme();
+  useNotificationLinks();
   const authMode = useSettings((s) => s.authMode);
   const onboarded = useSettings((s) => s.onboarded);
 
@@ -77,6 +93,13 @@ function RootStack() {
           <Stack.Screen name="exercise" />
           <Stack.Screen name="routine" />
           <Stack.Screen name="plates" options={modal} />
+          <Stack.Screen name="body" />
+          <Stack.Screen name="log-measurements" options={modal} />
+          <Stack.Screen name="log-bodyfat" options={modal} />
+          <Stack.Screen name="photos" />
+          <Stack.Screen name="compare" options={{ animation: 'fade' }} />
+          <Stack.Screen name="milestones" />
+          <Stack.Screen name="habits" />
           <Stack.Screen name="goal" />
           <Stack.Screen name="targets" />
           <Stack.Screen name="settings" />
@@ -85,6 +108,7 @@ function RootStack() {
         <Stack.Screen name="email-auth" />
       </Stack>
       <ToastHost />
+      <AppLockGate />
     </>
   );
 }

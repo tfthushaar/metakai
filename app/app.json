@@ -3,7 +3,7 @@
     "name": "Metakai",
     "slug": "metakai",
     "scheme": "metakai",
-    "version": "0.1.0",
+    "version": "0.3.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -14,7 +14,7 @@
     },
     "android": {
       "package": "com.tfthushaar.metakai",
-      "versionCode": 1,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#000000",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -29,6 +29,19 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Metakai uses Face ID to lock your data."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Metakai uses your photos only when you import a progress photo.",
+          "cameraPermission": "Metakai uses the camera to take private progress photos."
+        }
+      ],
       "expo-sqlite",
       "expo-secure-store",
       "expo-font",
@@ -48,7 +61,8 @@
           "color": "#FF453A"
         }
       ],
-      "./plugins/withReleaseSigning"
+      "./plugins/withReleaseSigning",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": false

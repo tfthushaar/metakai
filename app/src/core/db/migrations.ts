@@ -203,4 +203,83 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX workout_sets_we ON workout_sets (workout_exercise_id);
   CREATE INDEX workout_sets_workout ON workout_sets (workout_id);
   `,
+  `
+  CREATE TABLE measurements (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT,
+    date_key TEXT NOT NULL,
+    site TEXT NOT NULL,
+    cm REAL NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    synced_at TEXT
+  );
+  CREATE INDEX measurements_site_date ON measurements (site, date_key);
+
+  CREATE TABLE body_comp_entries (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT,
+    date_key TEXT NOT NULL,
+    method TEXT NOT NULL,
+    bf_pct REAL NOT NULL,
+    data TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    synced_at TEXT
+  );
+
+  CREATE TABLE progress_photos (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT,
+    date_key TEXT NOT NULL,
+    pose TEXT NOT NULL,
+    local_path TEXT,
+    storage_path TEXT,
+    weight_kg REAL,
+    note TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    synced_at TEXT
+  );
+  CREATE INDEX progress_photos_date ON progress_photos (date_key);
+
+  CREATE TABLE habits (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT,
+    name TEXT NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'manual',
+    position INTEGER NOT NULL DEFAULT 0,
+    archived_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    synced_at TEXT
+  );
+
+  CREATE TABLE habit_logs (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT,
+    habit_id TEXT NOT NULL,
+    date_key TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    synced_at TEXT
+  );
+  CREATE INDEX habit_logs_date ON habit_logs (date_key);
+
+  CREATE TABLE saved_meals (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT,
+    name TEXT NOT NULL,
+    items TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    synced_at TEXT
+  );
+  `,
 ];

@@ -14,6 +14,7 @@ import { dateKey } from '../lib/dates';
 import { parseWithAi } from '../modules/food/ai';
 import { MacroInline } from '../modules/food/components';
 import type { Food } from '../modules/food/foods';
+import { listSavedMeals, saveMeal, type SavedMeal } from '../modules/food/savedMeals';
 import { formatAmount, parseMeal, sumMacros, unitOptions, withQuantity, type ParsedItem } from '../modules/food/parse';
 import { Button } from '../ui/Button';
 import { Chip } from '../ui/Chip';
@@ -190,6 +191,8 @@ export default function LogFood() {
 
   const customFoods = useQuery(['custom_foods'], listCustomFoods);
   const frequent = useQuery(['log_entries'], () => frequentFoods(10));
+  const savedMeals = useQuery(['saved_meals'], listSavedMeals);
+  const [mealName, setMealName] = useState<string | null>(null);
   const extraFoods = useMemo<Food[]>(
     () =>
       customFoods.map((c) => ({
@@ -255,9 +258,9 @@ export default function LogFood() {
     }
   };
 
-  const save = () => {
+  const toEntries = (): NewLogEntry[] => {
     const date = params.date ?? dateKey();
-    const entries: NewLogEntry[] = items.map((i) => ({
+    return items.map((i) => ({
       dateKey: date,
       mealSlot: slot,
       foodRef: i.food?.id ?? null,
@@ -273,7 +276,50 @@ export default function LogFood() {
       source: !i.food ? 'custom' : i.food.id.startsWith('ai:') ? 'ai' : i.food.id.startsWith('custom:') ? 'custom' : 'local',
       rawInput: text.trim() || null,
     }));
-    addLogEntries(entries);
+  };
+
+  const saveAsMeal = () => {
+    const name = (mealName ?? '').trim();
+    if (!name) return;
+    saveMeal(
+      name,
+      toEntries().map(({ dateKey: _d, mealSlot: _m, rawInput: _r, ...item }) => item),
+    );
+    haptic.success();
+    toast(`Saved “${name}”`);
+    setMealName(null);
+  };
+
+  const addSavedMeal = (meal: SavedMeal) => {
+    haptic.selection();
+    const added: ParsedItem[] = meal.items.map((it, i) => {
+      const grams = it.grams ?? 100;
+      const k = 100 / Math.max(grams, 1);
+      const food: Food = {
+        id: it.foodRef ?? `saved:${meal.id}:${i}`,
+        name: it.name,
+        aliases: [],
+        per100: { kcal: it.kcal * k, protein: it.protein * k, carbs: it.carbs * k, fat: it.fat * k, fiber: it.fiber * k },
+        units: { [it.unit]: grams / Math.max(it.quantity, 0.01), g: 1 },
+        defaultUnit: it.unit,
+      };
+      return {
+        key: `saved-${meal.id}-${i}-${Date.now()}`,
+        input: it.name,
+        food,
+        name: it.name,
+        quantity: it.quantity,
+        unit: it.unit,
+        grams,
+        macros: { kcal: it.kcal, protein: it.protein, carbs: it.carbs, fat: it.fat, fiber: it.fiber },
+        confidence: 'high',
+      };
+    });
+    setExtraItems((list) => [...list, ...added]);
+  };
+
+  const save = () => {
+    addLogEntries(toEntries());
     haptic.success();
     toast(`Added ${Math.round(totals.kcal)} kcal to ${MEAL_SLOTS.find((m) => m.id === slot)!.title}`);
     router.back();
@@ -326,6 +372,19 @@ export default function LogFood() {
           </View>
         </View>
 
+        {text.trim() === '' && savedMeals.length > 0 && (
+          <Animated.View entering={FadeIn.duration(200)} style={{ marginTop: SPACE.xl, gap: SPACE.sm }}>
+            <Text variant="footnote" tone="secondary" style={{ paddingHorizontal: 4 }}>
+              SAVED MEALS
+            </Text>
+            <View style={styles.chips}>
+              {savedMeals.map((m) => (
+                <Chip key={m.id} label={`${m.name} · ${Math.round(m.kcal)}`} icon="plus" onPress={() => addSavedMeal(m)} />
+              ))}
+            </View>
+          </Animated.View>
+        )}
+
         {text.trim() === '' && extraItems.length === 0 && frequent.length > 0 && (
           <Animated.View entering={FadeIn.duration(200)} style={{ marginTop: SPACE.xl, gap: SPACE.sm }}>
             <Text variant="footnote" tone="secondary" style={{ paddingHorizontal: 4 }}>
@@ -351,10 +410,34 @@ export default function LogFood() {
           entering={FadeIn.duration(200)}
           style={[styles.footer, { paddingBottom: insets.bottom + SPACE.md, backgroundColor: colors.background, borderTopColor: colors.separator }]}
         >
-          <View style={styles.totals}>
-            <Text variant="title3" tabular>{`${Math.round(totals.kcal)} kcal`}</Text>
-            <MacroInline macros={totals} showKcal={false} />
-          </View>
+          {mealName != null ? (
+            <View style={styles.saveMealRow}>
+              <TextInput
+                autoFocus
+                value={mealName}
+                onChangeText={setMealName}
+                onSubmitEditing={saveAsMeal}
+                placeholder="Meal name, e.g. Usual breakfast"
+                placeholderTextColor={colors.textTertiary}
+                selectionColor={colors.accent}
+                returnKeyType="done"
+                style={[TYPE.body, styles.mealNameInput, { color: colors.text, backgroundColor: colors.fill }]}
+              />
+              <Button title="Save" size="sm" full={false} onPress={saveAsMeal} disabled={!mealName.trim()} />
+            </View>
+          ) : (
+            <View style={styles.totals}>
+              <Text variant="title3" tabular>{`${Math.round(totals.kcal)} kcal`}</Text>
+              <MacroInline macros={totals} showKcal={false} />
+              {items.length > 1 && canSave && (
+                <PressableScale feedback="selection" onPress={() => setMealName('')} hitSlop={8}>
+                  <Text variant="subhead" tone="accent" weight="semibold">
+                    Save meal
+                  </Text>
+                </PressableScale>
+              )}
+            </View>
+          )}
           <Button
             title={hasUnknown ? 'Enter calories for unknown items' : `Add to ${MEAL_SLOTS.find((m) => m.id === slot)!.title}`}
             onPress={save}
@@ -384,5 +467,7 @@ const styles = StyleSheet.create({
   manualGrid: { flexDirection: 'row', gap: SPACE.sm },
   manualInput: { borderRadius: RADIUS.sm, height: 44, paddingHorizontal: 10, paddingVertical: 0 },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: SPACE.lg, paddingTop: SPACE.md, gap: SPACE.md, borderTopWidth: StyleSheet.hairlineWidth },
-  totals: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  totals: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: SPACE.md },
+  saveMealRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
+  mealNameInput: { flex: 1, height: 40, borderRadius: RADIUS.md, paddingHorizontal: SPACE.md, paddingVertical: 0 },
 });

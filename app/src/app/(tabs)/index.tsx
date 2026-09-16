@@ -1,11 +1,11 @@
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useBody } from '../../core/goals/useBody';
 import { addWater, listLog, MEAL_SLOTS, undoLastWater, waterTotal } from '../../core/db/repo';
 import { useQuery } from '../../core/db/useQuery';
-import { useFeature, useSettings } from '../../core/store/settings';
+import { orderedTodayCards, useFeature, useSettings, type TodayCardId } from '../../core/store/settings';
 import { useAuth } from '../../core/auth/auth';
 import { useSync } from '../../core/sync/sync';
 import { useTheme } from '../../core/theme/ThemeProvider';
@@ -15,6 +15,7 @@ import { GOALS } from '../../lib/goals';
 import { displayWeight, weightUnit } from '../../lib/units';
 import { MacroInline, MacroSummary } from '../../modules/food/components';
 import { sumMacros } from '../../modules/food/parse';
+import { HabitsCard } from '../../modules/habits/HabitsCard';
 import { ElapsedText } from '../../modules/workouts/components';
 import { activeWorkout, listWorkouts, startWorkout } from '../../modules/workouts/repo';
 import { Button } from '../../ui/Button';
@@ -56,6 +57,7 @@ export default function Today() {
   const waterOn = useFeature('water');
   const predictionsOn = useFeature('predictions');
   const trainOn = useFeature('workouts');
+  const habitsOn = useFeature('habits');
   const active = useQuery(['workouts'], activeWorkout);
   const lastWorkout = useQuery(['workouts', 'workout_sets'], () => listWorkouts(1)[0] ?? null);
   const today = dateKey();
@@ -73,18 +75,19 @@ export default function Today() {
   const lastWeighIn = trend.filter((t) => t.kg != null).pop();
   const weighedToday = lastWeighIn?.date === today;
 
-  let cardIndex = 0;
+  const todayOrder = useSettings((st) => st.todayOrder);
+  const todayHidden = useSettings((st) => st.todayHidden);
+  const visibleCards = orderedTodayCards(todayOrder).filter((id) => !todayHidden.includes(id));
+  const idx = (id: TodayCardId) => visibleCards.indexOf(id);
 
-  return (
-    <Screen title="Today" subtitle={`${greeting()} · ${formatShort(today)}`} tabBar accessory={<SyncBadge />}>
-      {foodOn && targets && (
-        <Card index={cardIndex++} onPress={() => router.navigate('/(tabs)/food')}>
+  const blocks: Record<TodayCardId, ReactNode> = {
+    macros: foodOn && targets ? (
+        <Card index={idx('macros')} onPress={() => router.navigate('/(tabs)/food')}>
           <MacroSummary eaten={eaten} targets={targets} />
         </Card>
-      )}
-
-      {foodOn && (
-        <Card index={cardIndex++} style={{ marginTop: SPACE.md }} padded={false}>
+    ) : null,
+    logPrompt: foodOn ? (
+        <Card index={idx('logPrompt')} padded={false}>
           <PressableScale onPress={() => router.push('/log-food')} feedback="light" scaleTo={0.985} style={styles.logPrompt}>
             <View style={[styles.logIcon, { backgroundColor: colors.accentSoft }]}>
               <Icon name="sparkles" size={20} color={colors.accent} />
@@ -123,10 +126,9 @@ export default function Today() {
             </View>
           )}
         </Card>
-      )}
-
-      {currentKg != null && (
-        <Card index={cardIndex++} style={{ marginTop: SPACE.md }} onPress={() => router.navigate('/(tabs)/progress')}>
+    ) : null,
+    weight: currentKg != null ? (
+        <Card index={idx('weight')} onPress={() => router.navigate('/(tabs)/progress')}>
           <View style={styles.weightHeader}>
             <View style={{ flex: 1 }}>
               <Text variant="footnote" tone="secondary" weight="medium">
@@ -156,7 +158,7 @@ export default function Today() {
             />
           </View>
           {trend.length > 1 && (
-            <View style={{ marginTop: SPACE.md }}>
+            <View>
               <WeightChart
                 compact
                 height={72}
@@ -186,10 +188,12 @@ export default function Today() {
             </View>
           )}
         </Card>
-      )}
-
-      {trainOn && (
-        <Card index={cardIndex++} style={{ marginTop: SPACE.md }}>
+    ) : null,
+    habits: habitsOn ? (
+      <HabitsCard index={idx('habits')} />
+    ) : null,
+    training: trainOn ? (
+        <Card index={idx('training')}>
           <View style={styles.weightHeader}>
             <View style={[styles.logIcon, { backgroundColor: active ? colors.accent : colors.fill }]}>
               <Icon name="dumbbell" size={20} color={active ? colors.onAccent : colors.text} />
@@ -219,10 +223,9 @@ export default function Today() {
             />
           </View>
         </Card>
-      )}
-
-      {waterOn && (
-        <Card index={cardIndex++} style={{ marginTop: SPACE.md }}>
+    ) : null,
+    water: waterOn ? (
+        <Card index={idx('water')}>
           <View style={styles.weightHeader}>
             <View style={[styles.logIcon, { backgroundColor: colors.fill }]}>
               <Icon name="droplet" size={20} color={colors.text} />
@@ -238,14 +241,25 @@ export default function Today() {
               <Icon name="plus" size={18} color={colors.onAccent} strokeWidth={2.6} />
             </PressableScale>
           </View>
-          <View style={{ marginTop: SPACE.md }}>
+          <View>
             <ProgressBar progress={water / waterGoal} color={colors.text} height={5} />
           </View>
         </Card>
-      )}
+    ) : null,
+  };
+
+  return (
+    <Screen title="Today" subtitle={`${greeting()} · ${formatShort(today)}`} tabBar accessory={<SyncBadge />}>
+      {visibleCards
+        .filter((id) => blocks[id])
+        .map((id, i) => (
+          <View key={id} style={i > 0 && { marginTop: SPACE.md }}>
+            {blocks[id]}
+          </View>
+        ))}
 
       {!phase && (
-        <Card index={cardIndex++} style={{ marginTop: SPACE.md }}>
+        <Card index={visibleCards.length} style={{ marginTop: SPACE.md }}>
           <Text variant="headline">Set a goal</Text>
           <Text variant="subhead" tone="secondary" style={{ marginVertical: SPACE.sm }}>
             Choose cut, bulk, recomp or maintain to get calorie targets.

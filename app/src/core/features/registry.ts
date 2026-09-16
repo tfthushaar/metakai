@@ -62,7 +62,7 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
     group: 'Body',
     requires: [],
     permissions: [],
-    status: 'planned',
+    status: 'available',
   },
   body_comp: {
     id: 'body_comp',
@@ -71,7 +71,7 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
     group: 'Body',
     requires: [],
     permissions: [],
-    status: 'planned',
+    status: 'available',
   },
   photos: {
     id: 'photos',
@@ -80,7 +80,7 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
     group: 'Body',
     requires: [],
     permissions: ['camera'],
-    status: 'planned',
+    status: 'available',
   },
   milestones: {
     id: 'milestones',
@@ -89,7 +89,7 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
     group: 'Body',
     requires: [],
     permissions: [],
-    status: 'planned',
+    status: 'available',
   },
   workouts: {
     id: 'workouts',
@@ -125,7 +125,7 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
     group: 'Lifestyle',
     requires: [],
     permissions: [],
-    status: 'planned',
+    status: 'available',
   },
   coach: {
     id: 'coach',

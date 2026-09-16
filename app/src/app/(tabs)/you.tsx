@@ -76,6 +76,12 @@ export default function You() {
       <ListGroup header="App" index={2}>
         <ListRow icon="grid" iconColor={colors.text} title="Features" value={settings.preset === 'custom' ? 'Custom' : undefined} onPress={() => router.push('/settings/features')} />
         <ListRow icon="palette" title="Appearance" value={appearanceLabel} onPress={() => router.push('/settings/appearance')} />
+        <ListRow icon="home" iconColor={colors.text} title="Today layout" onPress={() => router.push('/settings/dashboard')} />
+        {settings.enabledModules.includes('habits') && (
+          <ListRow icon="check" iconColor={colors.fill} title="Habits" onPress={() => router.push('/habits')} />
+        )}
+        <ListRow icon="timer" iconColor={colors.fill} title="Reminders" value={Object.values(settings.reminders).filter((r) => r.on).length ? 'On' : 'Off'} onPress={() => router.push('/settings/reminders')} />
+        <ListRow icon="user" iconColor={colors.fill} title="Privacy" value={settings.appLock ? 'Locked' : undefined} onPress={() => router.push('/settings/privacy')} />
         {settings.enabledModules.includes('workouts') && (
           <ListRow icon="dumbbell" iconColor={colors.text} title="Gym" value={`Rest ${settings.gym.restSeconds}s`} onPress={() => router.push('/settings/gym')} />
         )}

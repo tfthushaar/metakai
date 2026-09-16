@@ -15,7 +15,13 @@ export type TableName =
   | 'routine_items'
   | 'workouts'
   | 'workout_exercises'
-  | 'workout_sets';
+  | 'workout_sets'
+  | 'measurements'
+  | 'body_comp_entries'
+  | 'progress_photos'
+  | 'habits'
+  | 'habit_logs'
+  | 'saved_meals';
 
 export const SYNCED_TABLES: TableName[] = [
   'profile',
@@ -30,6 +36,12 @@ export const SYNCED_TABLES: TableName[] = [
   'workouts',
   'workout_exercises',
   'workout_sets',
+  'measurements',
+  'body_comp_entries',
+  'progress_photos',
+  'habits',
+  'habit_logs',
+  'saved_meals',
 ];
 
 let db: SQLiteDatabase | null = null;
