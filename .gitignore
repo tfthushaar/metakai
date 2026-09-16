@@ -1,0 +1,12 @@
+node_modules/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+# release signing material never belongs in the repo
+*.jks
+*.keystore
+*.p12
+supabase/.temp/
+supabase/.branches/
