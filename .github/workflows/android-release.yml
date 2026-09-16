@@ -50,7 +50,7 @@ jobs:
           METAKAI_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           METAKAI_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           METAKAI_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
 
       - name: Rename APK
         run: |
