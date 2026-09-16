@@ -1,6 +1,6 @@
 {
   "name": "metakai",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

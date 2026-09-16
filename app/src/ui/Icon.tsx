@@ -40,6 +40,13 @@ import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import User from 'lucide-react-native/icons/user';
 import Utensils from 'lucide-react-native/icons/utensils';
 import X from 'lucide-react-native/icons/x';
+import Bike from 'lucide-react-native/icons/bike';
+import Footprints from 'lucide-react-native/icons/footprints';
+import Heart from 'lucide-react-native/icons/heart';
+import HeartPulse from 'lucide-react-native/icons/heart-pulse';
+import Moon from 'lucide-react-native/icons/moon';
+import Pause from 'lucide-react-native/icons/pause';
+import Pill from 'lucide-react-native/icons/pill';
 
 const ICONS = {
   activity: Activity,
@@ -83,6 +90,13 @@ const ICONS = {
   user: User,
   utensils: Utensils,
   close: X,
+  bike: Bike,
+  footprints: Footprints,
+  heart: Heart,
+  heartPulse: HeartPulse,
+  moon: Moon,
+  pause: Pause,
+  pill: Pill,
 } as const;
 
 export type IconName = keyof typeof ICONS;

@@ -15,7 +15,7 @@ export const AUTO_HABITS: { kind: Exclude<HabitKind, 'manual'>; name: string; de
   { kind: 'protein', name: 'Hit protein', description: 'Done when you log your protein target' },
   { kind: 'calories', name: 'Stay on calories', description: 'Within 10% of your calorie target' },
   { kind: 'water', name: 'Drink water', description: 'Reach your water goal' },
-  { kind: 'workout', name: 'Train', description: 'Finish a workout' },
+  { kind: 'workout', name: 'Train', description: 'Finish a workout or log cardio' },
   { kind: 'weigh_in', name: 'Weigh in', description: 'Log your weight' },
 ];
 
@@ -80,7 +80,11 @@ export function dayFacts(dateKey: string): DayFacts {
     [dateKey],
   );
   const water = db.getFirstSync<{ ml: number | null }>('SELECT SUM(ml) AS ml FROM water_entries WHERE date_key = ? AND deleted_at IS NULL', [dateKey]);
-  const workouts = db.getFirstSync<{ n: number }>('SELECT COUNT(*) AS n FROM workouts WHERE date_key = ? AND ended_at IS NOT NULL AND deleted_at IS NULL', [dateKey]);
+  const workouts = db.getFirstSync<{ n: number }>(
+    `SELECT (SELECT COUNT(*) FROM workouts WHERE date_key = ?1 AND ended_at IS NOT NULL AND deleted_at IS NULL)
+          + (SELECT COUNT(*) FROM cardio_sessions WHERE date_key = ?1 AND deleted_at IS NULL) AS n`,
+    [dateKey],
+  );
   const weighIns = db.getFirstSync<{ n: number }>('SELECT COUNT(*) AS n FROM weight_entries WHERE date_key = ? AND deleted_at IS NULL', [dateKey]);
   return { protein: food?.p ?? 0, kcal: food?.k ?? 0, waterMl: water?.ml ?? 0, workouts: workouts?.n ?? 0, weighIns: weighIns?.n ?? 0 };
 }

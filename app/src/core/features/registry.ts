@@ -10,6 +10,7 @@ export type ModuleId =
   | 'habits'
   | 'cardio'
   | 'recovery'
+  | 'health'
   | 'coach';
 
 export type ModuleGroup = 'Nutrition' | 'Body' | 'Training' | 'Lifestyle' | 'Coaching';
@@ -103,20 +104,29 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
   cardio: {
     id: 'cardio',
     name: 'Cardio',
-    description: 'Cardio sessions and interval timers.',
+    description: 'Log runs, rides and other cardio, plus a Tabata, HIIT and EMOM timer.',
     group: 'Training',
     requires: [],
     permissions: [],
-    status: 'planned',
+    status: 'available',
   },
   recovery: {
     id: 'recovery',
     name: 'Recovery',
-    description: 'Readiness, soreness and sleep.',
+    description: 'Daily readiness check-in with sleep, soreness and stress, plus muscle recovery.',
     group: 'Lifestyle',
-    requires: ['workouts'],
+    requires: [],
     permissions: [],
-    status: 'planned',
+    status: 'available',
+  },
+  health: {
+    id: 'health',
+    name: 'Health & supplements',
+    description: 'Supplement checklist, blood pressure, resting heart rate, steps and lab results.',
+    group: 'Lifestyle',
+    requires: [],
+    permissions: [],
+    status: 'available',
   },
   habits: {
     id: 'habits',
@@ -145,9 +155,9 @@ export const isAvailable = (id: ModuleId) => MODULES[id].status === 'available';
 export type PresetId = 'cut' | 'lean_bulk' | 'recomp' | 'maintain' | 'minimal' | 'everything';
 
 export const PRESETS: Record<PresetId, { name: string; modules: ModuleId[] }> = {
-  cut: { name: 'Cut', modules: ['food', 'water', 'predictions', 'measurements', 'body_comp', 'photos', 'milestones', 'workouts', 'habits'] },
-  lean_bulk: { name: 'Lean bulk', modules: ['food', 'predictions', 'workouts', 'measurements', 'photos', 'milestones'] },
-  recomp: { name: 'Recomp', modules: ['food', 'predictions', 'workouts', 'measurements', 'body_comp', 'photos', 'milestones'] },
+  cut: { name: 'Cut', modules: ['food', 'water', 'predictions', 'measurements', 'body_comp', 'photos', 'milestones', 'workouts', 'cardio', 'habits'] },
+  lean_bulk: { name: 'Lean bulk', modules: ['food', 'predictions', 'workouts', 'recovery', 'measurements', 'photos', 'milestones'] },
+  recomp: { name: 'Recomp', modules: ['food', 'predictions', 'workouts', 'cardio', 'recovery', 'measurements', 'body_comp', 'photos', 'milestones'] },
   maintain: { name: 'Maintain', modules: ['food', 'workouts', 'habits'] },
   minimal: { name: 'Minimal', modules: ['food'] },
   everything: { name: 'Everything', modules: Object.keys(MODULES) as ModuleId[] },

@@ -19,7 +19,7 @@ import { Text } from '../../ui/Text';
 import { toast } from '../../ui/Toast';
 import { dayFacts, isDone, listHabits, manualDone, seedHabits, setManualDone, type Habit } from './repo';
 
-const TABLES = ['habits', 'habit_logs', 'log_entries', 'water_entries', 'workouts', 'weight_entries'] as const;
+const TABLES = ['habits', 'habit_logs', 'log_entries', 'water_entries', 'workouts', 'cardio_sessions', 'weight_entries'] as const;
 
 const AUTO_HINT: Record<Exclude<Habit['kind'], 'manual'>, string> = {
   protein: 'Checks itself when you log enough protein',

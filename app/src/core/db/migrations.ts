@@ -305,4 +305,80 @@ export const MIGRATIONS: string[] = [
   ALTER TABLE routines ADD COLUMN muscle_groups TEXT NOT NULL DEFAULT '[]';
   ALTER TABLE workouts ADD COLUMN kcal REAL;
   `,
+  `
+  CREATE TABLE cardio_sessions (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT,
+    date_key TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    duration_min REAL NOT NULL,
+    distance_km REAL,
+    avg_hr REAL,
+    rpe INTEGER,
+    kcal REAL,
+    intervals TEXT,
+    note TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    synced_at TEXT
+  );
+  CREATE INDEX cardio_sessions_date_key ON cardio_sessions (date_key);
+  CREATE TABLE recovery_checkins (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT,
+    date_key TEXT NOT NULL,
+    sleep_hours REAL,
+    sleep_quality INTEGER,
+    soreness INTEGER,
+    stress INTEGER,
+    energy INTEGER,
+    mood INTEGER,
+    note TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    synced_at TEXT
+  );
+  CREATE INDEX recovery_checkins_date_key ON recovery_checkins (date_key);
+  CREATE TABLE health_markers (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT,
+    date_key TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    label TEXT,
+    value REAL NOT NULL,
+    value2 REAL,
+    unit TEXT,
+    note TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    synced_at TEXT
+  );
+  CREATE INDEX health_markers_kind ON health_markers (kind, date_key);
+  CREATE TABLE supplements (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT,
+    name TEXT NOT NULL,
+    dose TEXT,
+    timing TEXT,
+    position INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    synced_at TEXT
+  );
+  CREATE TABLE supplement_logs (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT,
+    supplement_id TEXT NOT NULL,
+    date_key TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    synced_at TEXT
+  );
+  CREATE INDEX supplement_logs_date_key ON supplement_logs (date_key);
+  `,
 ];

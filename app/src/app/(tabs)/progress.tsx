@@ -107,6 +107,8 @@ export default function Progress() {
   const bodyCompOn = useFeature('body_comp');
   const bodyOn = measurementsOn || bodyCompOn;
   const photosOn = useFeature('photos');
+  const recoveryOn = useFeature('recovery');
+  const healthOn = useFeature('health');
   const milestones = useMilestones();
   const nextMilestone = milestones?.find((m) => !m.reachedDate);
   const bodyComp = useQuery(['body_comp_entries'], listBodyComp);
@@ -260,6 +262,17 @@ export default function Progress() {
               subtitle={photoCount ? `${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}` : 'Private progress photos'}
               onPress={() => router.push('/photos')}
             />
+          )}
+        </ListGroup>
+      )}
+
+      {(recoveryOn || healthOn) && (
+        <ListGroup header="Health & recovery" index={3}>
+          {recoveryOn && (
+            <ListRow icon="heartPulse" title="Recovery" subtitle="Readiness, sleep and muscle recovery" onPress={() => router.push('/recovery')} />
+          )}
+          {healthOn && (
+            <ListRow icon="pill" iconColor={colors.text} title="Health" subtitle="Supplements, blood pressure, heart rate and labs" onPress={() => router.push('/health')} />
           )}
         </ListGroup>
       )}

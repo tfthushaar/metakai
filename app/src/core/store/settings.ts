@@ -34,7 +34,7 @@ export const DEFAULT_REMINDERS: Record<ReminderId, Reminder> = {
   photos: { on: false, hour: 8, minute: 0, weekday: 1 },
 };
 
-export type TodayCardId = 'macros' | 'logPrompt' | 'weight' | 'habits' | 'training' | 'water';
+export type TodayCardId = 'macros' | 'logPrompt' | 'weight' | 'readiness' | 'habits' | 'training' | 'supplements' | 'water';
 
 export const TODAY_CARDS: { id: TodayCardId; name: string; module?: ModuleId }[] = [
   { id: 'macros', name: 'Calories & macros', module: 'food' },
@@ -43,6 +43,8 @@ export const TODAY_CARDS: { id: TodayCardId; name: string; module?: ModuleId }[]
   { id: 'habits', name: 'Habits', module: 'habits' },
   { id: 'training', name: 'Training', module: 'workouts' },
   { id: 'water', name: 'Water', module: 'water' },
+  { id: 'readiness', name: 'Readiness', module: 'recovery' },
+  { id: 'supplements', name: 'Supplements', module: 'health' },
 ];
 
 /** Saved order plus any cards added in later versions. */

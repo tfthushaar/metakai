@@ -30,6 +30,8 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const foodOn = useFeature('food');
   const trainOn = useFeature('workouts');
+  const cardioOn = useFeature('cardio');
+  const healthOn = useFeature('health');
   const rotation = useSharedValue(0);
   useEffect(() => {
     rotation.value = withSpring(menuOpen ? 1 : 0, SPRING);
@@ -53,6 +55,8 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           { icon: 'check' as IconName, label: 'Log finished workout', onPress: () => router.push('/quick-workout') },
         ]
       : []),
+    ...(cardioOn ? [{ icon: 'footprints' as IconName, label: 'Log cardio', onPress: () => router.push('/log-cardio') }] : []),
+    ...(healthOn ? [{ icon: 'heartPulse' as IconName, label: 'Log health marker', onPress: () => router.push('/log-marker') }] : []),
   ];
 
   const routes = state.routes.filter((r) => (descriptors[r.key].options as { href?: string | null }).href !== null);
@@ -135,7 +139,7 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
 export default function TabsLayout() {
   const foodEnabled = useSettings((s) => s.enabledModules.includes('food'));
-  const trainEnabled = useSettings((s) => s.enabledModules.includes('workouts'));
+  const trainEnabled = useSettings((s) => s.enabledModules.includes('workouts') || s.enabledModules.includes('cardio'));
   return (
     <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Tabs.Screen name="index" options={{ title: 'Today' }} />

@@ -18,7 +18,7 @@ import { Screen } from '../ui/Screen';
 import { Text } from '../ui/Text';
 import { TextField } from '../ui/TextField';
 
-const HABIT_TABLES = ['habits', 'habit_logs', 'log_entries', 'water_entries', 'workouts', 'weight_entries'] as const;
+const HABIT_TABLES = ['habits', 'habit_logs', 'log_entries', 'water_entries', 'workouts', 'cardio_sessions', 'weight_entries'] as const;
 
 export default function Habits() {
   const { colors } = useTheme();

@@ -15,7 +15,10 @@ import { GOALS } from '../../lib/goals';
 import { displayWeight, weightUnit } from '../../lib/units';
 import { MacroInline, MacroSummary } from '../../modules/food/components';
 import { sumMacros } from '../../modules/food/parse';
+import { cardioStats } from '../../modules/cardio/repo';
 import { HabitsCard } from '../../modules/habits/HabitsCard';
+import { listSupplements, setTaken, takenOn } from '../../modules/health/repo';
+import { readinessFor } from '../../modules/recovery/repo';
 import { ElapsedText } from '../../modules/workouts/components';
 import { activeWorkout, listWorkouts, overloadSummary, routinesForWeekday, startWorkout, trainingStats } from '../../modules/workouts/repo';
 import { Button } from '../../ui/Button';
@@ -58,10 +61,18 @@ export default function Today() {
   const predictionsOn = useFeature('predictions');
   const trainOn = useFeature('workouts');
   const habitsOn = useFeature('habits');
+  const cardioOn = useFeature('cardio');
+  const recoveryOn = useFeature('recovery');
+  const healthOn = useFeature('health');
   const active = useQuery(['workouts'], activeWorkout);
   const lastWorkout = useQuery(['workouts', 'workout_sets'], () => listWorkouts(1)[0] ?? null);
   const todayDay = useQuery(['routines', 'routine_items', 'splits'], () => routinesForWeekday(new Date().getDay()).find((r) => r.items.length > 0) ?? null);
-  const weekTraining = useQuery(['workouts', 'workout_sets'], () => trainingStats(addDays(dateKey(), -6)));
+  const weekLifting = useQuery(['workouts', 'workout_sets'], () => trainingStats(addDays(dateKey(), -6)));
+  const weekCardio = useQuery(['cardio_sessions'], () => cardioStats(addDays(dateKey(), -6)));
+  const weekTraining = {
+    workouts: (trainOn ? weekLifting.workouts : 0) + (cardioOn ? weekCardio.sessions : 0),
+    kcal: (trainOn ? weekLifting.kcal : 0) + (cardioOn ? weekCardio.kcal : 0),
+  };
   const overloadRows = useQuery(['workouts', 'workout_sets'], () => overloadSummary(addDays(dateKey(), -56)));
   const overloadTotal = overloadRows.filter((o) => o.status !== 'new').length;
   const overloadUp = overloadRows.filter((o) => o.status === 'progressing').length;
@@ -71,6 +82,9 @@ export default function Today() {
   const log = useQuery(['log_entries'], () => listLog(today), [today]);
   const water = useQuery(['water_entries'], () => waterTotal(today), [today]);
   const eaten = useMemo(() => sumMacros(log), [log]);
+  const ready = useQuery(['recovery_checkins', 'workout_sets'], () => readinessFor(today), [today]);
+  const supplements = useQuery(['supplements'], listSupplements);
+  const taken = useQuery(['supplement_logs'], () => takenOn(today), [today]);
 
   const { phase, targets, currentKg, weeklyChange, trend, progress, etaDate, aheadKg, phaseEnded, dayType } = body;
   const goalDef = phase ? GOALS[phase.goalType] : null;
@@ -271,6 +285,60 @@ export default function Today() {
           </View>
         </Card>
     ) : null,
+    readiness: recoveryOn ? (
+        <Card index={idx('readiness')} onPress={() => router.push('/recovery')}>
+          <View style={styles.weightHeader}>
+            <View style={[styles.logIcon, { backgroundColor: colors.fill }]}>
+              <Icon name="heartPulse" size={20} color={ready ? (ready.band === 'high' ? colors.success : ready.band === 'moderate' ? colors.warning : colors.danger) : colors.text} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="footnote" tone="secondary">
+                Readiness
+              </Text>
+              <Text variant="headline" numberOfLines={1}>
+                {ready ? `${ready.score} · ${ready.band === 'high' ? 'Ready to push' : ready.band === 'moderate' ? 'Train smart' : 'Take it easy'}` : 'How do you feel today?'}
+              </Text>
+              <Text variant="footnote" tone="secondary" numberOfLines={1}>
+                {ready ? (ready.flags[0] ?? 'Sleep, soreness and stress look good') : '30-second check-in'}
+              </Text>
+            </View>
+            {!ready && <Button title="Check in" size="sm" variant="tinted" full={false} onPress={() => router.push('/recovery')} />}
+          </View>
+        </Card>
+    ) : null,
+    supplements: healthOn && supplements.length > 0 ? (
+        <Card index={idx('supplements')}>
+          <PressableScale scaleTo={0.99} onPress={() => router.push('/health')} style={[styles.weightHeader, { marginBottom: SPACE.md }]}>
+            <View style={[styles.logIcon, { backgroundColor: colors.fill }]}>
+              <Icon name="pill" size={20} color={colors.text} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="headline">Supplements</Text>
+              <Text variant="footnote" tone="secondary">{`${supplements.filter((s) => taken.has(s.id)).length} of ${supplements.length} taken`}</Text>
+            </View>
+            <Icon name="chevronRight" size={18} color={colors.textTertiary} />
+          </PressableScale>
+          <View style={styles.suppRow}>
+            {supplements.map((s) => {
+              const on = taken.has(s.id);
+              return (
+                <PressableScale
+                  key={s.id}
+                  feedback="selection"
+                  scaleTo={0.95}
+                  onPress={() => setTaken(s.id, today, !on)}
+                  style={[styles.supp, { backgroundColor: on ? colors.accent : colors.fill }]}
+                >
+                  {on && <Icon name="check" size={14} color={colors.onAccent} strokeWidth={3} />}
+                  <Text variant="subhead" weight="medium" color={on ? colors.onAccent : colors.text}>
+                    {s.name}
+                  </Text>
+                </PressableScale>
+              );
+            })}
+          </View>
+        </Card>
+    ) : null,
     water: waterOn ? (
         <Card index={idx('water')}>
           <View style={styles.weightHeader}>
@@ -335,6 +403,8 @@ const styles = StyleSheet.create({
   mealRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingVertical: SPACE.sm },
   weightHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
   goalRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  suppRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm },
+  supp: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, height: 34, borderRadius: RADIUS.pill },
   trainStats: { flexDirection: 'row', marginTop: SPACE.md, paddingTop: SPACE.md, borderTopWidth: StyleSheet.hairlineWidth },
   trainStat: { flex: 1, alignItems: 'center', gap: 2 },
   round: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },

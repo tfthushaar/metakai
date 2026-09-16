@@ -126,6 +126,12 @@ function RootStack() {
           <Stack.Screen name="split" />
           <Stack.Screen name="overload" />
           <Stack.Screen name="quick-workout" options={modal} />
+          <Stack.Screen name="log-cardio" options={modal} />
+          <Stack.Screen name="interval-timer" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+          <Stack.Screen name="recovery" />
+          <Stack.Screen name="health" />
+          <Stack.Screen name="marker" />
+          <Stack.Screen name="log-marker" options={modal} />
           <Stack.Screen name="physique" />
           <Stack.Screen name="checkin" />
           <Stack.Screen name="volume" />
