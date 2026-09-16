@@ -381,4 +381,21 @@ export const MIGRATIONS: string[] = [
   );
   CREATE INDEX supplement_logs_date_key ON supplement_logs (date_key);
   `,
+  `
+  ALTER TABLE cardio_sessions ADD COLUMN route TEXT;
+  ALTER TABLE cardio_sessions ADD COLUMN elevation_m REAL;
+  ALTER TABLE cardio_sessions ADD COLUMN elapsed_min REAL;
+  ALTER TABLE cardio_sessions ADD COLUMN splits TEXT;
+  ALTER TABLE cardio_sessions ADD COLUMN title TEXT;
+  -- Live GPS fixes for the recording in progress. Local only, cleared after saving.
+  CREATE TABLE gps_live (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+    segment INTEGER NOT NULL,
+    lat REAL NOT NULL,
+    lon REAL NOT NULL,
+    alt REAL,
+    acc REAL,
+    t INTEGER NOT NULL
+  );
+  `,
 ];

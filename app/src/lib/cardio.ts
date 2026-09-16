@@ -2,11 +2,12 @@
  * Cardio energy estimates from the Compendium of Physical Activities (2024).
  * With a distance, walking, running and cycling use speed; otherwise effort (RPE 1–10) picks a MET band.
  */
-export type CardioKind = 'walk' | 'run' | 'cycle' | 'row' | 'swim' | 'elliptical' | 'stairs' | 'hiit' | 'sport' | 'other';
+export type CardioKind = 'walk' | 'run' | 'hike' | 'cycle' | 'row' | 'swim' | 'elliptical' | 'stairs' | 'hiit' | 'sport' | 'other';
 
 export const CARDIO_KINDS: { id: CardioKind; label: string; distance: boolean }[] = [
   { id: 'walk', label: 'Walk', distance: true },
   { id: 'run', label: 'Run', distance: true },
+  { id: 'hike', label: 'Hike', distance: true },
   { id: 'cycle', label: 'Cycle', distance: true },
   { id: 'row', label: 'Row', distance: true },
   { id: 'swim', label: 'Swim', distance: true },
@@ -23,6 +24,7 @@ export const cardioLabel = (kind: CardioKind) => CARDIO_KINDS.find((k) => k.id =
 const MET_BY_EFFORT: Record<CardioKind, [number, number, number, number]> = {
   walk: [2.8, 3.5, 4.5, 5.5],
   run: [7.0, 9.0, 11.0, 12.8],
+  hike: [5.3, 6.0, 7.3, 8.5],
   cycle: [4.0, 6.8, 8.5, 11.0],
   row: [4.8, 7.0, 8.5, 12.0],
   swim: [5.8, 7.0, 9.8, 10.3],

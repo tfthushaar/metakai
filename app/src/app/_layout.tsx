@@ -21,6 +21,7 @@ import { AppLockGate } from '../core/AppLock';
 import { syncReminders } from '../core/reminders';
 import { backfillWorkoutCalories } from '../modules/workouts/repo';
 import { flushDrive, syncDrive, watchForChanges } from '../core/drive';
+import { restoreRecording } from '../modules/gps/tracker';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ duration: 250, fade: true });
@@ -30,6 +31,7 @@ try {
   backfillWorkoutCalories();
 } catch {}
 startAuth();
+restoreRecording().catch(() => {});
 
 function useBackgroundSync() {
   const session = useAuth((s) => s.session);
@@ -127,6 +129,8 @@ function RootStack() {
           <Stack.Screen name="overload" />
           <Stack.Screen name="quick-workout" options={modal} />
           <Stack.Screen name="log-cardio" options={modal} />
+          <Stack.Screen name="record" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+          <Stack.Screen name="activity" />
           <Stack.Screen name="interval-timer" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
           <Stack.Screen name="recovery" />
           <Stack.Screen name="health" />

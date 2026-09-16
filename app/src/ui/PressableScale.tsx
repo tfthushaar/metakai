@@ -19,7 +19,7 @@ export function PressableScale({ children, style, scaleTo = 0.97, feedback = 'no
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 1 - (1 - scaleTo) * pressed.value }],
     opacity: (disabled ? 0.45 : 1) - pressed.value * 0.08,
-  }));
+  }), [disabled, scaleTo]);
 
   return (
     <AnimatedPressable

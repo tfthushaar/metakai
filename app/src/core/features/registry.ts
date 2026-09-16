@@ -9,6 +9,7 @@ export type ModuleId =
   | 'milestones'
   | 'habits'
   | 'cardio'
+  | 'gps'
   | 'recovery'
   | 'health'
   | 'coach';
@@ -108,6 +109,15 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
     group: 'Training',
     requires: [],
     permissions: [],
+    status: 'available',
+  },
+  gps: {
+    id: 'gps',
+    name: 'GPS tracking',
+    description: 'Record runs, walks, hikes and rides with live pace, splits, route and best efforts.',
+    group: 'Training',
+    requires: ['cardio'],
+    permissions: ['location'],
     status: 'available',
   },
   recovery: {

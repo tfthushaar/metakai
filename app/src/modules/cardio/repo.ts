@@ -14,6 +14,19 @@ export interface CardioSession {
   intervals: (IntervalConfig & { name: string }) | null;
   note: string | null;
   createdAt: string;
+  /** Encoded polyline for GPS-recorded sessions. */
+  route: string | null;
+  elevationM: number | null;
+  elapsedMin: number | null;
+  splits: RouteSplits | null;
+  title: string | null;
+}
+
+/** Splits and best efforts saved with a GPS session. Times are moving seconds. */
+export interface RouteSplits {
+  unitM: number;
+  splits: { d: number; t: number; e: number | null }[];
+  best: Record<string, number>;
 }
 
 interface Row {
@@ -28,6 +41,11 @@ interface Row {
   intervals: string | null;
   note: string | null;
   created_at: string;
+  route: string | null;
+  elevation_m: number | null;
+  elapsed_min: number | null;
+  splits: string | null;
+  title: string | null;
 }
 
 const toSession = (r: Row): CardioSession => ({
@@ -42,17 +60,41 @@ const toSession = (r: Row): CardioSession => ({
   intervals: r.intervals ? JSON.parse(r.intervals) : null,
   note: r.note,
   createdAt: r.created_at,
+  route: r.route,
+  elevationM: r.elevation_m,
+  elapsedMin: r.elapsed_min,
+  splits: r.splits ? JSON.parse(r.splits) : null,
+  title: r.title,
 });
 
-export type NewCardio = Omit<CardioSession, 'id' | 'createdAt'>;
+export type NewCardio = Omit<CardioSession, 'id' | 'createdAt' | 'route' | 'elevationM' | 'elapsedMin' | 'splits' | 'title'> &
+  Partial<Pick<CardioSession, 'route' | 'elevationM' | 'elapsedMin' | 'splits' | 'title'>>;
 
 export function addCardio(s: NewCardio): string {
   const id = newId();
   const now = nowIso();
   getDb().runSync(
-    `INSERT INTO cardio_sessions (id, date_key, kind, duration_min, distance_km, avg_hr, rpe, kcal, intervals, note, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [id, s.dateKey, s.kind, s.durationMin, s.distanceKm, s.avgHr, s.rpe, s.kcal, s.intervals ? JSON.stringify(s.intervals) : null, s.note, now, now],
+    `INSERT INTO cardio_sessions (id, date_key, kind, duration_min, distance_km, avg_hr, rpe, kcal, intervals, note, route, elevation_m, elapsed_min, splits, title, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id,
+      s.dateKey,
+      s.kind,
+      s.durationMin,
+      s.distanceKm,
+      s.avgHr,
+      s.rpe,
+      s.kcal,
+      s.intervals ? JSON.stringify(s.intervals) : null,
+      s.note,
+      s.route ?? null,
+      s.elevationM ?? null,
+      s.elapsedMin ?? null,
+      s.splits ? JSON.stringify(s.splits) : null,
+      s.title ?? null,
+      now,
+      now,
+    ],
   );
   notify('cardio_sessions');
   return id;
@@ -84,4 +126,33 @@ export function cardioStats(fromDateKey: string, toDateKey = '9999'): CardioStat
     [fromDateKey, toDateKey],
   );
   return { sessions: r?.n ?? 0, minutes: Math.round(r?.minutes ?? 0), kcal: Math.round(r?.kcal ?? 0), distanceKm: r?.km ?? 0 };
+}
+
+export function getCardio(id: string): CardioSession | null {
+  const r = getDb().getFirstSync<Row>('SELECT * FROM cardio_sessions WHERE id = ? AND deleted_at IS NULL', [id]);
+  return r ? toSession(r) : null;
+}
+
+export function renameCardio(id: string, title: string) {
+  getDb().runSync('UPDATE cardio_sessions SET title = ?, updated_at = ? WHERE id = ?', [title.trim() || null, nowIso(), id]);
+  notify('cardio_sessions');
+}
+
+/** Fastest saved time for each best-effort distance, excluding one session. */
+export function bestEfforts(kind: CardioKind, excludeId: string | null = null): Record<string, number> {
+  const rows = getDb().getAllSync<{ id: string; splits: string }>(
+    'SELECT id, splits FROM cardio_sessions WHERE deleted_at IS NULL AND kind = ? AND splits IS NOT NULL',
+    [kind],
+  );
+  const best: Record<string, number> = {};
+  for (const r of rows) {
+    if (r.id === excludeId) continue;
+    try {
+      const parsed = JSON.parse(r.splits) as RouteSplits;
+      for (const [k, v] of Object.entries(parsed.best ?? {})) if (best[k] == null || v < best[k]) best[k] = v;
+    } catch {
+      // Ignore malformed rows.
+    }
+  }
+  return best;
 }

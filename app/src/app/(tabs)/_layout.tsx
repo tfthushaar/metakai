@@ -8,6 +8,7 @@ import { useFeature, useSettings } from '../../core/store/settings';
 import { activeWorkout, startWorkout } from '../../modules/workouts/repo';
 import { EASE_OUT, SPRING } from '../../ui/motion';
 import { useTheme } from '../../core/theme/ThemeProvider';
+import { useLive } from '../../modules/gps/tracker';
 import { BarBackground } from '../../ui/BarBackground';
 import { Icon, type IconName } from '../../ui/Icon';
 import { PressableScale } from '../../ui/PressableScale';
@@ -32,6 +33,8 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const trainOn = useFeature('workouts');
   const cardioOn = useFeature('cardio');
   const healthOn = useFeature('health');
+  const gpsOn = useFeature('gps');
+  const recording = useLive((s) => s.status !== 'idle');
   const rotation = useSharedValue(0);
   useEffect(() => {
     rotation.value = withSpring(menuOpen ? 1 : 0, SPRING);
@@ -55,6 +58,7 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           { icon: 'check' as IconName, label: 'Log finished workout', onPress: () => router.push('/quick-workout') },
         ]
       : []),
+    ...(gpsOn ? [{ icon: 'navigation' as IconName, label: recording ? 'Return to recording' : 'Record run or ride', onPress: () => router.push('/record') }] : []),
     ...(cardioOn ? [{ icon: 'footprints' as IconName, label: 'Log cardio', onPress: () => router.push('/log-cardio') }] : []),
     ...(healthOn ? [{ icon: 'heartPulse' as IconName, label: 'Log health marker', onPress: () => router.push('/log-marker') }] : []),
   ];
@@ -139,7 +143,7 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
 export default function TabsLayout() {
   const foodEnabled = useSettings((s) => s.enabledModules.includes('food'));
-  const trainEnabled = useSettings((s) => s.enabledModules.includes('workouts') || s.enabledModules.includes('cardio'));
+  const trainEnabled = useSettings((s) => s.enabledModules.includes('workouts') || s.enabledModules.includes('cardio') || s.enabledModules.includes('gps'));
   return (
     <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Tabs.Screen name="index" options={{ title: 'Today' }} />

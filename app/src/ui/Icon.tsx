@@ -47,6 +47,11 @@ import HeartPulse from 'lucide-react-native/icons/heart-pulse';
 import Moon from 'lucide-react-native/icons/moon';
 import Pause from 'lucide-react-native/icons/pause';
 import Pill from 'lucide-react-native/icons/pill';
+import ChevronDown from 'lucide-react-native/icons/chevron-down';
+import Mountain from 'lucide-react-native/icons/mountain';
+import Navigation from 'lucide-react-native/icons/navigation';
+import Square from 'lucide-react-native/icons/square';
+import Volume2 from 'lucide-react-native/icons/volume-2';
 
 const ICONS = {
   activity: Activity,
@@ -97,6 +102,11 @@ const ICONS = {
   moon: Moon,
   pause: Pause,
   pill: Pill,
+  chevronDown: ChevronDown,
+  mountain: Mountain,
+  navigation: Navigation,
+  square: Square,
+  volume: Volume2,
 } as const;
 
 export type IconName = keyof typeof ICONS;

@@ -8,6 +8,7 @@ Build the body you want. Metakai tracks food, weight and progress for cutting, b
 - **Gym:** an 876-exercise library, workout logger with previous performance, warm-ups, PR detection and a rest timer, plus routines and a plate calculator.
 - **Fast workout logging:** type what you did ("bench 3x8 60", "deadlift 100x5 120x3") and it's matched to exercises and saved in one tap. Every workout gets an estimated calorie burn.
 - **Splits and progressive overload:** pick a preset split (Push/Pull/Legs, Upper/Lower, Full body, PHUL, Arnold, Bro split) or build your own, choose exercises for each muscle group, and see which lifts are progressing, holding or slipping. Weekly workouts, calories burned and lifts progressing also show on the Today screen.
+- **GPS tracking:** record runs, walks, hikes and rides with a live distance, pace and route view that keeps tracking with the screen off, spoken splits, per-km splits, elevation, best efforts (1 km to marathon) with PRs, and clean route art. Only “while using the app” location access is needed, and routes stay on your phone.
 - **Cardio:** log walks, runs, rides, rows, swims and classes with pace and calories burned, or run a Tabata, HIIT, EMOM or custom interval timer that vibrates at each change.
 - **Recovery:** a 30-second morning check-in (sleep, soreness, stress, energy, mood) gives a readiness score with advice, alongside estimated recovery for each muscle group.
 - **Health:** a daily supplement checklist, plus blood pressure, resting heart rate, HRV, fasting glucose, steps and lab results, with trends and gentle range flags.
@@ -26,7 +27,7 @@ Download the latest APK from [Releases](https://github.com/tfthushaar/metakai/re
 
 ## Status and what's left
 
-**Built and on-device tested (v0.1–v0.7):** everything listed above. The app works fully offline.
+**Built and on-device tested (v0.1–v0.8):** everything listed above. The app works fully offline.
 
 **Built, waiting on setup:** Google Drive backup and restore are coded and the sign-in screen opens, but Drive can't connect until the Google Cloud setup below is done. Backup files and your own AI keys work now.
 
@@ -46,7 +47,7 @@ Download the latest APK from [Releases](https://github.com/tfthushaar/metakai/re
 
 ### Not built yet (roadmap)
 
-- **v0.7.x Rest of health:** GPS runs and walks, Health Connect (steps, heart rate, sleep imported automatically), a body map for muscle recovery, wellbeing journal, injury and pain log, mobility routines, home screen widgets.
+- **v0.8.x Rest of health:** Health Connect (steps, heart rate, sleep imported automatically), a body map for muscle recovery, wellbeing journal, injury and pain log, mobility routines, home screen widgets.
 - **v0.8 Advanced training and food:** built-in programs with set percentages and scheduled deload weeks (GZCLP, 5/3/1-style), calisthenics skill trees, weak-point focus and physique proportions (shoulder-to-waist, symmetry), SVG body heatmap, voice set logging, form-check video, meal planning with grocery lists and meal prep, food budget, dietary-preference filtering and "what should I eat" suggestions, an offline education hub.
 - **v0.9 AI and sharing:** AI coach chat, AI program and meal-plan builders, meal photo estimates, nutrition label OCR, voice food logging, coach and trainer sharing links, shareable cards and phase recaps, import from Strong, Hevy and MyFitnessPal.
 - **v0.10 Experimental:** camera rep counter, gym geofence check-in, accountability partner, badges.
@@ -56,6 +57,7 @@ Download the latest APK from [Releases](https://github.com/tfthushaar/metakai/re
 
 - The built-in food database covers about 150 common Indian and international foods. Unknown foods need an AI key, a barcode scan, or quick add.
 - Free AI limits are set by Google and Groq and change over time. The app tracks usage per model, and adapts when a provider reports a limit.
+- GPS routes are drawn as route art without a map background; maps need a paid or key-based tile service, which the app avoids. Tracking was tested with simulated GPS; real-world accuracy depends on the phone's GPS chip.
 - Readiness only factors in training load after three weeks of workouts. Muscle recovery is an estimate from sets and time, not a measurement.
 - Drive sync merges whole records (the newest edit wins). If you edit the same entry on two phones before either syncs, the later edit is kept.
 - Exercise demo images load from a CDN, so they need a connection the first time.

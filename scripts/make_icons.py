@@ -47,6 +47,12 @@ def main():
     rings(1024, 0.72, [WHITE, WHITE, WHITE], track=False).save(ASSETS / "android-icon-monochrome.png")
     rings(512, 1.0, [RED, WHITE, GREY], track=True).save(ASSETS / "splash-icon.png")
     rings(96, 1.0, [RED, WHITE, GREY], bg=black).save(ASSETS / "favicon.png")
+    notification_icon()
+
+
+def notification_icon():
+    """All-white glyph for Android status-bar notifications (GPS tracking)."""
+    rings(96, 1.15, [WHITE, WHITE, WHITE], track=False).save(ASSETS / "notification-icon.png")
 
 
 if __name__ == "__main__":

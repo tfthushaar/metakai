@@ -90,6 +90,8 @@ interface SettingsState {
   adaptiveTargets: boolean;
   carbCycling: boolean;
   drive: DriveSettings;
+  /** Spoken split announcements while recording GPS activities. */
+  gpsVoice: boolean;
 
   set: (patch: Partial<Omit<SettingsState, 'set' | 'toggleModule' | 'applyPreset'>>) => void;
   toggleModule: (id: ModuleId, on: boolean) => void;
@@ -117,6 +119,7 @@ export const useSettings = create<SettingsState>()(
       adaptiveTargets: true,
       carbCycling: false,
       drive: DEFAULT_DRIVE,
+      gpsVoice: true,
 
       set: (patch) => set(patch),
       toggleModule: (id, on) => {
@@ -131,7 +134,7 @@ export const useSettings = create<SettingsState>()(
     {
       name: 'metakai.settings',
       storage: createJSONStorage(() => kvStorage),
-      version: 5,
+      version: 6,
       migrate: (state, version) => {
         const s = state as Record<string, unknown>;
         if (version < 2) {
@@ -150,6 +153,7 @@ export const useSettings = create<SettingsState>()(
           s.carbCycling = false;
         }
         if (version < 5) s.drive = DEFAULT_DRIVE;
+        if (version < 6) s.gpsVoice = true;
         return s as never;
       },
     },

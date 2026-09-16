@@ -10,6 +10,8 @@ import { cardioLabel, formatPace, paceMinPerKm } from '../../lib/cardio';
 import { formatDurationWords } from '../../lib/strength';
 import { weightUnit } from '../../lib/units';
 import { cardioStats, deleteCardio, listCardio, type CardioSession } from '../../modules/cardio/repo';
+import { distanceParts, RouteArt } from '../../modules/gps/components';
+import { useLive } from '../../modules/gps/tracker';
 import { ElapsedText, formatVolume, formatWeight, useUnits } from '../../modules/workouts/components';
 import {
   activeSplit,
@@ -70,6 +72,9 @@ export default function Train() {
   const history = useQuery([...TABLES], () => listWorkouts(8));
   const liftOn = useFeature('workouts');
   const cardioOn = useFeature('cardio');
+  const gpsOn = useFeature('gps');
+  const liveStatus = useLive((s) => s.status);
+  const liveKm = useLive((s) => s.distanceM);
   const recoveryOn = useFeature('recovery');
   const lifting = useQuery([...TABLES], () => trainingStats(addDays(today, -6)), [today]);
   const cardioWeek = useQuery(['cardio_sessions'], () => cardioStats(addDays(today, -6)), [today]);
@@ -293,7 +298,31 @@ export default function Train() {
               ) : undefined
             }
           />
-          <Card index={4} padded={false}>
+          {gpsOn && (
+            <Card
+              index={4}
+              onPress={() => router.push('/record')}
+              style={{ marginBottom: SPACE.md, backgroundColor: liveStatus === 'idle' ? colors.surface : colors.accent }}
+            >
+              <View style={styles.row}>
+                <View style={[styles.cardioIcon, { backgroundColor: liveStatus === 'idle' ? colors.accentSoft : 'rgba(255,255,255,0.2)' }]}>
+                  <Icon name="navigation" size={18} color={liveStatus === 'idle' ? colors.accent : colors.onAccent} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text variant="headline" color={liveStatus === 'idle' ? colors.text : colors.onAccent}>
+                    {liveStatus === 'idle' ? 'Record' : liveStatus === 'finished' ? 'Save your activity' : liveStatus === 'paused' ? 'Paused' : 'Recording'}
+                  </Text>
+                  <Text variant="footnote" color={liveStatus === 'idle' ? colors.textSecondary : colors.onAccent}>
+                    {liveStatus === 'idle'
+                      ? 'Run, walk, hike or ride with GPS'
+                      : `${distanceParts(liveKm, units === 'metric').value} ${units === 'metric' ? 'km' : 'mi'} · tap to open`}
+                  </Text>
+                </View>
+                <Icon name="chevronRight" size={18} color={liveStatus === 'idle' ? colors.textTertiary : colors.onAccent} />
+              </View>
+            </Card>
+          )}
+          <Card index={5} padded={false}>
             {cardio.length === 0 ? (
               <PressableScale scaleTo={0.99} onPress={() => router.push('/log-cardio')} style={{ padding: SPACE.lg, gap: 2 }}>
                 <Text variant="headline">No cardio yet</Text>
@@ -306,14 +335,23 @@ export default function Train() {
                 <PressableScale
                   key={c.id}
                   scaleTo={0.99}
+                  onPress={c.route ? () => router.push({ pathname: '/activity', params: { id: c.id } }) : undefined}
                   onLongPress={() => confirmDeleteCardio(c)}
                   style={[styles.listRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator }]}
                 >
-                  <View style={[styles.cardioIcon, { backgroundColor: colors.fill }]}>
-                    <Icon name={CARDIO_ICON[c.kind] ?? 'activity'} size={18} color={colors.text} />
-                  </View>
+                  {c.route ? (
+                    <View style={[styles.routeThumb, { backgroundColor: colors.fill }]}>
+                      <RouteArt encoded={c.route} width={40} height={40} strokeWidth={1.6} markers={false} />
+                    </View>
+                  ) : (
+                    <View style={[styles.cardioIcon, { backgroundColor: colors.fill }]}>
+                      <Icon name={CARDIO_ICON[c.kind] ?? 'activity'} size={18} color={colors.text} />
+                    </View>
+                  )}
                   <View style={{ flex: 1, gap: 2 }}>
-                    <Text variant="body">{cardioLabel(c.kind)}</Text>
+                    <Text variant="body" numberOfLines={1}>
+                      {c.title ?? cardioLabel(c.kind)}
+                    </Text>
                     <Text variant="footnote" tone="secondary" numberOfLines={1}>
                       {cardioSummary(c)}
                     </Text>
@@ -418,6 +456,7 @@ const styles = StyleSheet.create({
   overloadHead: { paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md, borderBottomWidth: StyleSheet.hairlineWidth },
   overloadRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingHorizontal: SPACE.lg, paddingVertical: 10 },
   listRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingHorizontal: SPACE.lg, paddingVertical: SPACE.md },
+  routeThumb: { width: 40, height: 40, borderRadius: RADIUS.sm, overflow: 'hidden' },
   cardioIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   play: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
 });
