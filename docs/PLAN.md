@@ -261,8 +261,6 @@ Account & auth · profile · **goal & phase engine** · Today screen (container)
 | | ↳ Form check video | Workouts | Camera |
 | | ↳ Rep counter (experimental) | Workouts | Camera |
 | | Calisthenics skills | Workouts | — |
-| | Mobility & flexibility | — | — |
-| | Injury & pain log | Workouts | — |
 | **Cardio & activity** | Cardio & interval timers | — | — |
 | | ↳ GPS tracking | Cardio | Location |
 | | Activity (Health Connect) | — | Health Connect |
@@ -290,7 +288,7 @@ Account & auth · profile · **goal & phase engine** · Today screen (container)
 | **Maintenance** | Maintenance | Food logging (Simple), Workouts, Habits |
 | **Strength / powerlifting** | Strength focus | Workouts, Programs, Recovery, Milestones, Gamification |
 | **Bodybuilding** | Any | Everything in Body + Training groups, Weak-point focus, Proportions |
-| **Calisthenics / home** | Any | Workouts, Calisthenics skills, Mobility, Habits |
+| **Calisthenics / home** | Any | Workouts, Calisthenics skills, Habits |
 | **General fitness / cardio** | Maintenance or Cut | Cardio, GPS, Activity, Sleep, Habits |
 | **Minimal** | Any | Food logging + weight, Simple mode everywhere |
 | **Everything** | Any | All modules |
@@ -540,20 +538,6 @@ Account & auth · profile · **goal & phase engine** · Today screen (container)
 - Hold-time and rep tracking per step
 - Skill milestone cards
 
-#### Mobility & flexibility
-- Warm-up routines per workout type (lower, upper, full body) that attach to a workout
-- Cool-down and stretching routines
-- Mobility programs (hips, shoulders, thoracic spine, ankles)
-- Guided timer with holds and sides
-- Simple mobility self-tests (e.g. deep squat hold, overhead reach, toe touch) tracked over time
-
-#### Injury & pain log
-- Log pain by body part / joint, intensity and trigger exercise
-- **Flag exercises** that caused pain; suggest alternatives from the library
-- Temporary "avoid" list that the program respects until cleared
-- Return-to-training progression (reduced load, gradual build-up)
-- Clear note to see a professional for persistent or sharp pain
-
 #### Form check & rep counter
 - **Form video** recorded from the logger, linked to the set; stored on-device only
 - Side-by-side playback of two dates, slow motion, frame stepping
@@ -675,7 +659,7 @@ Account & auth · profile · **goal & phase engine** · Today screen (container)
 - **Disordered eating sensitivity:** option to hide numbers, no shaming language, check-ins framed around trends not single days
 - **No water-cutting, dehydration or peak-week manipulation protocols**
 - **No PED protocols or dosing**; FFMI feasibility notes stay neutral and informational
-- **Health markers and injury log** are informational, with "see a professional" guidance
+- **Health markers** are informational, with "see a professional" guidance
 - Pregnancy / medical conditions: onboarding question that switches off deficits and aggressive goals, suggesting professional guidance
 
 ---
@@ -748,10 +732,6 @@ exercise_settings (exercise_id, gym_profile_id, notes)
 form_videos       (set_id, local_uri, duration_s)            ← never uploaded
 skills            (bundled: tree, step, name, unlock_criteria jsonb)
 skill_progress    (skill_id, best_reps, best_hold_s, unlocked_at)
-mobility_routines (owner_id NULL = bundled, name, items jsonb)
-mobility_tests    (date, test, result)
-pain_logs         (date, body_part, intensity, exercise_id, notes, resolved_at)
-exercise_avoid    (exercise_id, reason, until)
 soreness_logs     (date, body_part, level)
 
 ── Cardio & activity ────────────────────────────────────────────────
@@ -777,7 +757,7 @@ ai_usage          (date, calls)
 
 - Log entries store a **macro snapshot**; editing a food later doesn't rewrite history.
 - Predictions are a cache regenerated whenever phases or adaptive TDEE change.
-- Bundled reference data (exercises, skills, mobility routines, articles, IFCT) ships as read-only local assets, not user rows.
+- Bundled reference data (exercises, skills, articles, IFCT) ships as read-only local assets, not user rows.
 
 ---
 
@@ -793,8 +773,8 @@ Tabs are **dynamic** (§6.5). Available screens:
 6. **Workout**: start / routines / programs → active workout → finish summary
 7. **Exercise library** and exercise detail
 8. **Programs**: split planner, program calendar, progression settings, weak points
-9. **Skills & mobility**: skill trees, mobility routines, tests
-10. **Body**: muscle volume heatmap, recovery map, pain log
+9. **Skills**: calisthenics skill trees
+10. **Body**: muscle volume heatmap, recovery map
 11. **Cardio**: manual log, GPS tracker, interval timer
 12. **Progress**: weight vs prediction, measurements, body composition, proportions, strength trends, health markers
 13. **Journey**: milestone cards, photo timeline, compare tools, phase recaps
@@ -821,8 +801,8 @@ metakai/
 │   ├── src/modules/
 │   │   ├── nutrition/  meal-planning/  food-budget/
 │   │   ├── measurements/  body-comp/  proportions/  photos/  milestones/
-│   │   ├── workouts/  programs/  muscle-volume/  skills/  mobility/
-│   │   ├── injury/  form-check/
+│   │   ├── workouts/  programs/  muscle-volume/  skills/
+│   │   ├── form-check/
 │   │   ├── cardio/  activity/
 │   │   ├── recovery/  sleep/  wellbeing/  habits/  supplements/
 │   │   ├── health-markers/
@@ -833,7 +813,7 @@ metakai/
 │   │                               warm-ups, progression, MET, DOTS/Wilks,
 │   │                               Navy/skinfold BF, FFMI, ratios, readiness
 │   └── assets/                     ifct.sqlite, exercises/, skills.json,
-│                                   mobility.json, articles/, body.svg
+│                                   articles/, body.svg
 ├── supabase/
 │   ├── migrations/                 schema + RLS
 │   └── functions/                  parse-food, photo-meal, food-lookup, weekly-report,
@@ -858,7 +838,7 @@ Each module folder owns its screens, components, queries, dashboard cards and re
 | **v0.2 Gym core** | Exercise library, routines, active workout with previous performance, rest timer + ongoing notification, plate calculator, warm-ups, 1RM, PRs, finish summary, exercise history, gym profiles |
 | **v0.3 Body & progress** | Measurements, body composition (Navy, skinfolds, manual BIA/DEXA), FFMI, progress photos, milestone cards (all types), habits, saved meals / recipes, reminders, app lock, dynamic tabs + dashboard layout |
 | **v0.4 Smart planning** | **Physique goal builder + goal recommender + phase planner**, remaining goal types (bulk, reverse, diet break, mini cut, strength, event prep), adaptive TDEE, weekly check-in, programs + auto-progression, deloads, muscle volume heatmap, training/rest-day macros, strength standards & goals, barcode scan |
-| **v0.5 Recovery, cardio & health** | Recovery map, readiness, sleep & stress, wellbeing + journal, supplements, cardio + interval timers, GPS, Health Connect, health markers, injury & pain log, mobility routines, widgets |
+| **v0.5 Recovery, cardio & health** | Recovery map, readiness, sleep & stress, wellbeing + journal, supplements, cardio + interval timers, GPS, Health Connect, health markers, widgets |
 | **v0.6 Advanced training & food** | Calisthenics skill trees, weak-point focus, physique proportions, voice set logging, form check video, meal planning + grocery list + meal prep, food budget, education hub |
 | **v0.7 AI & sharing** | AI coach chat, AI program and meal-plan builders, meal photo AI, label OCR, voice food logging, coach sharing, share cards, phase recaps, Strong / Hevy / MFP import |
 | **v0.8 Experimental** | Pose rep counter + range of motion, gym geofence check-in, accountability partner, gamification badges |
@@ -869,7 +849,8 @@ Each module folder owns its screens, components, queries, dashboard cards and re
 ## 14. Deliberately out of scope
 - **Public social feed / community:** needs moderation and adds bloat; replaced by private sharing, coach links and an accountability partner.
 - **Water cuts, peak week, PED protocols:** unsafe to automate (§9).
-- **Medical diagnosis** from health markers or pain logs.
+- **Medical diagnosis** from health markers.
+- **Injury & pain log, mobility routines:** dropped by owner decision to keep the app focused.
 - **Paid features / subscriptions:** conflicts with the $0 goal; can be reconsidered later.
 - **Wear OS app:** free but a separate build effort; revisit after v1.0 (Health Connect covers watch data meanwhile).
 

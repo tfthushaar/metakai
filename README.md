@@ -47,7 +47,7 @@ Download the latest APK from [Releases](https://github.com/tfthushaar/metakai/re
 
 ### Not built yet (roadmap)
 
-- **v0.8.x Rest of health:** Health Connect (steps, heart rate, sleep imported automatically), a body map for muscle recovery, wellbeing journal, injury and pain log, mobility routines, home screen widgets.
+- **v0.8.x Rest of health:** Health Connect (steps, heart rate, sleep imported automatically), a body map for muscle recovery, wellbeing journal, home screen widgets.
 - **v0.8 Advanced training and food:** built-in programs with set percentages and scheduled deload weeks (GZCLP, 5/3/1-style), calisthenics skill trees, weak-point focus and physique proportions (shoulder-to-waist, symmetry), SVG body heatmap, voice set logging, form-check video, meal planning with grocery lists and meal prep, food budget, dietary-preference filtering and "what should I eat" suggestions, an offline education hub.
 - **v0.9 AI and sharing:** AI coach chat, AI program and meal-plan builders, meal photo estimates, nutrition label OCR, voice food logging, coach and trainer sharing links, shareable cards and phase recaps, import from Strong, Hevy and MyFitnessPal.
 - **v0.10 Experimental:** camera rep counter, gym geofence check-in, accountability partner, badges.
