@@ -3,7 +3,7 @@
     "name": "Metakai",
     "slug": "metakai",
     "scheme": "metakai",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -14,7 +14,7 @@
     },
     "android": {
       "package": "com.tfthushaar.metakai",
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
         "backgroundColor": "#000000",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -69,7 +69,8 @@
         }
       ],
       "./plugins/withReleaseSigning",
-      "expo-sharing"
+      "expo-sharing",
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": false

@@ -20,6 +20,7 @@ import { ToastHost } from '../ui/Toast';
 import { AppLockGate } from '../core/AppLock';
 import { syncReminders } from '../core/reminders';
 import { backfillWorkoutCalories } from '../modules/workouts/repo';
+import { flushDrive, syncDrive, watchForChanges } from '../core/drive';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ duration: 250, fade: true });
@@ -46,6 +47,23 @@ function useBackgroundSync() {
   }, [session]);
 }
 
+function useDriveBackup() {
+  const enabled = useSettings((s) => s.drive.enabled);
+  useEffect(() => {
+    if (!enabled) return;
+    syncDrive();
+    const unwatch = watchForChanges();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'background') flushDrive();
+      if (state === 'active') syncDrive();
+    });
+    return () => {
+      unwatch();
+      sub.remove();
+    };
+  }, [enabled]);
+}
+
 function useNotificationLinks() {
   const router = useRouter();
   useEffect(() => {
@@ -61,6 +79,7 @@ function useNotificationLinks() {
 function RootStack() {
   const { colors, dark } = useTheme();
   useNotificationLinks();
+  useDriveBackup();
   const authMode = useSettings((s) => s.authMode);
   const onboarded = useSettings((s) => s.onboarded);
 

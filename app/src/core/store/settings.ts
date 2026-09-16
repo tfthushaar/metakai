@@ -59,6 +59,16 @@ export const DEFAULT_GYM: GymSettings = {
   keepAwake: true,
 };
 
+export interface DriveSettings {
+  enabled: boolean;
+  email: string | null;
+  lastSyncedAt: string | null;
+  /** modifiedTime of the Drive data file after our last upload or download. */
+  remoteVersion: string | null;
+}
+
+export const DEFAULT_DRIVE: DriveSettings = { enabled: false, email: null, lastSyncedAt: null, remoteVersion: null };
+
 interface SettingsState {
   appearance: Appearance;
   accent: AccentId;
@@ -77,6 +87,7 @@ interface SettingsState {
   todayHidden: TodayCardId[];
   adaptiveTargets: boolean;
   carbCycling: boolean;
+  drive: DriveSettings;
 
   set: (patch: Partial<Omit<SettingsState, 'set' | 'toggleModule' | 'applyPreset'>>) => void;
   toggleModule: (id: ModuleId, on: boolean) => void;
@@ -103,6 +114,7 @@ export const useSettings = create<SettingsState>()(
       todayHidden: [],
       adaptiveTargets: true,
       carbCycling: false,
+      drive: DEFAULT_DRIVE,
 
       set: (patch) => set(patch),
       toggleModule: (id, on) => {
@@ -117,7 +129,7 @@ export const useSettings = create<SettingsState>()(
     {
       name: 'metakai.settings',
       storage: createJSONStorage(() => kvStorage),
-      version: 4,
+      version: 5,
       migrate: (state, version) => {
         const s = state as Record<string, unknown>;
         if (version < 2) {
@@ -135,6 +147,7 @@ export const useSettings = create<SettingsState>()(
           s.adaptiveTargets = true;
           s.carbCycling = false;
         }
+        if (version < 5) s.drive = DEFAULT_DRIVE;
         return s as never;
       },
     },

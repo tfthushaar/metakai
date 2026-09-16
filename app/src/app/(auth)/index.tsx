@@ -6,6 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { signInWithGoogle } from '../../core/auth/auth';
 import { cloudEnabled } from '../../core/auth/supabase';
+import { pickAndRestoreBackup } from '../../core/backup';
+import { getActivePhase, getProfile } from '../../core/db/repo';
+import { connectDrive, restoreFromDrive } from '../../core/drive';
 import { useSettings } from '../../core/store/settings';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { SPACE } from '../../core/theme/typography';
@@ -33,6 +36,40 @@ export default function Welcome() {
   const router = useRouter();
   const setSettings = useSettings((s) => s.set);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [restoring, setRestoring] = useState<'drive' | 'file' | null>(null);
+
+  /** After a restore, skip onboarding when the backup brought a profile. */
+  const finishRestore = () => {
+    const onboarded = getProfile() != null && getActivePhase() != null;
+    setSettings({ authMode: 'guest', onboarded });
+    if (!onboarded) toast('Backup restored. Finish setting up your goal.');
+  };
+
+  const fromDrive = async () => {
+    setRestoring('drive');
+    try {
+      const email = await connectDrive();
+      if (!email) return;
+      setSettings({ drive: { ...useSettings.getState().drive, email } });
+      if (await restoreFromDrive()) finishRestore();
+      else toast(`No Metakai backup found in ${email}'s Drive.`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not restore from Google Drive.');
+    } finally {
+      setRestoring(null);
+    }
+  };
+
+  const fromFile = async () => {
+    setRestoring('file');
+    try {
+      if (await pickAndRestoreBackup()) finishRestore();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not restore that file.');
+    } finally {
+      setRestoring(null);
+    }
+  };
 
   const google = async () => {
     setGoogleLoading(true);
@@ -65,13 +102,21 @@ export default function Welcome() {
       </View>
 
       <Animated.View entering={enterUp(5)} style={styles.actions}>
-        <Button title="Continue with Google" onPress={google} loading={googleLoading} disabled={!cloudEnabled} />
-        <Button title="Continue with email" variant="gray" icon="mail" onPress={() => router.push('/email-auth')} disabled={!cloudEnabled} />
-        <Button title="Use without an account" variant="plain" onPress={() => setSettings({ authMode: 'guest' })} />
+        <Button title="Get started" onPress={() => setSettings({ authMode: 'guest' })} />
+        <Button title="Restore from Google Drive" variant="gray" icon="cloud" onPress={fromDrive} loading={restoring === 'drive'} disabled={restoring != null} />
+        <Button title="Restore from a backup file" variant="plain" onPress={fromFile} loading={restoring === 'file'} disabled={restoring != null} />
+        {cloudEnabled && (
+          <View style={{ flexDirection: 'row', gap: SPACE.sm }}>
+            <View style={{ flex: 1 }}>
+              <Button title="Google account" size="sm" variant="gray" onPress={google} loading={googleLoading} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button title="Email account" size="sm" variant="gray" icon="mail" onPress={() => router.push('/email-auth')} />
+            </View>
+          </View>
+        )}
         <Text variant="footnote" tone="tertiary" align="center">
-          {cloudEnabled
-            ? 'Without an account your data stays on this phone. You can sign in later to sync.'
-            : 'Cloud sign-in is not configured in this build. Your data stays on this phone.'}
+          No account needed. Your data stays on this phone, with optional backup to your own Google Drive.
         </Text>
       </Animated.View>
     </View>

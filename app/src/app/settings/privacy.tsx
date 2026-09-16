@@ -37,11 +37,11 @@ export default function Privacy() {
 
       <ListGroup header="Your data">
         <ListRow title="Stored on this phone" subtitle="Food, weight, workouts, photos and measurements are saved locally first." />
-        <ListRow title="Photos never leave the device" subtitle="Progress photos are kept inside the app, not in your gallery." />
-        <ListRow title="AI requests" subtitle="Only the meal text you ask AI to analyze is sent, never your profile or weight." />
+        <ListRow title="Photos stay private" subtitle="Progress photos are kept inside the app, not in your gallery. They only leave the phone if you turn on Google Drive backup." />
+        <ListRow title="AI requests" subtitle="Only the meal text you ask AI to analyze is sent to Google or Groq with your own key, never your profile or weight." />
       </ListGroup>
       <Text variant="caption" tone="tertiary" style={{ marginTop: 16, paddingHorizontal: 16 }}>
-        When you sign in, your logs sync to your private account, protected so only you can read them.
+        Google Drive backup uses a hidden app folder in your own Drive. Metakai has no servers that store your data.
       </Text>
     </Screen>
   );

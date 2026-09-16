@@ -2,7 +2,9 @@ import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
+import { hasAiKey, useAiKeys } from '../../core/aiKey';
 import { useAuth } from '../../core/auth/auth';
+import { cloudEnabled } from '../../core/auth/supabase';
 import { useBody } from '../../core/goals/useBody';
 import { ACCENTS } from '../../core/theme/palette';
 import { useSettings } from '../../core/store/settings';
@@ -23,6 +25,7 @@ export default function You() {
   const { colors } = useTheme();
   const { profile, phase, targets, currentKg } = useBody();
   const settings = useSettings();
+  const aiKeys = useAiKeys();
   const session = useAuth((s) => s.session);
   const lastSynced = useSync((s) => s.lastSyncedAt);
 
@@ -87,14 +90,32 @@ export default function You() {
         )}
       </ListGroup>
 
-      <ListGroup header="Account" index={3}>
+      <ListGroup header="Data" index={3}>
         <ListRow
-          icon={session ? 'cloud' : 'cloudOff'}
-          iconColor={session ? colors.success : colors.fill}
-          title={session ? 'Account & sync' : 'Sign in to sync'}
-          subtitle={session ? (lastSynced ? `Synced ${new Date(lastSynced).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'Not synced yet') : 'Your data is only on this phone'}
-          onPress={() => router.push('/settings/account')}
+          icon={settings.drive.enabled ? 'cloud' : 'cloudOff'}
+          iconColor={settings.drive.enabled ? colors.success : colors.fill}
+          title="Backup & sync"
+          subtitle={
+            settings.drive.enabled
+              ? settings.drive.lastSyncedAt
+                ? `Google Drive · ${new Date(settings.drive.lastSyncedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+                : 'Google Drive'
+              : 'Only on this phone'
+          }
+          onPress={() => router.push('/settings/backup')}
         />
+        <ListRow icon="sparkles" title="AI" value={hasAiKey(aiKeys) ? 'On' : 'Off'} onPress={() => router.push('/settings/ai')} />
+        {cloudEnabled ? (
+          <ListRow
+            icon={session ? 'cloud' : 'cloudOff'}
+            iconColor={session ? colors.success : colors.fill}
+            title={session ? 'Account & sync' : 'Account'}
+            subtitle={session ? (lastSynced ? `Synced ${new Date(lastSynced).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'Not synced yet') : undefined}
+            onPress={() => router.push('/settings/account')}
+          />
+        ) : (
+          <ListRow icon="trash" iconColor={colors.fill} title="Manage data" onPress={() => router.push('/settings/account')} />
+        )}
       </ListGroup>
 
       <Text variant="footnote" tone="tertiary" align="center" style={{ marginTop: SPACE.xxl }}>

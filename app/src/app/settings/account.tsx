@@ -5,7 +5,7 @@ import { Alert, View } from 'react-native';
 import { deleteAccount, signInWithGoogle, signOut, useAuth } from '../../core/auth/auth';
 import { cloudEnabled } from '../../core/auth/supabase';
 import { clearAllData, resetSyncState } from '../../core/db/database';
-import { useSettings } from '../../core/store/settings';
+import { DEFAULT_DRIVE, useSettings } from '../../core/store/settings';
 import { syncNow, useSync } from '../../core/sync/sync';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { SPACE } from '../../core/theme/typography';
@@ -53,7 +53,7 @@ export default function AccountSettings() {
           await syncNow();
           await signOut();
           clearAllData();
-          setSettings({ authMode: 'none', onboarded: false });
+          setSettings({ authMode: 'none', onboarded: false, drive: DEFAULT_DRIVE });
         },
       },
     ]);
@@ -69,7 +69,7 @@ export default function AccountSettings() {
           try {
             await deleteAccount();
             clearAllData();
-            setSettings({ authMode: 'none', onboarded: false });
+            setSettings({ authMode: 'none', onboarded: false, drive: DEFAULT_DRIVE });
           } catch (e) {
             toast(e instanceof Error ? e.message : 'Could not delete account. Try again when online.');
           }
@@ -86,7 +86,7 @@ export default function AccountSettings() {
         style: 'destructive',
         onPress: () => {
           clearAllData();
-          setSettings({ authMode: 'none', onboarded: false });
+          setSettings({ authMode: 'none', onboarded: false, drive: DEFAULT_DRIVE });
         },
       },
     ]);
@@ -94,12 +94,12 @@ export default function AccountSettings() {
 
   if (!session) {
     return (
-      <Screen title="Account" back>
-        <Text variant="subhead" tone="secondary">
-          {cloudEnabled
-            ? 'Sign in to back up your data and use it on other devices. Everything you logged so far will be uploaded to your account.'
-            : 'Cloud sync is not configured in this build. Your data is stored only on this phone.'}
-        </Text>
+      <Screen title={cloudEnabled ? 'Account' : 'Manage data'} back>
+        {cloudEnabled && (
+          <Text variant="subhead" tone="secondary">
+            Sign in to sync with a Metakai account. Everything you logged so far will be uploaded to it.
+          </Text>
+        )}
         {cloudEnabled && (
           <View style={{ gap: SPACE.md, marginTop: SPACE.xl }}>
             <Button title="Continue with Google" onPress={google} loading={busy} />

@@ -1,5 +1,6 @@
 // Parses a plain-language meal description into structured food items.
-// Gemini (free tier) first, Groq as fallback. Requires a signed-in user.
+// Tries each free-tier model in turn (each has its own quota), so one model hitting its limit
+// doesn't fail the request. Requires a signed-in user.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 interface Item {
@@ -15,8 +16,8 @@ interface Item {
 }
 
 const DAILY_LIMIT = Number(Deno.env.get('AI_DAILY_LIMIT') ?? '60');
-const GEMINI_MODEL = Deno.env.get('GEMINI_MODEL') ?? 'gemini-flash-latest';
-const GROQ_MODEL = Deno.env.get('GROQ_MODEL') ?? 'llama-3.3-70b-versatile';
+const GEMINI_MODELS = (Deno.env.get('GEMINI_MODELS') ?? 'gemini-flash-lite-latest,gemini-flash-latest').split(',');
+const GROQ_MODELS = (Deno.env.get('GROQ_MODELS') ?? 'openai/gpt-oss-20b,openai/gpt-oss-120b').split(',');
 
 const SYSTEM = `You convert meal descriptions into food items with nutrition estimates.
 Rules:
@@ -58,10 +59,10 @@ const SCHEMA = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-async function gemini(text: string) {
+async function gemini(model: string, text: string) {
   const key = Deno.env.get('GEMINI_API_KEY');
   if (!key) throw new Error('GEMINI_API_KEY not set');
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
     body: JSON.stringify({
@@ -75,15 +76,17 @@ async function gemini(text: string) {
   return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}');
 }
 
-async function groq(text: string) {
+async function groq(model: string, text: string) {
   const key = Deno.env.get('GROQ_API_KEY');
   if (!key) throw new Error('GROQ_API_KEY not set');
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
     body: JSON.stringify({
-      model: GROQ_MODEL,
+      model,
       temperature: 0.1,
+      reasoning_effort: 'low',
+      max_completion_tokens: 1500,
       response_format: { type: 'json_object' },
       messages: [
         {
@@ -145,13 +148,14 @@ Deno.serve(async (req) => {
   if ((calls as number) > DAILY_LIMIT) return json({ error: 'Daily AI limit reached. Offline matching still works.' }, 429);
 
   const errors: string[] = [];
-  for (const [provider, fn] of [
-    ['gemini', gemini],
-    ['groq', groq],
-  ] as const) {
+  const attempts = [
+    ...GEMINI_MODELS.map((m) => [m, gemini] as const),
+    ...GROQ_MODELS.map((m) => [m, groq] as const),
+  ];
+  for (const [model, fn] of attempts) {
     try {
-      const result = sanitize(await fn(text));
-      return json({ ...result, provider });
+      const result = sanitize(await fn(model, text));
+      return json({ ...result, provider: model });
     } catch (e) {
       errors.push(e instanceof Error ? e.message : String(e));
     }

@@ -1,4 +1,5 @@
 import { randomUUID } from 'expo-crypto';
+import { Directory, Paths } from 'expo-file-system';
 import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
 
 import { MIGRATIONS } from './migrations';
@@ -101,6 +102,12 @@ export function clearAllData() {
     for (const t of SYNCED_TABLES) database.execSync(`DELETE FROM ${t}`);
     database.execSync('DELETE FROM sync_state');
   });
+  try {
+    const photos = new Directory(Paths.document, 'progress-photos');
+    if (photos.exists) photos.delete();
+  } catch {
+    // Rows are gone; stray files are unreachable.
+  }
   notify(...SYNCED_TABLES);
 }
 

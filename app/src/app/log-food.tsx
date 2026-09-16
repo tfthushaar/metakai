@@ -5,8 +5,9 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../core/auth/auth';
+import { hasAiKey, useAiKeys } from '../core/aiKey';
 import { cloudEnabled } from '../core/auth/supabase';
-import { addLogEntries, frequentFoods, listCustomFoods, MEAL_SLOTS, type LogEntry, type MealSlot, type NewLogEntry } from '../core/db/repo';
+import { addCustomFood, addLogEntries, frequentFoods, listCustomFoods, MEAL_SLOTS, type LogEntry, type MealSlot, type NewLogEntry } from '../core/db/repo';
 import { useQuery } from '../core/db/useQuery';
 import { useTheme } from '../core/theme/ThemeProvider';
 import { RADIUS, SPACE, TYPE } from '../core/theme/typography';
@@ -233,7 +234,8 @@ export default function LogFood() {
   const totals = sumMacros(items);
   const hasUnknown = items.some((i) => i.confidence === 'none' && i.macros.kcal === 0);
   const canSave = items.length > 0 && !hasUnknown;
-  const canUseAi = cloudEnabled && session != null;
+  const aiKeys = useAiKeys();
+  const canUseAi = hasAiKey(aiKeys) || (cloudEnabled && session != null);
 
   const updateItem = (item: ParsedItem, next: ParsedItem | null) => {
     if (extraItems.some((e) => e.key === item.key)) {
@@ -322,6 +324,14 @@ export default function LogFood() {
 
   const save = () => {
     addLogEntries(toEntries());
+    // Remember foods AI found, so they match offline next time without spending quota.
+    const known = new Set(customFoods.map((c) => c.name.toLowerCase()));
+    for (const i of items) {
+      if (!i.food?.id.startsWith('ai:') || known.has(i.food.name.toLowerCase())) continue;
+      const [unit, grams] = Object.entries(i.food.units)[0] ?? [];
+      addCustomFood({ name: i.food.name, ...i.food.per100, servingName: unit ?? null, servingGrams: grams ?? null, barcode: null });
+      known.add(i.food.name.toLowerCase());
+    }
     haptic.success();
     toast(`Added ${Math.round(totals.kcal)} kcal to ${MEAL_SLOTS.find((m) => m.id === slot)!.title}`);
     router.back();
@@ -390,9 +400,15 @@ export default function LogFood() {
                 Scan
               </Text>
             </PressableScale>
-            <Text variant="footnote" tone="tertiary" style={{ flex: 1 }}>
-              {canUseAi ? 'Matched offline as you type.' : 'Matched offline as you type.'}
-            </Text>
+            {hasUnknown && !canUseAi ? (
+              <Text variant="footnote" color={colors.accent} style={{ flex: 1 }} onPress={() => router.push('/settings/ai')}>
+                Unknown food? Add a free AI key
+              </Text>
+            ) : (
+              <Text variant="footnote" tone="tertiary" style={{ flex: 1 }}>
+                Matched offline as you type.
+              </Text>
+            )}
             {canUseAi && (
               <Button title={ai ? 'AI applied' : 'Analyze with AI'} icon="sparkles" size="sm" variant="tinted" full={false} loading={aiLoading} disabled={!text.trim() || !!ai} onPress={runAi} />
             )}
