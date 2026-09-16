@@ -113,6 +113,10 @@ function RootStack() {
           <Stack.Screen name="log-cardio" options={modal} />
           <Stack.Screen name="record" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
           <Stack.Screen name="activity" />
+          <Stack.Screen name="rank-physique" />
+          <Stack.Screen name="rank-run" />
+          <Stack.Screen name="achievements" />
+          <Stack.Screen name="share-card" options={modal} />
           <Stack.Screen name="interval-timer" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
           <Stack.Screen name="recovery" />
           <Stack.Screen name="health" />

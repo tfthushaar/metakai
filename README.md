@@ -59,6 +59,16 @@ Three principles shape the app:
 - **Supplement checklist** and health markers: blood pressure, resting heart rate, HRV, fasting glucose, steps and lab results, with trends.
 - **Habits** that tick themselves off from your logs, plus reminders.
 
+### Ranks and achievements
+- **Physique pass:** every muscle group gets a rank, from Iron to Champion with three divisions per tier.
+  - Scores come from your best key lifts and how consistently you train the group.
+  - Each group shows how you compare with the average person of your sex, age, weight and height (percentile and "× average").
+  - Filters: people like you, same weight, same height, same sex, or everyone.
+  - A radar chart shows your balance, and weak groups pull the overall rank down.
+- **Run pass:** 1 km to marathon times are age-graded against world bests for your age and sex, so every runner is ranked fairly. It shows your age-grade class and how many people your age you're faster than.
+- **Achievements:** over 50 badges across training, running, nutrition, body, consistency and ranks, with progress toward the ones you haven't earned yet.
+- **Share cards:** any earned badge or pass rank can be shared as an image.
+
 ### Personalisation
 - **Features:** turn any feature on or off, or start from a preset.
 - **Layout:** reorder or hide cards on Today, sections on Train and Progress, and shortcuts in the + menu. Choose which tab the app opens on.
@@ -77,8 +87,8 @@ Three principles shape the app:
 flowchart LR
   subgraph Phone["Android phone"]
     direction TB
-    UI["Screens<br/>(Expo Router)"] --> Modules["Feature modules<br/>food · workouts · cardio · gps<br/>recovery · health · body · habits"]
-    Modules --> Lib["Pure logic<br/>targets · predictions · strength<br/>geo · readiness · rate limits"]
+    UI["Screens<br/>(Expo Router)"] --> Modules["Feature modules<br/>food · workouts · cardio · gps · ranks<br/>achievements · recovery · health · body · habits"]
+    Modules --> Lib["Pure logic<br/>targets · predictions · strength · ranks<br/>geo · readiness · achievements · rate limits"]
     Modules --> DB[("SQLite<br/>all user data")]
     Modules --> KV[("Key-value store<br/>settings · layouts")]
     Modules --> Secure[("Secure storage<br/>AI keys")]
@@ -92,7 +102,7 @@ flowchart LR
 
 - **Offline-first:** every screen reads from the local SQLite database through small repositories, and screens re-render when the tables they use change.
 - **Feature registry:** each module declares its dependencies and permissions. Screens, tabs, Today cards and shortcuts check it before rendering.
-- **Pure logic:** calculations live in `src/lib` as dependency-free, unit-tested functions, including energy and macros, predictions, 1RM and progression, body composition, GPS track maths, readiness and AI rate budgets.
+- **Pure logic:** calculations live in `src/lib` as dependency-free, unit-tested functions, including energy and macros, predictions, 1RM and progression, body composition, GPS track maths, population strength norms and age grading, readiness, achievements and AI rate budgets.
 - **No backend:** the only network calls are the optional ones shown above, made directly from the phone.
 
 ## Quick start
@@ -149,7 +159,7 @@ app/
   src/app/        Screens and navigation (Expo Router)
   src/core/       Database, settings, layouts, theme, backup, Drive, app lock
   src/lib/        Pure, unit-tested calculations
-  src/modules/    Feature modules: food, workouts, cardio, gps, recovery, health, body, habits
+  src/modules/    Feature modules: food, workouts, cardio, gps, ranks, achievements, recovery, health, body, habits
   src/ui/         Design system components
   plugins/        Expo config plugins (release signing)
 docs/             Product plan and website (privacy policy, terms)
@@ -164,7 +174,7 @@ scripts/          Icon and exercise data generators
 | App | React Native, Expo, Expo Router, TypeScript |
 | UI | Reanimated, Gesture Handler, react-native-svg, Lucide icons, Inter |
 | State and storage | Zustand, expo-sqlite (SQLite and key-value), expo-secure-store |
-| Device | expo-location with task manager, expo-camera, expo-notifications, expo-local-authentication |
+| Device | expo-location with task manager, expo-camera, expo-notifications, expo-local-authentication, react-native-view-shot |
 | Cloud (optional) | Google Sign-In and Drive REST API, Gemini and Groq APIs |
 | Quality | Jest, TypeScript strict mode, GitHub Actions |
 
@@ -174,4 +184,4 @@ Metakai has no servers and collects nothing. Your data stays on your phone unles
 
 ## Disclaimer
 
-Calorie, macro, body composition, readiness and calorie-burn figures are estimates for general fitness purposes, not medical advice. Talk to a doctor or qualified professional before starting a diet or training program.
+Calorie, macro, body composition, readiness, rank and calorie-burn figures are estimates for general fitness purposes, not medical advice. Talk to a doctor or qualified professional before starting a diet or training program.

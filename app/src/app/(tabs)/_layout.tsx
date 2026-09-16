@@ -12,6 +12,7 @@ import { activeWorkout, startWorkout } from '../../modules/workouts/repo';
 import { EASE_OUT, SPRING } from '../../ui/motion';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { useLive } from '../../modules/gps/tracker';
+import { AchievementWatcher } from '../../modules/ranks/RanksSummary';
 import { BarBackground } from '../../ui/BarBackground';
 import { Icon, type IconName } from '../../ui/Icon';
 import { PressableScale } from '../../ui/PressableScale';
@@ -175,13 +176,16 @@ export default function TabsLayout() {
   const foodEnabled = useSettings((s) => s.enabledModules.includes('food'));
   const trainEnabled = useSettings((s) => s.enabledModules.some((m) => m === 'workouts' || m === 'cardio' || m === 'gps'));
   return (
-    <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, animation: 'fade' }}>
-      <Tabs.Screen name="index" options={{ title: 'Today' }} />
-      <Tabs.Screen name="food" options={{ title: 'Food', href: foodEnabled ? undefined : null }} />
-      <Tabs.Screen name="train" options={{ title: 'Train', href: trainEnabled ? undefined : null }} />
-      <Tabs.Screen name="progress" options={{ title: 'Progress' }} />
-      <Tabs.Screen name="you" options={{ title: 'You' }} />
-    </Tabs>
+    <>
+      <AchievementWatcher />
+      <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, animation: 'fade' }}>
+        <Tabs.Screen name="index" options={{ title: 'Today' }} />
+        <Tabs.Screen name="food" options={{ title: 'Food', href: foodEnabled ? undefined : null }} />
+        <Tabs.Screen name="train" options={{ title: 'Train', href: trainEnabled ? undefined : null }} />
+        <Tabs.Screen name="progress" options={{ title: 'Progress' }} />
+        <Tabs.Screen name="you" options={{ title: 'You' }} />
+      </Tabs>
+    </>
   );
 }
 

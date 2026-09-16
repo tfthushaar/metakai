@@ -11,6 +11,7 @@ import { ListGroup, ListRow } from '../../ui/List';
 import { dailyTotals, deleteWeight, listWeights, restoreWeight, type WeightEntry } from '../../core/db/repo';
 import { useQuery } from '../../core/db/useQuery';
 import { useLayout } from '../../core/store/layouts';
+import { RanksSection } from '../../modules/ranks/RanksSummary';
 import { useFeature, useSettings } from '../../core/store/settings';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../../core/theme/typography';
@@ -246,6 +247,7 @@ export default function Progress() {
           )}
         </View>
       ) : null,
+    ranks: <RanksSection />,
     body:
       phase || milestonesOn || bodyOn || photosOn ? (
         <ListGroup header="Body & progress" index={2}>

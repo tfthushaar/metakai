@@ -47,7 +47,12 @@ import HeartPulse from 'lucide-react-native/icons/heart-pulse';
 import Moon from 'lucide-react-native/icons/moon';
 import Pause from 'lucide-react-native/icons/pause';
 import Pill from 'lucide-react-native/icons/pill';
+import Award from 'lucide-react-native/icons/award';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
+import Crown from 'lucide-react-native/icons/crown';
+import Lock from 'lucide-react-native/icons/lock';
+import Medal from 'lucide-react-native/icons/medal';
+import Share2 from 'lucide-react-native/icons/share-2';
 import Mountain from 'lucide-react-native/icons/mountain';
 import Navigation from 'lucide-react-native/icons/navigation';
 import Square from 'lucide-react-native/icons/square';
@@ -103,6 +108,11 @@ const ICONS = {
   pause: Pause,
   pill: Pill,
   chevronDown: ChevronDown,
+  award: Award,
+  crown: Crown,
+  lock: Lock,
+  medal: Medal,
+  share: Share2,
   mountain: Mountain,
   navigation: Navigation,
   square: Square,

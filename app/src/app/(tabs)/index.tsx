@@ -17,6 +17,7 @@ import { sumMacros } from '../../modules/food/parse';
 import { cardioStats } from '../../modules/cardio/repo';
 import { HabitsCard } from '../../modules/habits/HabitsCard';
 import { listSupplements, setTaken, takenOn } from '../../modules/health/repo';
+import { RanksTodayCard } from '../../modules/ranks/RanksSummary';
 import { readinessFor } from '../../modules/recovery/repo';
 import { ElapsedText } from '../../modules/workouts/components';
 import { activeWorkout, listWorkouts, overloadSummary, routinesForWeekday, startWorkout, trainingStats } from '../../modules/workouts/repo';
@@ -270,6 +271,7 @@ export default function Today() {
           </View>
         </Card>
     ) : null,
+    ranks: <RanksTodayCard index={idx('ranks')} />,
     readiness: recoveryOn ? (
         <Card index={idx('readiness')} onPress={() => router.push('/recovery')}>
           <View style={styles.weightHeader}>

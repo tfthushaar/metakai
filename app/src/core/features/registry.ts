@@ -12,9 +12,12 @@ export type ModuleId =
   | 'gps'
   | 'recovery'
   | 'health'
+  | 'rank_physique'
+  | 'rank_run'
+  | 'achievements'
   | 'coach';
 
-export type ModuleGroup = 'Nutrition' | 'Body' | 'Training' | 'Lifestyle' | 'Coaching';
+export type ModuleGroup = 'Nutrition' | 'Body' | 'Training' | 'Lifestyle' | 'Motivation' | 'Coaching';
 
 export type Permission = 'camera' | 'microphone' | 'location' | 'health';
 
@@ -147,6 +150,33 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
     permissions: [],
     status: 'available',
   },
+  rank_physique: {
+    id: 'rank_physique',
+    name: 'Physique pass',
+    description: 'Ranks every muscle group from your strength and consistency, compared with people like you.',
+    group: 'Motivation',
+    requires: ['workouts'],
+    permissions: [],
+    status: 'available',
+  },
+  rank_run: {
+    id: 'rank_run',
+    name: 'Run pass',
+    description: 'Age-graded ranks for your 1K to marathon times from GPS runs.',
+    group: 'Motivation',
+    requires: ['gps'],
+    permissions: [],
+    status: 'available',
+  },
+  achievements: {
+    id: 'achievements',
+    name: 'Achievements',
+    description: 'Badges for milestones across the app, shareable as cards.',
+    group: 'Motivation',
+    requires: [],
+    permissions: [],
+    status: 'available',
+  },
   coach: {
     id: 'coach',
     name: 'AI coach',
@@ -158,17 +188,17 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
   },
 };
 
-export const GROUP_ORDER: ModuleGroup[] = ['Nutrition', 'Body', 'Training', 'Lifestyle', 'Coaching'];
+export const GROUP_ORDER: ModuleGroup[] = ['Nutrition', 'Body', 'Training', 'Lifestyle', 'Motivation', 'Coaching'];
 
 export const isAvailable = (id: ModuleId) => MODULES[id].status === 'available';
 
 export type PresetId = 'cut' | 'lean_bulk' | 'recomp' | 'maintain' | 'minimal' | 'everything';
 
 export const PRESETS: Record<PresetId, { name: string; modules: ModuleId[] }> = {
-  cut: { name: 'Cut', modules: ['food', 'water', 'predictions', 'measurements', 'body_comp', 'photos', 'milestones', 'workouts', 'cardio', 'habits'] },
-  lean_bulk: { name: 'Lean bulk', modules: ['food', 'predictions', 'workouts', 'recovery', 'measurements', 'photos', 'milestones'] },
-  recomp: { name: 'Recomp', modules: ['food', 'predictions', 'workouts', 'cardio', 'recovery', 'measurements', 'body_comp', 'photos', 'milestones'] },
-  maintain: { name: 'Maintain', modules: ['food', 'workouts', 'habits'] },
+  cut: { name: 'Cut', modules: ['food', 'water', 'predictions', 'measurements', 'body_comp', 'photos', 'milestones', 'workouts', 'cardio', 'habits', 'rank_physique', 'achievements'] },
+  lean_bulk: { name: 'Lean bulk', modules: ['food', 'predictions', 'workouts', 'recovery', 'measurements', 'photos', 'milestones', 'rank_physique', 'achievements'] },
+  recomp: { name: 'Recomp', modules: ['food', 'predictions', 'workouts', 'cardio', 'recovery', 'measurements', 'body_comp', 'photos', 'milestones', 'rank_physique', 'achievements'] },
+  maintain: { name: 'Maintain', modules: ['food', 'workouts', 'habits', 'achievements'] },
   minimal: { name: 'Minimal', modules: ['food'] },
   everything: { name: 'Everything', modules: Object.keys(MODULES) as ModuleId[] },
 };

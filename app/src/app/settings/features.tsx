@@ -1,4 +1,4 @@
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { dependents, GROUP_ORDER, isAvailable, MODULES, PRESETS, type ModuleId, type PresetId } from '../../core/features/registry';
 import { useSettings } from '../../core/store/settings';
@@ -35,13 +35,11 @@ export default function FeatureSettings() {
       <Text variant="footnote" tone="secondary" style={{ marginTop: SPACE.xl, marginBottom: SPACE.sm, paddingHorizontal: SPACE.lg }}>
         PRESETS
       </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SPACE.sm }} style={{ marginHorizontal: -SPACE.lg }}>
-        <View style={{ width: SPACE.sm }} />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm }}>
         {PRESET_ORDER.map((id) => (
           <Chip key={id} label={PRESETS[id].name} selected={preset === id} onPress={() => applyPreset(id)} />
         ))}
-        <View style={{ width: SPACE.sm }} />
-      </ScrollView>
+      </View>
 
       {GROUP_ORDER.map((group) => {
         const modules = available.filter((id) => MODULES[id].group === group);
@@ -65,7 +63,7 @@ export default function FeatureSettings() {
       })}
 
       <Text variant="footnote" tone="tertiary" style={{ marginTop: SPACE.xl, paddingHorizontal: SPACE.lg }}>
-        Workouts, progress photos, measurements, habits and more are on the way. Presets already include them, so they appear when ready.
+        Rearrange what each screen shows in You → Layout.
       </Text>
     </Screen>
   );

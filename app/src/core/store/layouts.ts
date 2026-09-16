@@ -24,6 +24,7 @@ export const LAYOUTS: Record<LayoutScreen, { title: string; description: string;
       { id: 'logPrompt', name: 'Log food & meals', module: 'food' },
       { id: 'weight', name: 'Weight & goal' },
       { id: 'readiness', name: 'Readiness', module: 'recovery' },
+      { id: 'ranks', name: 'Ranks', anyModule: ['rank_physique', 'rank_run'] },
       { id: 'habits', name: 'Habits', module: 'habits' },
       { id: 'training', name: 'Training', module: 'workouts' },
       { id: 'supplements', name: 'Supplements', module: 'health' },
@@ -50,6 +51,7 @@ export const LAYOUTS: Record<LayoutScreen, { title: string; description: string;
     sections: [
       { id: 'chart', name: 'Weight chart' },
       { id: 'stats', name: 'Weight stats' },
+      { id: 'ranks', name: 'Ranks & achievements', anyModule: ['rank_physique', 'rank_run', 'achievements'] },
       { id: 'body', name: 'Body & progress' },
       { id: 'health', name: 'Health & recovery', anyModule: ['recovery', 'health'] },
       { id: 'calories', name: 'Calories', module: 'food' },
@@ -87,11 +89,23 @@ export interface LayoutPrefs {
 
 export const EMPTY_LAYOUT: LayoutPrefs = { order: [], hidden: [], shown: [] };
 
-/** Saved order, with sections added in later versions appended in their default place. */
+/** Saved order; sections added in later versions slot in after their default neighbour. */
 export function orderedSections(screen: LayoutScreen, order: string[]): SectionDef[] {
   const all = LAYOUTS[screen].sections;
-  const known = order.map((id) => all.find((s) => s.id === id)).filter((s): s is SectionDef => s != null);
-  return [...known, ...all.filter((s) => !order.includes(s.id))];
+  const result = order.map((id) => all.find((s) => s.id === id)).filter((s): s is SectionDef => s != null);
+  all.forEach((s, i) => {
+    if (result.includes(s)) return;
+    let at = 0;
+    for (let j = i - 1; j >= 0; j--) {
+      const k = result.indexOf(all[j]);
+      if (k >= 0) {
+        at = k + 1;
+        break;
+      }
+    }
+    result.splice(at, 0, s);
+  });
+  return result;
 }
 
 export const featureOn = (s: SectionDef, modules: ModuleId[]) =>

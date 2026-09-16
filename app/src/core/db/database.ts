@@ -28,7 +28,8 @@ export type TableName =
   | 'recovery_checkins'
   | 'health_markers'
   | 'supplements'
-  | 'supplement_logs';
+  | 'supplement_logs'
+  | 'achievements';
 
 export const SYNCED_TABLES: TableName[] = [
   'profile',
@@ -55,6 +56,7 @@ export const SYNCED_TABLES: TableName[] = [
   'health_markers',
   'supplements',
   'supplement_logs',
+  'achievements',
 ];
 
 let db: SQLiteDatabase | null = null;
