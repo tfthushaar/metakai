@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Metakai Privacy Policy</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <nav>
+    <a href="./">Metakai</a>
+    <a href="privacy.html" aria-current="page">Privacy</a>
+    <a href="terms.html">Terms</a>
+  </nav>
+
+  <h1>Privacy Policy</h1>
+  <p class="muted">Last updated 17 September 2026</p>
+
+  <p>Metakai is a fitness tracking app for Android. This policy explains what data the app handles and where it goes. In short, your data stays on your phone unless you choose to back it up to your own Google Drive, and the developer never receives it.</p>
+
+  <h2>Data stored on your phone</h2>
+  <p>Your profile (such as sex, birth date, height and activity level), goals, food logs, weight, measurements, body fat, workouts, habits, and progress photos are saved in the app's private storage on your device. Progress photos are not added to your photo gallery. Uninstalling the app or using “Erase all data” deletes this data.</p>
+
+  <h2>Google Drive backup (optional)</h2>
+  <p>If you connect Google Drive, Metakai signs you in with Google and asks for one permission: <code>drive.appdata</code>. This lets the app create, read, update and delete its own files in a hidden app folder in your Google Drive. Metakai cannot see or change any other files in your Drive.</p>
+  <p>The app uses this permission only to save a copy of your Metakai data and progress photos to that folder, and to restore that copy onto your phones. The files go directly between your phone and Google. They are never sent to the developer or to any other server. Metakai also reads your Google account email so it can show which account is connected.</p>
+  <p>Metakai's use and transfer of information received from Google APIs follows the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements. Google user data is not used for advertising, is not sold, is not shared with third parties, and is not used to train AI models.</p>
+  <p>You can disconnect at any time in Settings → Backup &amp; sync. To delete the Drive copy, remove Metakai's access in your Google Account (Security → Third-party apps and services), which lets you delete its hidden app data.</p>
+
+  <h2>AI food analysis (optional)</h2>
+  <p>If you add your own Google Gemini or Groq API key, the meal text you choose to analyze (for example, “2 rotis and dal”) is sent directly from your phone to Google or Groq using your key. Your profile, weight and other data are not sent. Those services handle the text under their own terms and privacy policies. Your keys are stored in your phone's secure storage and are never included in backups.</p>
+
+  <h2>Other network requests</h2>
+  <ul>
+    <li><strong>Barcode lookups:</strong> when you scan a product, its barcode number is sent to <a href="https://world.openfoodfacts.org">Open Food Facts</a> to find its nutrition information.</li>
+    <li><strong>Exercise images:</strong> demo images are loaded from a public content delivery network (jsDelivr). Those requests contain no personal data.</li>
+  </ul>
+
+  <h2>What Metakai does not do</h2>
+  <ul>
+    <li>No advertising, analytics or tracking SDKs.</li>
+    <li>No selling or sharing of personal data.</li>
+    <li>No developer-run servers that store your data.</li>
+  </ul>
+
+  <h2>Health information</h2>
+  <p>Calorie, macro and body composition figures are estimates for general fitness purposes, not medical advice.</p>
+
+  <h2>Children</h2>
+  <p>Metakai is not directed at children under 13.</p>
+
+  <h2>Changes</h2>
+  <p>If this policy changes, the updated version will be posted on this page with a new date.</p>
+
+  <h2>Contact</h2>
+  <p>Questions or requests: <a href="https://github.com/tfthushaar/metakai/issues">open an issue on GitHub</a>.</p>
+
+  <footer class="muted"><a href="./">Metakai</a> · <a href="terms.html">Terms of Service</a></footer>
+</main>
+</body>
+</html>
