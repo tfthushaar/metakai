@@ -85,7 +85,7 @@ export function Screen({ title, subtitle, children, accessory, back, tabBar, con
             )}
             <Text variant="largeTitle">{title}</Text>
           </View>
-          {accessory}
+          {accessory ? <View style={styles.accessory}>{accessory}</View> : null}
         </Animated.View>
         {children}
       </Animated.ScrollView>
@@ -103,8 +103,10 @@ export function Screen({ title, subtitle, children, accessory, back, tabBar, con
           ) : (
             <View style={styles.back} />
           )}
-          <Animated.View style={compactTitleStyle} pointerEvents="none">
-            <Text variant="headline">{title}</Text>
+          <Animated.View style={[styles.compactTitle, compactTitleStyle]} pointerEvents="none">
+            <Text variant="headline" numberOfLines={1} align="center">
+              {title}
+            </Text>
           </Animated.View>
           <View style={styles.back} />
         </View>
@@ -118,6 +120,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   largeTitle: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: SPACE.lg, transformOrigin: 'left' },
   subtitle: { letterSpacing: 0.4, marginBottom: 2 },
+  accessory: { marginLeft: SPACE.md },
+  compactTitle: { flex: 1 },
   bar: { position: 'absolute', top: 0, left: 0, right: 0 },
   barContent: { height: COMPACT_HEIGHT, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
   back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },

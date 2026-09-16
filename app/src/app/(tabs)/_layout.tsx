@@ -113,28 +113,30 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             contentContainerStyle={styles.menuContent}
             showsVerticalScrollIndicator={false}
           >
-            {actions.map((a, i) => (
-              <Animated.View
-                key={a.label}
-                entering={FadeInDown.duration(260)
-                  .delay((actions.length - 1 - i) * 40)
-                  .easing(EASE_OUT)}
-              >
-                <PressableScale
-                  feedback="light"
-                  onPress={() => {
-                    setMenuOpen(false);
-                    a.onPress();
-                  }}
-                  style={[styles.menuItem, { backgroundColor: colors.surfaceRaised }]}
+            <View style={styles.menuColumn}>
+              {actions.map((a, i) => (
+                <Animated.View
+                  key={a.label}
+                  entering={FadeInDown.duration(260)
+                    .delay((actions.length - 1 - i) * 40)
+                    .easing(EASE_OUT)}
                 >
-                  <View style={[styles.menuIcon, { backgroundColor: colors.accentSoft }]}>
-                    <Icon name={a.icon} size={18} color={colors.accent} />
-                  </View>
-                  <Text variant="headline">{a.label}</Text>
-                </PressableScale>
-              </Animated.View>
-            ))}
+                  <PressableScale
+                    feedback="light"
+                    onPress={() => {
+                      setMenuOpen(false);
+                      a.onPress();
+                    }}
+                    style={[styles.menuItem, { backgroundColor: colors.surfaceRaised }]}
+                  >
+                    <View style={[styles.menuIcon, { backgroundColor: colors.accentSoft }]}>
+                      <Icon name={a.icon} size={18} color={colors.accent} />
+                    </View>
+                    <Text variant="headline">{a.label}</Text>
+                  </PressableScale>
+                </Animated.View>
+              ))}
+            </View>
           </ScrollView>
         </Animated.View>
       )}
@@ -198,7 +200,8 @@ const styles = StyleSheet.create({
   },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3, height: '100%' },
   menu: { position: 'absolute', left: 0, right: 0, flexGrow: 0 },
-  menuContent: { alignItems: 'center', gap: 10, paddingTop: 10, flexGrow: 1, justifyContent: 'flex-end' },
+  menuContent: { alignItems: 'center', paddingTop: 10, flexGrow: 1, justifyContent: 'flex-end' },
+  menuColumn: { gap: 10, alignItems: 'stretch', minWidth: 250, maxWidth: '92%' },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -207,7 +210,6 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     paddingRight: 20,
     borderRadius: 999,
-    width: 250,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 12,

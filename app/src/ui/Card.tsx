@@ -40,16 +40,17 @@ export function Card({ children, onPress, style, padded = true, index, container
 export function SectionHeader({ title, action }: { title: string; action?: ReactNode }) {
   return (
     <View style={styles.header}>
-      <Text variant="title3" weight="bold">
+      <Text variant="title3" weight="bold" style={{ flexShrink: 1 }}>
         {title}
       </Text>
-      {action}
+      {action ? <View style={styles.action}>{action}</View> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: { borderRadius: RADIUS.xl, overflow: 'hidden' },
+  action: { marginLeft: SPACE.sm },
   padded: { padding: SPACE.lg },
   header: {
     flexDirection: 'row',

@@ -79,7 +79,8 @@
           "isAndroidForegroundServiceEnabled": true,
           "androidForegroundServiceIcon": "./assets/notification-icon.png"
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": false

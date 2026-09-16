@@ -21,8 +21,10 @@ export function Toggle({ value, onChange, disabled }: { value: boolean; onChange
   const track = useAnimatedStyle(() => ({
     backgroundColor: interpolateColor(progress.value, [0, 1], [colors.fill, colors.accent]),
   }));
+  // On a light accent (Mono in dark mode) a white knob would disappear, so it takes the accent's contrast colour.
   const knob = useAnimatedStyle(() => ({
     transform: [{ translateX: 2 + progress.value * (WIDTH - KNOB - 4) }],
+    backgroundColor: interpolateColor(progress.value, [0, 1], ['#FFFFFF', colors.onAccent]),
   }));
 
   return (

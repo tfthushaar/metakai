@@ -75,7 +75,7 @@ export default function LogMeasurements() {
                 selectionColor={colors.accent}
                 style={[TYPE.headline, styles.input, { color: colors.text, backgroundColor: colors.fill }]}
               />
-              <Text variant="subhead" tone="secondary" style={{ width: 22 }}>
+              <Text variant="subhead" tone="secondary" numberOfLines={1} style={{ minWidth: 22 }}>
                 {unit}
               </Text>
             </View>

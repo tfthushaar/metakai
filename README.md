@@ -1,129 +1,177 @@
+<div align="center">
+
 # Metakai
 
-Build the body you want. Metakai tracks food, weight and progress for cutting, bulking, recomposition and maintenance in one Android app. It costs nothing to run: your data lives on your phone, backups go to your own Google Drive, and AI uses your own free keys.
+**Build the body you want.**
 
-- **Food logging in plain language:** "2 rotis, 1 katori dal, 150g paneer" becomes an itemised list with calories and macros. Matching runs offline against a built-in food database. For foods it doesn't know, AI uses your own free Gemini and/or Groq key, spreading requests across four models so you rarely hit a limit. Foods the AI finds are saved on the phone for next time.
-- **Goal engine:** cut, lean bulk, bulk, recomp or maintain, with calorie and macro targets from Mifflin-St Jeor or Katch-McArdle and safety floors.
-- **Predictions:** a week-by-week weight simulation with a forecast band, a smoothed trend weight, a goal date, and whether you are ahead of or behind plan.
-- **Gym:** an 876-exercise library, workout logger with previous performance, warm-ups, PR detection and a rest timer, plus routines and a plate calculator.
-- **Fast workout logging:** type what you did ("bench 3x8 60", "deadlift 100x5 120x3") and it's matched to exercises and saved in one tap. Every workout gets an estimated calorie burn.
-- **Splits and progressive overload:** pick a preset split (Push/Pull/Legs, Upper/Lower, Full body, PHUL, Arnold, Bro split) or build your own, choose exercises for each muscle group, and see which lifts are progressing, holding or slipping. Weekly workouts, calories burned and lifts progressing also show on the Today screen.
-- **GPS tracking:** record runs, walks, hikes and rides with a live distance, pace and route view that keeps tracking with the screen off, spoken splits, per-km splits, elevation, best efforts (1 km to marathon) with PRs, and clean route art. Only “while using the app” location access is needed, and routes stay on your phone.
-- **Cardio:** log walks, runs, rides, rows, swims and classes with pace and calories burned, or run a Tabata, HIIT, EMOM or custom interval timer that vibrates at each change.
-- **Recovery:** a 30-second morning check-in (sleep, soreness, stress, energy, mood) gives a readiness score with advice, alongside estimated recovery for each muscle group.
-- **Health:** a daily supplement checklist, plus blood pressure, resting heart rate, HRV, fasting glucose, steps and lab results, with trends and gentle range flags.
-- **Body & progress:** measurements, body fat (tape, calipers or manual), lean mass and FFMI, private progress photos with a before/after slider, and milestone cards with predicted dates.
-- **Habits & reminders:** automatic and manual daily habits, scheduled reminders, app lock, and a customisable Today layout.
-- **Smart planning:** ten goal types (including diet breaks, mini cuts, reverse diets and event prep), a physique planner that turns a target body into a phase timeline, adaptive maintenance calories, weekly check-ins, training-day carbs, double progression with deload hints, weekly muscle volume, strength standards and barcode scanning.
-- **Modular:** switch features on and off, or start from a preset.
-- **Your data, your phone:** everything is stored locally and works offline with no account. Optionally back up to a private app folder in your own Google Drive, which updates automatically and restores onto a new phone at sign-in. You can also export and import a backup file.
-- **Themes:** light, dark and system modes, six accent colours, and true-black or graphite dark styles.
+Food, training, cardio, recovery and progress in one private, offline-first Android app.
 
-The full product plan is in [docs/PLAN.md](docs/PLAN.md).
+[Download for Android](https://github.com/tfthushaar/metakai/releases/latest) · [Privacy](https://tfthushaar.github.io/metakai/privacy.html) · [Terms](https://tfthushaar.github.io/metakai/terms.html)
 
-## Install
+</div>
 
-Download the latest APK from [Releases](https://github.com/tfthushaar/metakai/releases) on an Android phone and allow installs from that source. Each release is signed with the same key, so updates install over the previous version and keep your data.
+---
 
-## Status and what's left
+## Overview
 
-**Built and on-device tested (v0.1–v0.8):** everything listed above. The app works fully offline.
+Metakai is a fitness tracker for people who want one app for their whole physique goal: cutting, bulking, recomposition or maintenance. It turns plain-language meals into calories and macros, sets targets from your body and goal, predicts your progress, and tracks strength training, GPS runs, recovery and health markers.
 
-**Built, waiting on setup:** Google Drive backup and restore are coded and the sign-in screen opens, but Drive can't connect until the Google Cloud setup below is done. Backup files and your own AI keys work now.
+Three principles shape the app:
 
-### Needs the repo owner (can't be done without your accounts)
+- **Private by design.** All data lives on the phone. There are no Metakai servers or accounts, and no analytics or ads.
+- **No bloat.** Every feature is a module you can switch off. Each screen's sections and shortcuts can be reordered or hidden.
+- **Free to run.** Optional cloud features use your own Google Drive and your own free AI keys.
 
-- **Google Cloud project for Drive backup** (free, one-time):
-  1. Create a project at [console.cloud.google.com](https://console.cloud.google.com) and enable the **Google Drive API**.
-  2. Set up the **OAuth consent screen** (Google Auth Platform → Branding/Audience): External, app name Metakai, your email. Add the scope `.../auth/drive.appdata`. It is non-sensitive, so no security review is needed. Then publish the app ("In production"). While it's in testing, only listed test users can sign in.
-  3. Create two **OAuth client IDs** of type **Android**, both with package name `com.tfthushaar.metakai`:
-     - release SHA-1 `79:97:27:D9:8C:F6:C2:47:BC:31:3B:15:6C:93:FC:1B:E9:B9:1A:97`
-     - debug SHA-1 `5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25` (for development builds)
+## Features
 
-  No keys go into the app: Google matches the package name and signing certificate. Until this is done, Drive buttons say backup isn't set up yet, and backup files still work.
-- **GitHub Actions secrets.** The token used during development couldn't write repo secrets, so the `v*` tag workflow refuses to publish until these are added: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. Until then, releases are built and signed locally.
-- **Back up the signing keystore.** It is stored outside the repo on the development machine in `~/.metakai-signing/`. Losing it means installed copies can never be updated, and the Drive OAuth client would need a new SHA-1.
-- **Optional: Supabase.** The older account-based sync (Supabase) is still in the code but no longer needed. It only appears if a project is configured (see [Supabase setup](#optional-supabase-setup)).
+### Nutrition
+- **Plain-language logging:** “2 rotis, 1 katori dal and 150g paneer” becomes an itemised list with calories, protein, carbs, fat and fiber.
+- **Offline food database** with Indian and international foods, barcode scanning (Open Food Facts), saved meals and quick add.
+- **AI for unknown foods** using your own free Google Gemini or Groq key. Requests are spread across several models with per-model quota tracking and automatic failover. Answers are cached and learned foods are saved for offline use.
+- **Targets** from Mifflin-St Jeor or Katch-McArdle, with safe calorie and protein floors, adaptive maintenance estimates and optional training-day carbs.
 
-### Not built yet (roadmap)
+### Goals and progress
+- **Goal types:** cut, lean bulk, bulk, recomp, maintain, mini cut, diet break, reverse diet, strength focus and event prep.
+- **Predictions:** a week-by-week forecast with a confidence band, a smoothed trend weight, goal date and ahead/behind status.
+- **Physique planner** that turns a target body into a phase timeline, plus weekly check-ins with suggested adjustments.
+- **Body tracking:** measurements, body fat (tape, calipers or manual), lean mass and FFMI.
+- **Private progress photos** with a before/after slider and milestone cards.
 
-- **v0.8.x Rest of health:** Health Connect (steps, heart rate, sleep imported automatically), a body map for muscle recovery, wellbeing journal, home screen widgets.
-- **v0.8 Advanced training and food:** built-in programs with set percentages and scheduled deload weeks (GZCLP, 5/3/1-style), calisthenics skill trees, weak-point focus and physique proportions (shoulder-to-waist, symmetry), SVG body heatmap, voice set logging, form-check video, meal planning with grocery lists and meal prep, food budget, dietary-preference filtering and "what should I eat" suggestions, an offline education hub.
-- **v0.9 AI and sharing:** AI coach chat, AI program and meal-plan builders, meal photo estimates, nutrition label OCR, voice food logging, coach and trainer sharing links, shareable cards and phase recaps, import from Strong, Hevy and MyFitnessPal.
-- **v0.10 Experimental:** camera rep counter, gym geofence check-in, accountability partner, badges.
-- **v1.0:** an editable multi-phase planner (future phases on a timeline), CSV export for spreadsheets, and a final safety review. Play Store ($25) and iOS ($99/year) releases are optional and paid.
+### Strength training
+- **Exercise library** of 876 exercises with demos, plus custom exercises.
+- **Workout logger** with previous performance, warm-ups, rest timer, PR detection and a plate calculator.
+- **One-line logging:** type `bench 3x8 60` or `deadlift 100x5 120x3` to save a finished workout, with estimated calories burned.
+- **Splits:** Push/Pull/Legs, Upper/Lower, Full body, PHUL, Arnold or Bro split, or build your own with exercises for each muscle group.
+- **Progressive overload tracking**, double progression with deload hints, weekly muscle volume and strength standards.
 
-### Known limitations
+### Cardio and GPS
+- **GPS recording** for runs, walks, hikes and rides:
+  - Live distance, pace or speed, and the route as you move.
+  - Keeps tracking with the screen off, with spoken splits.
+  - Per-km or per-mile splits, elevation gain and best efforts from 1 km to marathon.
+  - Needs only “while using the app” location access.
+- **Cardio log** for any activity, with calorie estimates.
+- **Interval timer** for Tabata, HIIT, EMOM and custom rounds.
 
-- The built-in food database covers about 150 common Indian and international foods. Unknown foods need an AI key, a barcode scan, or quick add.
-- Free AI limits are set by Google and Groq and change over time. The app tracks usage per model, and adapts when a provider reports a limit.
-- GPS routes are drawn as route art without a map background; maps need a paid or key-based tile service, which the app avoids. Tracking was tested with simulated GPS; real-world accuracy depends on the phone's GPS chip.
-- Readiness only factors in training load after three weeks of workouts. Muscle recovery is an estimate from sets and time, not a measurement.
-- Drive sync merges whole records (the newest edit wins). If you edit the same entry on two phones before either syncs, the later edit is kept.
-- Exercise demo images load from a CDN, so they need a connection the first time.
-- Calories burned from lifting are estimates based on MET values, bodyweight, duration and set density. Treat them as a rough guide.
-- Android bars use a solid background; true blur is iOS-only in this Expo SDK.
+### Recovery and health
+- **Readiness score** from a 30-second morning check-in (sleep, soreness, stress, energy, mood) combined with recent training load.
+- **Muscle recovery** estimates for each muscle group.
+- **Supplement checklist** and health markers: blood pressure, resting heart rate, HRV, fasting glucose, steps and lab results, with trends.
+- **Habits** that tick themselves off from your logs, plus reminders.
 
-## Repo layout
+### Personalisation
+- **Features:** turn any feature on or off, or start from a preset.
+- **Layout:** reorder or hide cards on Today, sections on Train and Progress, and shortcuts in the + menu. Choose which tab the app opens on.
+- **Appearance:** light, dark or system mode, six accent colours, true-black or graphite dark style, four text sizes, reduce motion and haptics.
+- **Units:** metric or imperial.
 
+### Your data
+- **Local storage:** everything is stored in SQLite on the phone and works fully offline.
+- **Google Drive backup (optional):** saves to a hidden app folder in your own Drive, updates automatically and restores onto a new phone.
+- **Backup files:** export and import, with or without photos.
+- **Security:** app lock with fingerprint or face unlock, and one tap to erase everything.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph Phone["Android phone"]
+    direction TB
+    UI["Screens<br/>(Expo Router)"] --> Modules["Feature modules<br/>food · workouts · cardio · gps<br/>recovery · health · body · habits"]
+    Modules --> Lib["Pure logic<br/>targets · predictions · strength<br/>geo · readiness · rate limits"]
+    Modules --> DB[("SQLite<br/>all user data")]
+    Modules --> KV[("Key-value store<br/>settings · layouts")]
+    Modules --> Secure[("Secure storage<br/>AI keys")]
+    GPS["Location foreground service"] --> DB
+  end
+
+  DB -. "optional backup<br/>(your account)" .-> Drive[("Google Drive<br/>app data folder")]
+  Modules -. "meal text only<br/>(your key)" .-> AI["Gemini / Groq"]
+  Modules -. "barcode number" .-> OFF["Open Food Facts"]
 ```
-app/                 Expo (React Native) app
-  src/app/           screens (expo-router)
-  src/core/          database, sync, auth, feature registry, theme, goal hooks
-  src/lib/           pure, unit-tested maths (targets, predictions, strength, body comp, planning)
-  src/modules/       food (database, parser, AI, barcode), workouts, body, habits
-  src/ui/            design system components
-  plugins/           Expo config plugins (release signing)
-supabase/
-  migrations/        Postgres schema and row-level security
-  functions/         edge functions: parse-food, delete-account
-scripts/             icon generator
-.github/workflows/   CI, APK release, Supabase keep-alive
-```
 
-## Develop
+- **Offline-first:** every screen reads from the local SQLite database through small repositories, and screens re-render when the tables they use change.
+- **Feature registry:** each module declares its dependencies and permissions. Screens, tabs, Today cards and shortcuts check it before rendering.
+- **Pure logic:** calculations live in `src/lib` as dependency-free, unit-tested functions, including energy and macros, predictions, 1RM and progression, body composition, GPS track maths, readiness and AI rate budgets.
+- **No backend:** the only network calls are the optional ones shown above, made directly from the phone.
+
+## Quick start
+
+1. **Install.** Download the latest APK from [Releases](https://github.com/tfthushaar/metakai/releases/latest) on your Android phone, open it and allow installs from that source. Updates install over the previous version and keep your data.
+2. **Set up.** Tap **Get started** and answer a few questions: body stats, activity, experience and goal. Metakai calculates your calorie and macro targets.
+3. **Log food.** Tap **+ → Log food** and type what you ate in plain words, or scan a barcode.
+4. **Weigh in.** Log your weight in the morning a few times a week. The trend line and predictions improve as data comes in.
+5. **Train.** Pick a split on the **Train** tab, then tap **Start** to log live or **Log done** to type a finished workout. Use **Record** for GPS runs and rides.
+6. **Make it yours.** Go to **You → Features** to switch off what you don't use, **You → Layout** to arrange screens, and **You → Appearance** for themes and text size.
+7. **Back up.** Go to **You → Backup & sync** to connect Google Drive or export a backup file.
+8. **Optional AI.** Go to **You → AI**, tap **Get a key**, create a free key and come back. Metakai pastes it for you.
+
+## Building from source
+
+**Requirements:** Node.js 22+, Android Studio (SDK and an emulator or device), JDK 17.
 
 ```bash
-cd app
+git clone https://github.com/tfthushaar/metakai.git
+cd metakai/app
 npm install
-npm test            # unit tests
-npm run typecheck
-npx expo run:android   # needs Android Studio / SDK
+npm test              # unit tests
+npm run typecheck     # TypeScript
+npx expo run:android  # build and run a development build
 ```
 
-The app runs fully offline without any configuration. AI keys are entered in the app (Settings → AI). Drive backup needs the Google Cloud setup above.
+**Release builds.** The signing config reads these environment variables:
 
-## Optional: Supabase setup
+| Variable | Purpose |
+|---|---|
+| `METAKAI_KEYSTORE` | Path to the release keystore |
+| `METAKAI_KEYSTORE_PASSWORD` | Keystore password |
+| `METAKAI_KEY_ALIAS` | Key alias |
+| `METAKAI_KEY_PASSWORD` | Key password |
 
-1. Create a project at [supabase.com](https://supabase.com) (free plan).
-2. Apply the schema:
-   ```bash
-   npx supabase login
-   npx supabase link --project-ref <ref>
-   npx supabase db push
-   ```
-3. Get a free API key from [Google AI Studio](https://aistudio.google.com/apikey), and optionally one from [Groq](https://console.groq.com/keys). Then deploy the functions (model lists can be overridden with `GEMINI_MODELS` and `GROQ_MODELS`):
-   ```bash
-   npx supabase secrets set GEMINI_API_KEY=... GROQ_API_KEY=...
-   npx supabase functions deploy parse-food
-   npx supabase functions deploy delete-account
-   ```
-4. Auth → URL configuration: add `metakai://auth-callback` to the redirect URLs.
-5. Optional Google sign-in: create an OAuth client in Google Cloud, then enable the Google provider in Supabase Auth.
-6. Copy `app/.env.example` to `app/.env.local` and fill in the project URL and anon key.
-7. For release builds, add the same two values as GitHub secrets `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+```bash
+npx expo prebuild --platform android --clean
+cd android && ./gradlew assembleRelease
+```
 
-With Supabase configured, the welcome screen also offers account sign-in, and AI works for signed-in users without their own key (the `parse-food` function uses the same model fallback chain).
+Tagged pushes (`v*`) build and publish a signed APK through GitHub Actions when the matching `ANDROID_KEYSTORE_*` secrets are set.
 
-## Releases
+**Google Drive backup in your own build:**
+1. In Google Cloud, enable the Google Drive API.
+2. Configure the OAuth consent screen with the `drive.appdata` scope.
+3. Create an Android OAuth client with package `com.tfthushaar.metakai` and your signing certificate's SHA-1.
 
-Pushing a tag such as `v0.1.0` builds a signed APK and attaches it to a GitHub Release. The signing key is read from these repo secrets:
+No client ID goes into the code.
 
-- `ANDROID_KEYSTORE_BASE64`
-- `ANDROID_KEYSTORE_PASSWORD`
-- `ANDROID_KEY_ALIAS`
-- `ANDROID_KEY_PASSWORD`
+## Project structure
 
-Keep an offline backup of the keystore. Without it, installed copies can't be updated.
+```
+app/
+  src/app/        Screens and navigation (Expo Router)
+  src/core/       Database, settings, layouts, theme, backup, Drive, app lock
+  src/lib/        Pure, unit-tested calculations
+  src/modules/    Feature modules: food, workouts, cardio, gps, recovery, health, body, habits
+  src/ui/         Design system components
+  plugins/        Expo config plugins (release signing)
+docs/             Product plan and website (privacy policy, terms)
+scripts/          Icon and exercise data generators
+.github/          CI and release workflows
+```
 
-Nutrition values are estimates, not medical advice.
+## Tech stack
+
+| Area | Technology |
+|---|---|
+| App | React Native, Expo, Expo Router, TypeScript |
+| UI | Reanimated, Gesture Handler, react-native-svg, Lucide icons, Inter |
+| State and storage | Zustand, expo-sqlite (SQLite and key-value), expo-secure-store |
+| Device | expo-location with task manager, expo-camera, expo-notifications, expo-local-authentication |
+| Cloud (optional) | Google Sign-In and Drive REST API, Gemini and Groq APIs |
+| Quality | Jest, TypeScript strict mode, GitHub Actions |
+
+## Privacy
+
+Metakai has no servers and collects nothing. Your data stays on your phone unless you back it up to your own Google Drive. AI requests send only the meal text you choose to analyse, directly to Google or Groq with your own key. Read the full [privacy policy](https://tfthushaar.github.io/metakai/privacy.html).
+
+## Disclaimer
+
+Calorie, macro, body composition, readiness and calorie-burn figures are estimates for general fitness purposes, not medical advice. Talk to a doctor or qualified professional before starting a diet or training program.

@@ -210,7 +210,7 @@ export default function Today() {
               <Text variant="footnote" tone="secondary">
                 {active ? 'In progress' : todayDay ? 'Today' : 'Training'}
               </Text>
-              <Text variant="headline" numberOfLines={1}>
+              <Text variant="headline" numberOfLines={2}>
                 {active ? active.name : todayDay ? todayDay.name : lastWorkout ? `Last: ${lastWorkout.name}` : 'No workouts yet'}
               </Text>
               {active ? (
@@ -235,6 +235,7 @@ export default function Today() {
               size="sm"
               variant={active ? 'filled' : 'tinted'}
               full={false}
+              style={{ alignSelf: 'center' }}
               onPress={() => {
                 startWorkout({ routineId: todayDay?.id });
                 router.push('/workout');
@@ -279,14 +280,14 @@ export default function Today() {
               <Text variant="footnote" tone="secondary">
                 Readiness
               </Text>
-              <Text variant="headline" numberOfLines={1}>
+              <Text variant="headline" numberOfLines={2}>
                 {ready ? `${ready.score} · ${ready.band === 'high' ? 'Ready to push' : ready.band === 'moderate' ? 'Train smart' : 'Take it easy'}` : 'How do you feel today?'}
               </Text>
               <Text variant="footnote" tone="secondary" numberOfLines={1}>
                 {ready ? (ready.flags[0] ?? 'Sleep, soreness and stress look good') : '30-second check-in'}
               </Text>
             </View>
-            {!ready && <Button title="Check in" size="sm" variant="tinted" full={false} onPress={() => router.push('/recovery')} />}
+            {!ready && <Button title="Check in" size="sm" variant="tinted" full={false} style={{ alignSelf: 'center' }} onPress={() => router.push('/recovery')} />}
           </View>
         </Card>
     ) : null,

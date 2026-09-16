@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
 import { ACCENT_ORDER, ACCENTS, buildTheme, type AccentId, type Appearance, type DarkStyle } from '../../core/theme/palette';
-import { useSettings } from '../../core/store/settings';
+import { useSettings, type TextScale } from '../../core/store/settings';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../../core/theme/typography';
 import { Card } from '../../ui/Card';
@@ -28,7 +28,7 @@ function Swatch({ id, selected, dark, onPress }: { id: AccentId; selected: boole
           {selected && <Icon name="check" size={18} color={id === 'mono' ? colors.background : '#FFFFFF'} strokeWidth={3} />}
         </View>
       </View>
-      <Text variant="caption" tone={selected ? 'primary' : 'secondary'}>
+      <Text variant="caption" tone={selected ? 'primary' : 'secondary'} numberOfLines={1} adjustsFontSizeToFit>
         {ACCENTS[id].name}
       </Text>
     </PressableScale>
@@ -119,8 +119,29 @@ export default function AppearanceSettings() {
         </Card>
       </View>
 
+      <View style={{ marginTop: SPACE.xl, gap: SPACE.sm }}>
+        <Text variant="footnote" tone="secondary" style={styles.label}>
+          TEXT SIZE
+        </Text>
+        <SegmentedControl<TextScale>
+          value={settings.textScale}
+          onChange={(textScale) => settings.set({ textScale })}
+          segments={[
+            { value: 'small', label: 'Small' },
+            { value: 'default', label: 'Default' },
+            { value: 'large', label: 'Large' },
+            { value: 'xlarge', label: 'Larger' },
+          ]}
+        />
+      </View>
+
       <ListGroup header="Feel">
         <ListRow title="Haptics" subtitle="Subtle taps on selections and actions" accessory={<Toggle value={settings.haptics} onChange={(haptics) => settings.set({ haptics })} />} />
+        <ListRow
+          title="Reduce motion"
+          subtitle="Turn off entrance and layout animations"
+          accessory={<Toggle value={settings.reduceMotion} onChange={(reduceMotion) => settings.set({ reduceMotion })} />}
+        />
       </ListGroup>
 
       <ListGroup header="Units">
@@ -136,7 +157,7 @@ const styles = StyleSheet.create({
   pill: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 5, borderRadius: RADIUS.pill, marginTop: 4 },
   label: { paddingHorizontal: SPACE.lg },
   swatches: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: SPACE.lg },
-  swatchWrap: { alignItems: 'center', gap: 6, width: 52 },
+  swatchWrap: { alignItems: 'center', gap: 6, width: 56 },
   swatchOuter: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   swatchRing: { position: 'absolute', width: 48, height: 48, borderRadius: 24, borderWidth: 2.5 },
   swatch: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth },

@@ -354,7 +354,7 @@ export default function Train() {
                   <Text variant="body" numberOfLines={1}>
                     {c.title ?? cardioLabel(c.kind)}
                   </Text>
-                  <Text variant="footnote" tone="secondary" numberOfLines={1}>
+                  <Text variant="footnote" tone="secondary" numberOfLines={2}>
                     {cardioSummary(c)}
                   </Text>
                 </View>
@@ -387,7 +387,7 @@ export default function Train() {
               >
                 <View style={{ flex: 1 }}>
                   <Text variant="body">{r.name}</Text>
-                  <Text variant="footnote" tone="secondary" numberOfLines={1}>{`${r.items.length} exercises`}</Text>
+                  <Text variant="footnote" tone="secondary" numberOfLines={1}>{`${r.items.length} ${r.items.length === 1 ? 'exercise' : 'exercises'}`}</Text>
                 </View>
                 <PressableScale
                   feedback="medium"
@@ -442,7 +442,7 @@ export default function Train() {
       ) : null,
   };
   /** Sections that start with their own header already carry top spacing. */
-  const HEADED = new Set(['split', 'overload', 'cardio', 'routines', 'history']);
+  const HEADED = new Set(['split', 'overload', 'cardio', 'routines', 'history', 'tools']);
   const shown = sections.filter((id) => blocks[id]);
 
   return (

@@ -1,4 +1,5 @@
-import * as Linking from 'expo-linking';
+import * as Clipboard from 'expo-clipboard';
+import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Alert, View } from 'react-native';
 
@@ -14,9 +15,23 @@ import { Text } from '../../ui/Text';
 import { TextField } from '../../ui/TextField';
 import { toast } from '../../ui/Toast';
 
-const PROVIDERS: { id: AiProvider; name: string; placeholder: string; url: string; how: string }[] = [
-  { id: 'gemini', name: 'Google Gemini', placeholder: 'AIza…', url: 'https://aistudio.google.com/apikey', how: 'Google AI Studio → Create API key' },
-  { id: 'groq', name: 'Groq', placeholder: 'gsk_…', url: 'https://console.groq.com/keys', how: 'Groq console → Create API key' },
+const PROVIDERS: { id: AiProvider; name: string; placeholder: string; url: string; how: string; pattern: RegExp }[] = [
+  {
+    id: 'gemini',
+    name: 'Google Gemini',
+    placeholder: 'AIza…',
+    url: 'https://aistudio.google.com/apikey',
+    how: 'Tap Get a key, sign in with Google, tap “Create API key” and copy it. Metakai pastes it when you come back.',
+    pattern: /^AIza[\w-]{30,}$/,
+  },
+  {
+    id: 'groq',
+    name: 'Groq',
+    placeholder: 'gsk_…',
+    url: 'https://console.groq.com/keys',
+    how: 'Tap Get a key, sign in, tap “Create API Key” and copy it. Metakai pastes it when you come back.',
+    pattern: /^gsk_\w{20,}$/,
+  },
 ];
 
 const masked = (key: string) => `${key.slice(0, 4)}••••••••${key.slice(-4)}`;
@@ -40,6 +55,22 @@ function KeyCard({ provider }: { provider: (typeof PROVIDERS)[number] }) {
     }
   };
 
+  /** Opens the provider's key page in an in-app browser, then picks up a copied key. */
+  const getKey = async () => {
+    await WebBrowser.openBrowserAsync(provider.url, { presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET, toolbarColor: '#000000' }).catch(() => {});
+    const copied = (await Clipboard.getStringAsync().catch(() => '')).trim();
+    if (provider.pattern.test(copied)) {
+      setDraft(copied);
+      toast('Key pasted from clipboard. Tap Save.');
+    }
+  };
+
+  const paste = async () => {
+    const copied = (await Clipboard.getStringAsync().catch(() => '')).trim();
+    if (copied) setDraft(copied);
+    else toast('Clipboard is empty');
+  };
+
   const remove = () =>
     Alert.alert(`Remove ${provider.name} key?`, 'You can add it again at any time.', [
       { text: 'Cancel', style: 'cancel' },
@@ -55,7 +86,7 @@ function KeyCard({ provider }: { provider: (typeof PROVIDERS)[number] }) {
     );
   }
   return (
-    <ListGroup header={provider.name} footer={`Free. ${provider.how}.`}>
+    <ListGroup header={provider.name} footer={`Free. ${provider.how}`}>
       <View style={{ padding: SPACE.lg, gap: SPACE.md }}>
         <TextField
           value={draft}
@@ -68,7 +99,7 @@ function KeyCard({ provider }: { provider: (typeof PROVIDERS)[number] }) {
         />
         <View style={{ flexDirection: 'row', gap: SPACE.sm }}>
           <View style={{ flex: 1 }}>
-            <Button title="Get a key" variant="gray" size="sm" onPress={() => Linking.openURL(provider.url)} />
+            <Button title={draft ? 'Paste again' : 'Get a key'} variant="gray" size="sm" onPress={draft ? paste : getKey} />
           </View>
           <View style={{ flex: 1 }}>
             <Button title="Save" size="sm" onPress={save} loading={busy} disabled={draft.trim().length < 20} />

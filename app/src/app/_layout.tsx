@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
+import { ReducedMotionConfig, ReduceMotion } from 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -63,6 +64,7 @@ function RootStack() {
   useDriveBackup();
   const authMode = useSettings((s) => s.authMode);
   const onboarded = useSettings((s) => s.onboarded);
+  const reduceMotion = useSettings((s) => s.reduceMotion);
 
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(colors.background).catch(() => {});
@@ -73,6 +75,7 @@ function RootStack() {
   return (
     <>
       <StatusBar style={dark ? 'light' : 'dark'} />
+      {reduceMotion && <ReducedMotionConfig mode={ReduceMotion.Always} />}
       <Stack
         screenOptions={{
           headerShown: false,

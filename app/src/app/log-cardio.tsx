@@ -111,7 +111,7 @@ export default function LogCardio() {
               selectionColor={colors.accent}
               style={[TYPE.headline, styles.input, { color: colors.text, backgroundColor: colors.fill }]}
             />
-            <Text variant="subhead" tone="secondary" style={{ width: 34 }}>
+            <Text variant="subhead" tone="secondary" numberOfLines={1} style={{ minWidth: 34 }}>
               {distUnit}
             </Text>
           </View>
@@ -142,7 +142,7 @@ export default function LogCardio() {
             selectionColor={colors.accent}
             style={[TYPE.headline, styles.input, { color: colors.text, backgroundColor: colors.fill }]}
           />
-          <Text variant="subhead" tone="secondary" style={{ width: 34 }}>
+          <Text variant="subhead" tone="secondary" numberOfLines={1} style={{ minWidth: 34 }}>
             bpm
           </Text>
         </View>

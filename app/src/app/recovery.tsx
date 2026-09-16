@@ -180,8 +180,10 @@ export default function Recovery() {
             const c = m.recovered >= 80 ? colors.success : m.recovered >= 50 ? colors.warning : colors.danger;
             return (
               <View key={m.id} style={[styles.muscleRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator }]}>
-                <View style={{ width: 96 }}>
-                  <Text variant="body">{m.label}</Text>
+                <View style={{ width: 104 }}>
+                  <Text variant="body" numberOfLines={1} adjustsFontSizeToFit>
+                    {m.label}
+                  </Text>
                   {m.lastTrainedAt != null && (
                     <Text variant="caption" tone="tertiary">{ago(Date.now() - m.lastTrainedAt)}</Text>
                   )}

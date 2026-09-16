@@ -160,8 +160,8 @@ export default function ExerciseDetail() {
           <Card padded={false}>
             {history.slice(0, 15).map((s, i) => (
               <View key={s.workoutId} style={[styles.session, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator }]}>
-                <Text variant="subhead" weight="semibold" style={{ width: 96 }}>
-                  {relativeDay(s.dateKey)}
+                <Text variant="subhead" weight="semibold" numberOfLines={1} style={{ width: 96 }}>
+                  {['Today', 'Yesterday'].includes(relativeDay(s.dateKey)) ? relativeDay(s.dateKey) : formatShort(s.dateKey)}
                 </Text>
                 <Text variant="subhead" tone="secondary" tabular style={{ flex: 1 }}>
                   {s.sets.map((x) => `${x.kind === 'warmup' ? 'W ' : ''}${formatWeight(x.weightKg, units)}×${x.reps ?? '—'}`).join('  ')}
