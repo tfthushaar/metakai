@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router';
+import type { ReactNode } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 
 import { useQuery } from '../../core/db/useQuery';
+import { useLayout } from '../../core/store/layouts';
 import { useFeature } from '../../core/store/settings';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../../core/theme/typography';
@@ -118,258 +120,258 @@ export default function Train() {
     router.push('/workout');
   };
 
-  return (
-    <Screen
-      title="Train"
-      tabBar
-      accessory={
-        <PressableScale feedback="selection" onPress={() => router.push('/settings/gym')} style={[styles.gear, { backgroundColor: colors.fill }]}>
-          <Icon name="settings" size={17} color={colors.text} />
-        </PressableScale>
-      }
-    >
-      <Card index={0}>
-        <Text variant="footnote" tone="secondary" style={{ marginBottom: SPACE.sm }}>
-          LAST 7 DAYS
-        </Text>
-        <View style={styles.stats}>
-          <Stat value={String(week.sessions)} label={week.sessions === 1 ? 'session' : 'sessions'} />
-          <View style={[styles.divider, { backgroundColor: colors.separator }]} />
-          <Stat value={week.kcal.toLocaleString('en-US')} label="kcal burned" />
-          <View style={[styles.divider, { backgroundColor: colors.separator }]} />
-          {liftOn ? (
-            <Stat value={formatVolume(lifting.volumeKg, units)} label={`${weightUnit(units)} lifted`} />
-          ) : (
-            <Stat value={String(cardioWeek.minutes)} label="cardio min" />
-          )}
-        </View>
-        {liftOn && cardioOn && cardioWeek.sessions > 0 && (
-          <Text variant="caption" tone="tertiary" align="center" style={{ marginTop: SPACE.sm }}>
-            {`Includes ${cardioWeek.sessions} cardio ${cardioWeek.sessions === 1 ? 'session' : 'sessions'} · ${cardioWeek.minutes} min`}
+  const sections = useLayout('train');
+  const blocks: Record<string, ReactNode> = {
+    week: (
+      <>
+        <Card index={0}>
+          <Text variant="footnote" tone="secondary" style={{ marginBottom: SPACE.sm }}>
+            LAST 7 DAYS
           </Text>
-        )}
-      </Card>
-
-      {cardioOn && !liftOn && (
-        <View style={[styles.actions, { marginTop: SPACE.md }]}>
-          <View style={{ flex: 1 }}>
-            <Button title="Log cardio" icon="plus" onPress={() => router.push('/log-cardio')} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Button title="Intervals" icon="timer" variant="gray" onPress={() => router.push('/interval-timer')} />
-          </View>
-        </View>
-      )}
-
-      {liftOn && (
-        <>
-          {active ? (
-            <Card index={1} onPress={() => router.push('/workout')} style={{ marginTop: SPACE.md, backgroundColor: colors.accent }}>
-              <View style={styles.row}>
-                <View style={{ flex: 1 }}>
-                  <Text variant="footnote" tone="onAccent" weight="semibold" style={{ opacity: 0.8 }}>
-                    IN PROGRESS
-                  </Text>
-                  <Text variant="title3" tone="onAccent">
-                    {active.name}
-                  </Text>
-                </View>
-                <ElapsedText since={active.startedAt} variant="title2" color={colors.onAccent} />
-              </View>
-            </Card>
-          ) : (
-            <Card index={1} style={{ marginTop: SPACE.md }}>
-              <Text variant="footnote" tone="secondary">
-                {todayDay || !split ? 'TODAY' : 'REST DAY'}
-              </Text>
-              <Text variant="title2" style={{ marginTop: 2 }}>
-                {todayDay
-                  ? todayDay.name
-                  : split
-                    ? nextDay
-                      ? `Next: ${nextDay.d.name} ${nextDay.offset === 1 ? 'tomorrow' : `in ${nextDay.offset} days`}`
-                      : 'No days scheduled'
-                    : 'Free training'}
-              </Text>
-              {todayDay && (
-                <Text variant="footnote" tone="secondary" numberOfLines={2} style={{ marginTop: 2 }}>
-                  {todayDay.items.map((i) => getExercise(i.exerciseId).name).join(' · ')}
-                </Text>
-              )}
-              <View style={styles.actions}>
-                <View style={{ flex: 1 }}>
-                  <Button title="Start" icon="play" onPress={() => start(todayDay?.id)} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Button title="Log done" icon="check" variant="gray" onPress={() => router.push('/quick-workout')} />
-                </View>
-              </View>
-            </Card>
-          )}
-
-          <SectionHeader
-            title="Split"
-            action={<Button title={split ? 'Edit' : 'Choose'} size="sm" variant="tinted" full={false} onPress={() => router.push('/split')} />}
-          />
-          <Card index={2} onPress={() => router.push('/split')}>
-            {split ? (
-              <>
-                <Text variant="headline">{split.name}</Text>
-                <View style={styles.week}>
-                  {DAY_LETTERS.map((l, i) => {
-                    const day = split.days.find((d) => d.weekdays.includes(i));
-                    const isToday = i === weekday;
-                    return (
-                      <View key={i} style={styles.weekCell}>
-                        <Text variant="caption" tone={isToday ? 'accent' : 'tertiary'} weight={isToday ? 'bold' : 'medium'}>
-                          {l}
-                        </Text>
-                        <View style={[styles.weekPill, { backgroundColor: day ? (isToday ? colors.accent : colors.text) : colors.fill }]}>
-                          <Text
-                            variant="caption"
-                            weight="semibold"
-                            numberOfLines={1}
-                            color={day ? (isToday ? colors.onAccent : colors.background) : colors.textTertiary}
-                          >
-                            {day ? shortName(day.name) : '—'}
-                          </Text>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              </>
+          <View style={styles.stats}>
+            <Stat value={String(week.sessions)} label={week.sessions === 1 ? 'session' : 'sessions'} />
+            <View style={[styles.divider, { backgroundColor: colors.separator }]} />
+            <Stat value={week.kcal.toLocaleString('en-US')} label="kcal burned" />
+            <View style={[styles.divider, { backgroundColor: colors.separator }]} />
+            {liftOn ? (
+              <Stat value={formatVolume(lifting.volumeKg, units)} label={`${weightUnit(units)} lifted`} />
             ) : (
-              <>
-                <Text variant="headline">Pick your split</Text>
-                <Text variant="subhead" tone="secondary" style={{ marginTop: 2 }}>
-                  Push/Pull/Legs, Upper/Lower, Full body, PHUL, Arnold, Bro split, or build your own with the exercises you like.
-                </Text>
-              </>
+              <Stat value={String(cardioWeek.minutes)} label="cardio min" />
             )}
-          </Card>
+          </View>
+          {liftOn && cardioOn && cardioWeek.sessions > 0 && (
+            <Text variant="caption" tone="tertiary" align="center" style={{ marginTop: SPACE.sm }}>
+              {`Includes ${cardioWeek.sessions} cardio ${cardioWeek.sessions === 1 ? 'session' : 'sessions'} · ${cardioWeek.minutes} min`}
+            </Text>
+          )}
+        </Card>
 
-          <SectionHeader
-            title="Progressive overload"
-            action={<Button title="All" size="sm" variant="tinted" full={false} onPress={() => router.push('/overload')} />}
-          />
-          <Card index={3} padded={false} onPress={() => router.push('/overload')}>
-            {overload.length === 0 ? (
-              <View style={{ padding: SPACE.lg }}>
-                <Text variant="subhead" tone="secondary">
-                  Log workouts to see which lifts are going up.
+        {cardioOn && !liftOn && (
+          <View style={[styles.actions, { marginTop: SPACE.md }]}>
+            <View style={{ flex: 1 }}>
+              <Button title="Log cardio" icon="plus" onPress={() => router.push('/log-cardio')} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button title="Intervals" icon="timer" variant="gray" onPress={() => router.push('/interval-timer')} />
+            </View>
+          </View>
+        )}
+      </>
+    ),
+    today: liftOn ? (
+      <>
+        {active ? (
+          <Card index={1} onPress={() => router.push('/workout')} style={{ backgroundColor: colors.accent }}>
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text variant="footnote" tone="onAccent" weight="semibold" style={{ opacity: 0.8 }}>
+                  IN PROGRESS
+                </Text>
+                <Text variant="title3" tone="onAccent">
+                  {active.name}
                 </Text>
               </View>
-            ) : (
-              <>
-                <View style={[styles.overloadHead, { borderBottomColor: colors.separator }]}>
-                  <Text variant="subhead" tone="secondary">{`${progressing} of ${overload.length} lifts progressing`}</Text>
-                </View>
-                {overload.slice(0, 4).map((o) => {
-                  const color = o.status === 'progressing' ? colors.success : o.status === 'slipping' ? colors.warning : colors.textSecondary;
+              <ElapsedText since={active.startedAt} variant="title2" color={colors.onAccent} />
+            </View>
+          </Card>
+        ) : (
+          <Card index={1}>
+            <Text variant="footnote" tone="secondary">
+              {todayDay || !split ? 'TODAY' : 'REST DAY'}
+            </Text>
+            <Text variant="title2" style={{ marginTop: 2 }}>
+              {todayDay
+                ? todayDay.name
+                : split
+                  ? nextDay
+                    ? `Next: ${nextDay.d.name} ${nextDay.offset === 1 ? 'tomorrow' : `in ${nextDay.offset} days`}`
+                    : 'No days scheduled'
+                  : 'Free training'}
+            </Text>
+            {todayDay && (
+              <Text variant="footnote" tone="secondary" numberOfLines={2} style={{ marginTop: 2 }}>
+                {todayDay.items.map((i) => getExercise(i.exerciseId).name).join(' · ')}
+              </Text>
+            )}
+            <View style={styles.actions}>
+              <View style={{ flex: 1 }}>
+                <Button title="Start" icon="play" onPress={() => start(todayDay?.id)} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button title="Log done" icon="check" variant="gray" onPress={() => router.push('/quick-workout')} />
+              </View>
+            </View>
+          </Card>
+        )}
+      </>
+    ) : null,
+    split: liftOn ? (
+      <>
+        <SectionHeader
+          title="Split"
+          action={<Button title={split ? 'Edit' : 'Choose'} size="sm" variant="tinted" full={false} onPress={() => router.push('/split')} />}
+        />
+        <Card index={2} onPress={() => router.push('/split')}>
+          {split ? (
+            <>
+              <Text variant="headline">{split.name}</Text>
+              <View style={styles.week}>
+                {DAY_LETTERS.map((l, i) => {
+                  const day = split.days.find((d) => d.weekdays.includes(i));
+                  const isToday = i === weekday;
                   return (
-                    <View key={o.exerciseId} style={styles.overloadRow}>
-                      <Text variant="body" numberOfLines={1} style={{ flex: 1 }}>
-                        {getExercise(o.exerciseId).name}
+                    <View key={i} style={styles.weekCell}>
+                      <Text variant="caption" tone={isToday ? 'accent' : 'tertiary'} weight={isToday ? 'bold' : 'medium'}>
+                        {l}
                       </Text>
-                      <Text variant="subhead" tabular>{`${formatWeight(Math.round(o.current * 2) / 2, units)} ${weightUnit(units)}`}</Text>
-                      <Text variant="subhead" weight="semibold" tabular color={color} style={{ minWidth: 64, textAlign: 'right' }}>
-                        {o.changePct == null ? 'new' : `${o.changePct > 0 ? '↑' : o.changePct < 0 ? '↓' : ''} ${Math.abs(o.changePct).toFixed(1)}%`}
-                      </Text>
+                      <View style={[styles.weekPill, { backgroundColor: day ? (isToday ? colors.accent : colors.text) : colors.fill }]}>
+                        <Text
+                          variant="caption"
+                          weight="semibold"
+                          numberOfLines={1}
+                          color={day ? (isToday ? colors.onAccent : colors.background) : colors.textTertiary}
+                        >
+                          {day ? shortName(day.name) : '—'}
+                        </Text>
+                      </View>
                     </View>
                   );
                 })}
-              </>
-            )}
-          </Card>
-        </>
-      )}
-
-      {cardioOn && (
-        <>
-          <SectionHeader
-            title="Cardio"
-            action={
-              liftOn ? (
-                <View style={{ flexDirection: 'row', gap: SPACE.sm }}>
-                  <Button title="Intervals" icon="timer" size="sm" variant="gray" full={false} onPress={() => router.push('/interval-timer')} />
-                  <Button title="Log" icon="plus" size="sm" variant="tinted" full={false} onPress={() => router.push('/log-cardio')} />
-                </View>
-              ) : undefined
-            }
-          />
-          {gpsOn && (
-            <Card
-              index={4}
-              onPress={() => router.push('/record')}
-              style={{ marginBottom: SPACE.md, backgroundColor: liveStatus === 'idle' ? colors.surface : colors.accent }}
-            >
-              <View style={styles.row}>
-                <View style={[styles.cardioIcon, { backgroundColor: liveStatus === 'idle' ? colors.accentSoft : 'rgba(255,255,255,0.2)' }]}>
-                  <Icon name="navigation" size={18} color={liveStatus === 'idle' ? colors.accent : colors.onAccent} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text variant="headline" color={liveStatus === 'idle' ? colors.text : colors.onAccent}>
-                    {liveStatus === 'idle' ? 'Record' : liveStatus === 'finished' ? 'Save your activity' : liveStatus === 'paused' ? 'Paused' : 'Recording'}
-                  </Text>
-                  <Text variant="footnote" color={liveStatus === 'idle' ? colors.textSecondary : colors.onAccent}>
-                    {liveStatus === 'idle'
-                      ? 'Run, walk, hike or ride with GPS'
-                      : `${distanceParts(liveKm, units === 'metric').value} ${units === 'metric' ? 'km' : 'mi'} · tap to open`}
-                  </Text>
-                </View>
-                <Icon name="chevronRight" size={18} color={liveStatus === 'idle' ? colors.textTertiary : colors.onAccent} />
               </View>
-            </Card>
+            </>
+          ) : (
+            <>
+              <Text variant="headline">Pick your split</Text>
+              <Text variant="subhead" tone="secondary" style={{ marginTop: 2 }}>
+                Push/Pull/Legs, Upper/Lower, Full body, PHUL, Arnold, Bro split, or build your own with the exercises you like.
+              </Text>
+            </>
           )}
-          <Card index={5} padded={false}>
-            {cardio.length === 0 ? (
-              <PressableScale scaleTo={0.99} onPress={() => router.push('/log-cardio')} style={{ padding: SPACE.lg, gap: 2 }}>
-                <Text variant="headline">No cardio yet</Text>
-                <Text variant="subhead" tone="secondary">
-                  Log walks, runs, rides or classes, or run a Tabata, HIIT or EMOM timer.
-                </Text>
-              </PressableScale>
-            ) : (
-              cardio.map((c, i) => (
-                <PressableScale
-                  key={c.id}
-                  scaleTo={0.99}
-                  onPress={c.route ? () => router.push({ pathname: '/activity', params: { id: c.id } }) : undefined}
-                  onLongPress={() => confirmDeleteCardio(c)}
-                  style={[styles.listRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator }]}
-                >
-                  {c.route ? (
-                    <View style={[styles.routeThumb, { backgroundColor: colors.fill }]}>
-                      <RouteArt encoded={c.route} width={40} height={40} strokeWidth={1.6} markers={false} />
-                    </View>
-                  ) : (
-                    <View style={[styles.cardioIcon, { backgroundColor: colors.fill }]}>
-                      <Icon name={CARDIO_ICON[c.kind] ?? 'activity'} size={18} color={colors.text} />
-                    </View>
-                  )}
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <Text variant="body" numberOfLines={1}>
-                      {c.title ?? cardioLabel(c.kind)}
+        </Card>
+      </>
+    ) : null,
+    overload: liftOn ? (
+      <>
+        <SectionHeader
+          title="Progressive overload"
+          action={<Button title="All" size="sm" variant="tinted" full={false} onPress={() => router.push('/overload')} />}
+        />
+        <Card index={3} padded={false} onPress={() => router.push('/overload')}>
+          {overload.length === 0 ? (
+            <View style={{ padding: SPACE.lg }}>
+              <Text variant="subhead" tone="secondary">
+                Log workouts to see which lifts are going up.
+              </Text>
+            </View>
+          ) : (
+            <>
+              <View style={[styles.overloadHead, { borderBottomColor: colors.separator }]}>
+                <Text variant="subhead" tone="secondary">{`${progressing} of ${overload.length} lifts progressing`}</Text>
+              </View>
+              {overload.slice(0, 4).map((o) => {
+                const color = o.status === 'progressing' ? colors.success : o.status === 'slipping' ? colors.warning : colors.textSecondary;
+                return (
+                  <View key={o.exerciseId} style={styles.overloadRow}>
+                    <Text variant="body" numberOfLines={1} style={{ flex: 1 }}>
+                      {getExercise(o.exerciseId).name}
                     </Text>
-                    <Text variant="footnote" tone="secondary" numberOfLines={1}>
-                      {cardioSummary(c)}
+                    <Text variant="subhead" tabular>{`${formatWeight(Math.round(o.current * 2) / 2, units)} ${weightUnit(units)}`}</Text>
+                    <Text variant="subhead" weight="semibold" tabular color={color} style={{ minWidth: 64, textAlign: 'right' }}>
+                      {o.changePct == null ? 'new' : `${o.changePct > 0 ? '↑' : o.changePct < 0 ? '↓' : ''} ${Math.abs(o.changePct).toFixed(1)}%`}
                     </Text>
                   </View>
-                  {c.kcal != null && <Text variant="subhead" weight="semibold" tabular>{`${Math.round(c.kcal)} kcal`}</Text>}
-                </PressableScale>
-              ))
-            )}
-          </Card>
-          {cardio.length > 0 && (
-            <Text variant="caption" tone="tertiary" style={{ marginTop: SPACE.sm, paddingHorizontal: SPACE.lg }}>
-              Press and hold a session to delete it.
-            </Text>
+                );
+              })}
+            </>
           )}
-        </>
-      )}
-
-      {liftOn && ownRoutines.length > 0 && (
+        </Card>
+      </>
+    ) : null,
+    cardio: cardioOn ? (
+      <>
+        <SectionHeader
+          title="Cardio"
+          action={
+            liftOn ? (
+              <View style={{ flexDirection: 'row', gap: SPACE.sm }}>
+                <Button title="Intervals" icon="timer" size="sm" variant="gray" full={false} onPress={() => router.push('/interval-timer')} />
+                <Button title="Log" icon="plus" size="sm" variant="tinted" full={false} onPress={() => router.push('/log-cardio')} />
+              </View>
+            ) : undefined
+          }
+        />
+        {gpsOn && (
+          <Card
+            index={4}
+            onPress={() => router.push('/record')}
+            style={{ marginBottom: SPACE.md, backgroundColor: liveStatus === 'idle' ? colors.surface : colors.accent }}
+          >
+            <View style={styles.row}>
+              <View style={[styles.cardioIcon, { backgroundColor: liveStatus === 'idle' ? colors.accentSoft : 'rgba(255,255,255,0.2)' }]}>
+                <Icon name="navigation" size={18} color={liveStatus === 'idle' ? colors.accent : colors.onAccent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text variant="headline" color={liveStatus === 'idle' ? colors.text : colors.onAccent}>
+                  {liveStatus === 'idle' ? 'Record' : liveStatus === 'finished' ? 'Save your activity' : liveStatus === 'paused' ? 'Paused' : 'Recording'}
+                </Text>
+                <Text variant="footnote" color={liveStatus === 'idle' ? colors.textSecondary : colors.onAccent}>
+                  {liveStatus === 'idle'
+                    ? 'Run, walk, hike or ride with GPS'
+                    : `${distanceParts(liveKm, units === 'metric').value} ${units === 'metric' ? 'km' : 'mi'} · tap to open`}
+                </Text>
+              </View>
+              <Icon name="chevronRight" size={18} color={liveStatus === 'idle' ? colors.textTertiary : colors.onAccent} />
+            </View>
+          </Card>
+        )}
+        <Card index={5} padded={false}>
+          {cardio.length === 0 ? (
+            <PressableScale scaleTo={0.99} onPress={() => router.push('/log-cardio')} style={{ padding: SPACE.lg, gap: 2 }}>
+              <Text variant="headline">No cardio yet</Text>
+              <Text variant="subhead" tone="secondary">
+                Log walks, runs, rides or classes, or run a Tabata, HIIT or EMOM timer.
+              </Text>
+            </PressableScale>
+          ) : (
+            cardio.map((c, i) => (
+              <PressableScale
+                key={c.id}
+                scaleTo={0.99}
+                onPress={c.route ? () => router.push({ pathname: '/activity', params: { id: c.id } }) : undefined}
+                onLongPress={() => confirmDeleteCardio(c)}
+                style={[styles.listRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator }]}
+              >
+                {c.route ? (
+                  <View style={[styles.routeThumb, { backgroundColor: colors.fill }]}>
+                    <RouteArt encoded={c.route} width={40} height={40} strokeWidth={1.6} markers={false} />
+                  </View>
+                ) : (
+                  <View style={[styles.cardioIcon, { backgroundColor: colors.fill }]}>
+                    <Icon name={CARDIO_ICON[c.kind] ?? 'activity'} size={18} color={colors.text} />
+                  </View>
+                )}
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text variant="body" numberOfLines={1}>
+                    {c.title ?? cardioLabel(c.kind)}
+                  </Text>
+                  <Text variant="footnote" tone="secondary" numberOfLines={1}>
+                    {cardioSummary(c)}
+                  </Text>
+                </View>
+                {c.kcal != null && <Text variant="subhead" weight="semibold" tabular>{`${Math.round(c.kcal)} kcal`}</Text>}
+              </PressableScale>
+            ))
+          )}
+        </Card>
+        {cardio.length > 0 && (
+          <Text variant="caption" tone="tertiary" style={{ marginTop: SPACE.sm, paddingHorizontal: SPACE.lg }}>
+            Press and hold a session to delete it.
+          </Text>
+        )}
+      </>
+    ) : null,
+    routines:
+      liftOn && ownRoutines.length > 0 ? (
         <>
           <SectionHeader
             title="Routines"
@@ -399,19 +401,18 @@ export default function Train() {
             ))}
           </Card>
         </>
-      )}
-
-      {liftOn && (
-        <ListGroup index={5}>
-          <ListRow icon="dumbbell" title="Exercise library" subtitle="876 exercises with demos" onPress={() => router.push('/exercises')} />
-          <ListRow icon="activity" iconColor={colors.text} title="Muscle volume" subtitle="Weekly sets per muscle" onPress={() => router.push('/volume')} />
-          <ListRow icon="ruler" iconColor={colors.fill} title="Plate calculator" onPress={() => router.push('/plates')} />
-          {recoveryOn && <ListRow icon="heartPulse" title="Recovery" subtitle="Readiness and muscle recovery" onPress={() => router.push('/recovery')} />}
-          {ownRoutines.length === 0 && <ListRow icon="plus" iconColor={colors.fill} title="New routine" onPress={() => router.push('/routine')} />}
-        </ListGroup>
-      )}
-
-      {liftOn && history.length > 0 && (
+      ) : null,
+    tools: liftOn ? (
+      <ListGroup index={5}>
+        <ListRow icon="dumbbell" title="Exercise library" subtitle="876 exercises with demos" onPress={() => router.push('/exercises')} />
+        <ListRow icon="activity" iconColor={colors.text} title="Muscle volume" subtitle="Weekly sets per muscle" onPress={() => router.push('/volume')} />
+        <ListRow icon="ruler" iconColor={colors.fill} title="Plate calculator" onPress={() => router.push('/plates')} />
+        {recoveryOn && <ListRow icon="heartPulse" title="Recovery" subtitle="Readiness and muscle recovery" onPress={() => router.push('/recovery')} />}
+        {ownRoutines.length === 0 && <ListRow icon="plus" iconColor={colors.fill} title="New routine" onPress={() => router.push('/routine')} />}
+      </ListGroup>
+    ) : null,
+    history:
+      liftOn && history.length > 0 ? (
         <>
           <SectionHeader title="History" />
           <Card padded={false} index={6}>
@@ -438,7 +439,27 @@ export default function Train() {
             ))}
           </Card>
         </>
-      )}
+      ) : null,
+  };
+  /** Sections that start with their own header already carry top spacing. */
+  const HEADED = new Set(['split', 'overload', 'cardio', 'routines', 'history']);
+  const shown = sections.filter((id) => blocks[id]);
+
+  return (
+    <Screen
+      title="Train"
+      tabBar
+      accessory={
+        <PressableScale feedback="selection" onPress={() => router.push('/settings/gym')} style={[styles.gear, { backgroundColor: colors.fill }]}>
+          <Icon name="settings" size={17} color={colors.text} />
+        </PressableScale>
+      }
+    >
+      {shown.map((id, i) => (
+        <View key={id} style={i > 0 && !HEADED.has(id) && { marginTop: SPACE.md }}>
+          {blocks[id]}
+        </View>
+      ))}
     </Screen>
   );
 }

@@ -5,7 +5,8 @@ import { StyleSheet, View } from 'react-native';
 import { useBody } from '../../core/goals/useBody';
 import { addWater, listLog, MEAL_SLOTS, undoLastWater, waterTotal } from '../../core/db/repo';
 import { useQuery } from '../../core/db/useQuery';
-import { orderedTodayCards, useFeature, useSettings, type TodayCardId } from '../../core/store/settings';
+import { useLayout } from '../../core/store/layouts';
+import { useFeature, useSettings } from '../../core/store/settings';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../../core/theme/typography';
 import { addDays, dateKey, formatLong, formatShort, relativeDay } from '../../lib/dates';
@@ -79,12 +80,10 @@ export default function Today() {
   const lastWeighIn = trend.filter((t) => t.kg != null).pop();
   const weighedToday = lastWeighIn?.date === today;
 
-  const todayOrder = useSettings((st) => st.todayOrder);
-  const todayHidden = useSettings((st) => st.todayHidden);
-  const visibleCards = orderedTodayCards(todayOrder).filter((id) => !todayHidden.includes(id));
-  const idx = (id: TodayCardId) => visibleCards.indexOf(id);
+  const visibleCards = useLayout('today');
+  const idx = (id: string) => visibleCards.indexOf(id);
 
-  const blocks: Record<TodayCardId, ReactNode> = {
+  const blocks: Record<string, ReactNode> = {
     macros: foodOn && targets ? (
         <Card index={idx('macros')} onPress={() => router.navigate('/(tabs)/food')}>
           <MacroSummary eaten={eaten} targets={targets} />

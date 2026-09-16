@@ -4,6 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { dependents, PRESETS, withDependencies, type ModuleId, type PresetId } from '../features/registry';
 import type { AccentId, Appearance, DarkStyle } from '../theme/palette';
 import type { UnitSystem } from '../../lib/units';
+import type { LayoutPrefs, LayoutScreen } from './layouts';
 import { kvStorage } from './kvStorage';
 
 /** 'none' shows the welcome screen; 'guest' means the user has started (all data is local). */
@@ -35,24 +36,9 @@ export const DEFAULT_REMINDERS: Record<ReminderId, Reminder> = {
   photos: { on: false, hour: 8, minute: 0, weekday: 1 },
 };
 
-export type TodayCardId = 'macros' | 'logPrompt' | 'weight' | 'readiness' | 'habits' | 'training' | 'supplements' | 'water';
-
-export const TODAY_CARDS: { id: TodayCardId; name: string; module?: ModuleId }[] = [
-  { id: 'macros', name: 'Calories & macros', module: 'food' },
-  { id: 'logPrompt', name: 'Log food & meals', module: 'food' },
-  { id: 'weight', name: 'Weight & goal' },
-  { id: 'habits', name: 'Habits', module: 'habits' },
-  { id: 'training', name: 'Training', module: 'workouts' },
-  { id: 'water', name: 'Water', module: 'water' },
-  { id: 'readiness', name: 'Readiness', module: 'recovery' },
-  { id: 'supplements', name: 'Supplements', module: 'health' },
-];
-
-/** Saved order plus any cards added in later versions. */
-export function orderedTodayCards(order: TodayCardId[]): TodayCardId[] {
-  const known = order.filter((id) => TODAY_CARDS.some((c) => c.id === id));
-  return [...known, ...TODAY_CARDS.map((c) => c.id).filter((id) => !known.includes(id))];
-}
+export type StartTab = 'index' | 'food' | 'train' | 'progress';
+export type TextScale = 'small' | 'default' | 'large' | 'xlarge';
+export const TEXT_SCALE: Record<TextScale, number> = { small: 0.92, default: 1, large: 1.1, xlarge: 1.22 };
 
 export const DEFAULT_GYM: GymSettings = {
   barKg: 20,
@@ -86,8 +72,13 @@ interface SettingsState {
   gym: GymSettings;
   appLock: boolean;
   reminders: Record<ReminderId, Reminder>;
-  todayOrder: TodayCardId[];
-  todayHidden: TodayCardId[];
+  /** Section order and visibility per screen. */
+  layouts: Partial<Record<LayoutScreen, LayoutPrefs>>;
+  /** Tab the app opens on. */
+  startTab: StartTab;
+  textScale: TextScale;
+  /** Skips entrance and layout animations. */
+  reduceMotion: boolean;
   adaptiveTargets: boolean;
   carbCycling: boolean;
   drive: DriveSettings;
@@ -115,8 +106,10 @@ export const useSettings = create<SettingsState>()(
       gym: DEFAULT_GYM,
       appLock: false,
       reminders: DEFAULT_REMINDERS,
-      todayOrder: TODAY_CARDS.map((c) => c.id),
-      todayHidden: [],
+      layouts: {},
+      startTab: 'index',
+      textScale: 'default',
+      reduceMotion: false,
       adaptiveTargets: true,
       carbCycling: false,
       drive: DEFAULT_DRIVE,
@@ -135,7 +128,7 @@ export const useSettings = create<SettingsState>()(
     {
       name: 'metakai.settings',
       storage: createJSONStorage(() => kvStorage),
-      version: 7,
+      version: 8,
       migrate: (state, version) => {
         const s = state as Record<string, unknown>;
         if (version < 2) {
@@ -146,8 +139,6 @@ export const useSettings = create<SettingsState>()(
         if (version < 3) {
           s.appLock = false;
           s.reminders = DEFAULT_REMINDERS;
-          s.todayOrder = TODAY_CARDS.map((c) => c.id);
-          s.todayHidden = [];
         }
         if (version < 4) {
           s.adaptiveTargets = true;
@@ -156,6 +147,14 @@ export const useSettings = create<SettingsState>()(
         if (version < 5) s.drive = DEFAULT_DRIVE;
         if (version < 6) s.gpsVoice = true;
         if (version < 7 && s.authMode === 'account') s.authMode = 'guest';
+        if (version < 8) {
+          s.layouts = { today: { order: (s.todayOrder as string[]) ?? [], hidden: (s.todayHidden as string[]) ?? [], shown: [] } };
+          delete s.todayOrder;
+          delete s.todayHidden;
+          s.startTab = 'index';
+          s.textScale = 'default';
+          s.reduceMotion = false;
+        }
         return s as never;
       },
     },

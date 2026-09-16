@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
@@ -10,6 +10,7 @@ import { listBodyComp, listPhotos } from '../../modules/body/repo';
 import { ListGroup, ListRow } from '../../ui/List';
 import { dailyTotals, deleteWeight, listWeights, restoreWeight, type WeightEntry } from '../../core/db/repo';
 import { useQuery } from '../../core/db/useQuery';
+import { useLayout } from '../../core/store/layouts';
 import { useFeature, useSettings } from '../../core/store/settings';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../../core/theme/typography';
@@ -147,69 +148,89 @@ export default function Progress() {
   const totalChange = currentKg != null && phase ? currentKg - phase.startKg : null;
   const signed = (v: number, digits = 1) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${displayWeight(Math.abs(v), units, digits)}`;
 
-  return (
-    <Screen title="Progress" tabBar>
-      <SegmentedControl<Range>
-        value={range}
-        onChange={setRange}
-        segments={[
-          { value: '1m', label: '1M' },
-          { value: '3m', label: '3M' },
-          { value: '6m', label: '6M' },
-          { value: 'all', label: 'All' },
-        ]}
-      />
+  const sections = useLayout('progress');
+  const blocks: Record<string, ReactNode> = {
+    chart: (
+      <>
+        <SegmentedControl<Range>
+          value={range}
+          onChange={setRange}
+          segments={[
+            { value: '1m', label: '1M' },
+            { value: '3m', label: '3M' },
+            { value: '6m', label: '6M' },
+            { value: 'all', label: 'All' },
+          ]}
+        />
 
-      <Card index={0} style={{ marginTop: SPACE.md }}>
-        {trend.length === 0 ? (
-          <View style={{ alignItems: 'center', paddingVertical: SPACE.xxl, gap: SPACE.md }}>
-            <Icon name="scale" size={32} color={colors.textTertiary} />
-            <Text variant="headline">No weigh-ins yet</Text>
-            <Button title="Log weight" size="md" full={false} onPress={() => router.push('/log-weight')} />
-          </View>
-        ) : (
-          <>
-            <WeightChart
-              key={range}
-              trend={trend}
-              prediction={predictionsOn ? prediction?.points : []}
-              goalKg={predictionsOn ? phase?.targetKg : null}
-              startDate={startDate}
-              endDate={endDate}
-              units={units}
-              height={230}
-            />
-            <View style={styles.legend}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendLine, { backgroundColor: colors.text }]} />
-                <Text variant="caption" tone="secondary">
-                  Trend
-                </Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: colors.textTertiary }]} />
-                <Text variant="caption" tone="secondary">
-                  Weigh-ins
-                </Text>
-              </View>
-              {predictionsOn && def && def.direction !== 0 && (
+        <Card index={0} style={{ marginTop: SPACE.md }}>
+          {trend.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: SPACE.xxl, gap: SPACE.md }}>
+              <Icon name="scale" size={32} color={colors.textTertiary} />
+              <Text variant="headline">No weigh-ins yet</Text>
+              <Button title="Log weight" size="md" full={false} onPress={() => router.push('/log-weight')} />
+            </View>
+          ) : (
+            <>
+              <WeightChart
+                key={range}
+                trend={trend}
+                prediction={predictionsOn ? prediction?.points : []}
+                goalKg={predictionsOn ? phase?.targetKg : null}
+                startDate={startDate}
+                endDate={endDate}
+                units={units}
+                height={230}
+              />
+              <View style={styles.legend}>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendBand, { backgroundColor: colors.accentSoft, borderColor: colors.accent }]} />
+                  <View style={[styles.legendLine, { backgroundColor: colors.text }]} />
                   <Text variant="caption" tone="secondary">
-                    Predicted
+                    Trend
                   </Text>
                 </View>
-              )}
-            </View>
-          </>
-        )}
-      </Card>
-
-      {currentKg != null && (
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: colors.textTertiary }]} />
+                  <Text variant="caption" tone="secondary">
+                    Weigh-ins
+                  </Text>
+                </View>
+                {predictionsOn && def && def.direction !== 0 && (
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendBand, { backgroundColor: colors.accentSoft, borderColor: colors.accent }]} />
+                    <Text variant="caption" tone="secondary">
+                      Predicted
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </>
+          )}
+        </Card>
+      </>
+    ),
+    stats:
+      currentKg != null ? (
         <View style={styles.statGrid}>
-          <Stat label="Trend" value={`${displayWeight(currentKg, units)} ${wu}`} detail={phase ? `Started ${displayWeight(phase.startKg, units)}` : undefined} />
-          <Stat label="Weekly rate" value={weeklyChange == null ? '—' : `${signed(weeklyChange, 2)} ${wu}`} detail={phase && def?.direction !== 0 ? `Plan ${def!.direction < 0 ? '−' : '+'}${displayWeight((phase.startKg * phase.ratePctWeek) / 100, units, 2)}` : 'Last 2 weeks'} />
-          <Stat label="Total change" value={totalChange == null ? '—' : `${signed(totalChange)} ${wu}`} detail={phase ? `Since ${formatShort(phase.startDate)}` : undefined} />
+          <Stat
+            label="Trend"
+            value={`${displayWeight(currentKg, units)} ${wu}`}
+            detail={phase ? `Started ${displayWeight(phase.startKg, units)}` : undefined}
+          />
+          <Stat
+            label="Weekly rate"
+            value={weeklyChange == null ? '—' : `${signed(weeklyChange, 2)} ${wu}`}
+            detail={
+              phase && def?.direction !== 0
+                ? `Plan ${def!.direction < 0 ? '−' : '+'}${displayWeight((phase.startKg * phase.ratePctWeek) / 100, units, 2)}`
+                : 'Last 2 weeks'
+            }
+          />
+          <Stat
+            label="Total change"
+            value={totalChange == null ? '—' : `${signed(totalChange)} ${wu}`}
+            detail={phase ? `Since ${formatShort(phase.startDate)}` : undefined}
+          />
           {predictionsOn && phase?.targetKg != null && def?.direction !== 0 ? (
             <Stat
               label="Goal"
@@ -224,12 +245,18 @@ export default function Progress() {
             <Stat label="Maintenance" value={targets ? `${targets.tdee}` : '—'} detail="Estimated kcal / day" />
           )}
         </View>
-      )}
-
-      {(phase || milestonesOn || bodyOn || photosOn) && (
+      ) : null,
+    body:
+      phase || milestonesOn || bodyOn || photosOn ? (
         <ListGroup header="Body & progress" index={2}>
           {phase && (
-            <ListRow icon="check" iconColor={colors.success} title="Weekly check-in" subtitle="How this week went and what to adjust" onPress={() => router.push('/checkin')} />
+            <ListRow
+              icon="check"
+              iconColor={colors.success}
+              title="Weekly check-in"
+              subtitle="How this week went and what to adjust"
+              onPress={() => router.push('/checkin')}
+            />
           )}
           {milestonesOn && phase && (
             <ListRow
@@ -264,20 +291,26 @@ export default function Progress() {
             />
           )}
         </ListGroup>
-      )}
-
-      {(recoveryOn || healthOn) && (
+      ) : null,
+    health:
+      recoveryOn || healthOn ? (
         <ListGroup header="Health & recovery" index={3}>
           {recoveryOn && (
             <ListRow icon="heartPulse" title="Recovery" subtitle="Readiness, sleep and muscle recovery" onPress={() => router.push('/recovery')} />
           )}
           {healthOn && (
-            <ListRow icon="pill" iconColor={colors.text} title="Health" subtitle="Supplements, blood pressure, heart rate and labs" onPress={() => router.push('/health')} />
+            <ListRow
+              icon="pill"
+              iconColor={colors.text}
+              title="Health"
+              subtitle="Supplements, blood pressure, heart rate and labs"
+              onPress={() => router.push('/health')}
+            />
           )}
         </ListGroup>
-      )}
-
-      {foodOn && targets && (
+      ) : null,
+    calories:
+      foodOn && targets ? (
         <>
           <SectionHeader title="Calories" />
           <Card index={2}>
@@ -316,11 +349,14 @@ export default function Progress() {
             </View>
           </Card>
         </>
-      )}
-
-      {weights.length > 0 && (
+      ) : null,
+    weighins:
+      weights.length > 0 ? (
         <>
-          <SectionHeader title="Weigh-ins" action={<Button title="Add" size="sm" variant="tinted" icon="plus" full={false} onPress={() => router.push('/log-weight')} />} />
+          <SectionHeader
+            title="Weigh-ins"
+            action={<Button title="Add" size="sm" variant="tinted" icon="plus" full={false} onPress={() => router.push('/log-weight')} />}
+          />
           <Card index={3} padded={false}>
             {[...weights]
               .reverse()
@@ -333,7 +369,16 @@ export default function Progress() {
               ))}
           </Card>
         </>
-      )}
+      ) : null,
+  };
+
+  return (
+    <Screen title="Progress" tabBar>
+      {sections
+        .filter((id) => blocks[id])
+        .map((id) => (
+          <Fragment key={id}>{blocks[id]}</Fragment>
+        ))}
     </Screen>
   );
 }

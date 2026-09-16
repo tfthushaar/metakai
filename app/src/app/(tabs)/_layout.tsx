@@ -1,10 +1,13 @@
 import { Tabs, useRouter } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useFeature, useSettings } from '../../core/store/settings';
+import { addWater } from '../../core/db/repo';
+import { useLayout } from '../../core/store/layouts';
+import { useSettings } from '../../core/store/settings';
+import { dateKey } from '../../lib/dates';
 import { activeWorkout, startWorkout } from '../../modules/workouts/repo';
 import { EASE_OUT, SPRING } from '../../ui/motion';
 import { useTheme } from '../../core/theme/ThemeProvider';
@@ -13,6 +16,7 @@ import { BarBackground } from '../../ui/BarBackground';
 import { Icon, type IconName } from '../../ui/Icon';
 import { PressableScale } from '../../ui/PressableScale';
 import { Text } from '../../ui/Text';
+import { toast } from '../../ui/Toast';
 
 type BottomTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
@@ -27,13 +31,9 @@ const TAB_ICONS: Record<string, IconName> = {
 function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const foodOn = useFeature('food');
-  const trainOn = useFeature('workouts');
-  const cardioOn = useFeature('cardio');
-  const healthOn = useFeature('health');
-  const gpsOn = useFeature('gps');
   const recording = useLive((s) => s.status !== 'idle');
   const rotation = useSharedValue(0);
   useEffect(() => {
@@ -41,27 +41,37 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   }, [menuOpen, rotation]);
   const plusStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${rotation.value * 45}deg` }] }));
 
-  const actions: { icon: IconName; label: string; onPress: () => void }[] = [
-    ...(foodOn ? [{ icon: 'utensils' as IconName, label: 'Log food', onPress: () => router.push('/log-food') }] : []),
-    { icon: 'scale', label: 'Weigh in', onPress: () => router.push('/log-weight') },
-    ...(foodOn ? [{ icon: 'flame' as IconName, label: 'Quick add calories', onPress: () => router.push('/quick-add') }] : []),
-    ...(trainOn
-      ? [
-          {
-            icon: 'dumbbell' as IconName,
-            label: activeWorkout() ? 'Resume workout' : 'Start workout',
-            onPress: () => {
-              startWorkout();
-              router.push('/workout');
-            },
-          },
-          { icon: 'check' as IconName, label: 'Log finished workout', onPress: () => router.push('/quick-workout') },
-        ]
-      : []),
-    ...(gpsOn ? [{ icon: 'navigation' as IconName, label: recording ? 'Return to recording' : 'Record run or ride', onPress: () => router.push('/record') }] : []),
-    ...(cardioOn ? [{ icon: 'footprints' as IconName, label: 'Log cardio', onPress: () => router.push('/log-cardio') }] : []),
-    ...(healthOn ? [{ icon: 'heartPulse' as IconName, label: 'Log health marker', onPress: () => router.push('/log-marker') }] : []),
-  ];
+  const quick = useLayout('quick');
+  const ACTIONS: Record<string, { icon: IconName; label: string; onPress: () => void }> = {
+    logFood: { icon: 'utensils', label: 'Log food', onPress: () => router.push('/log-food') },
+    weighIn: { icon: 'scale', label: 'Weigh in', onPress: () => router.push('/log-weight') },
+    quickAdd: { icon: 'flame', label: 'Quick add calories', onPress: () => router.push('/quick-add') },
+    water: {
+      icon: 'droplet',
+      label: 'Add a glass of water',
+      onPress: () => {
+        addWater(dateKey(), 250);
+        toast('Added 250 ml');
+      },
+    },
+    workout: {
+      icon: 'dumbbell',
+      label: activeWorkout() ? 'Resume workout' : 'Start workout',
+      onPress: () => {
+        startWorkout();
+        router.push('/workout');
+      },
+    },
+    logWorkout: { icon: 'check', label: 'Log finished workout', onPress: () => router.push('/quick-workout') },
+    record: { icon: 'navigation', label: recording ? 'Return to recording' : 'Record run or ride', onPress: () => router.push('/record') },
+    logCardio: { icon: 'footprints', label: 'Log cardio', onPress: () => router.push('/log-cardio') },
+    intervals: { icon: 'timer', label: 'Interval timer', onPress: () => router.push('/interval-timer') },
+    checkIn: { icon: 'heartPulse', label: 'Readiness check-in', onPress: () => router.push('/recovery') },
+    logMarker: { icon: 'heartPulse', label: 'Log health marker', onPress: () => router.push('/log-marker') },
+    photo: { icon: 'user', label: 'Progress photo', onPress: () => router.push('/photos') },
+    measure: { icon: 'ruler', label: 'Measurements', onPress: () => router.push('/log-measurements') },
+  };
+  const actions = quick.map((id) => ACTIONS[id]).filter(Boolean);
 
   const routes = state.routes.filter((r) => (descriptors[r.key].options as { href?: string | null }).href !== null);
   const middle = Math.ceil(routes.length / 2);
@@ -98,9 +108,18 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       {menuOpen && (
         <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(150)} style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setMenuOpen(false)} accessibilityLabel="Close menu" />
-          <View style={[styles.menu, { bottom: Math.max(insets.bottom, 10) + 80 }]} pointerEvents="box-none">
+          <ScrollView
+            style={[styles.menu, { bottom: Math.max(insets.bottom, 10) + 80, maxHeight: height - insets.top - Math.max(insets.bottom, 10) - 100 }]}
+            contentContainerStyle={styles.menuContent}
+            showsVerticalScrollIndicator={false}
+          >
             {actions.map((a, i) => (
-              <Animated.View key={a.label} entering={FadeInDown.duration(260).delay((actions.length - 1 - i) * 40).easing(EASE_OUT)}>
+              <Animated.View
+                key={a.label}
+                entering={FadeInDown.duration(260)
+                  .delay((actions.length - 1 - i) * 40)
+                  .easing(EASE_OUT)}
+              >
                 <PressableScale
                   feedback="light"
                   onPress={() => {
@@ -116,34 +135,43 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 </PressableScale>
               </Animated.View>
             ))}
-          </View>
+          </ScrollView>
         </Animated.View>
       )}
-    <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 10) }]} pointerEvents="box-none">
-      <View style={[styles.bar, { borderColor: colors.separator }]}>
+      <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 10) }]} pointerEvents="box-none">
+        <View style={[styles.bar, { borderColor: colors.separator }]}>
           <BarBackground />
-        {routes.slice(0, middle).map(renderTab)}
-        <PressableScale
-          feedback="medium"
-          scaleTo={0.88}
-          accessibilityLabel="Quick actions"
-          onPress={() => setMenuOpen((o) => !o)}
-          style={[styles.plus, { backgroundColor: colors.accent }]}
-        >
-          <Animated.View style={plusStyle}>
-            <Icon name="plus" size={26} color={colors.onAccent} strokeWidth={2.6} />
-          </Animated.View>
-        </PressableScale>
-        {routes.slice(middle).map(renderTab)}
+          {routes.slice(0, middle).map(renderTab)}
+          <PressableScale
+            feedback="medium"
+            scaleTo={0.88}
+            accessibilityLabel="Quick actions"
+            onPress={() => setMenuOpen((o) => !o)}
+            style={[styles.plus, { backgroundColor: colors.accent }]}
+          >
+            <Animated.View style={plusStyle}>
+              <Icon name="plus" size={26} color={colors.onAccent} strokeWidth={2.6} />
+            </Animated.View>
+          </PressableScale>
+          {routes.slice(middle).map(renderTab)}
+        </View>
       </View>
-    </View>
     </>
   );
 }
 
+let startApplied = false;
+
 export default function TabsLayout() {
+  const router = useRouter();
+  const startTab = useSettings((s) => s.startTab);
+  useEffect(() => {
+    if (startApplied) return;
+    startApplied = true;
+    if (startTab !== 'index') router.navigate(`/(tabs)/${startTab}` as never);
+  }, [router, startTab]);
   const foodEnabled = useSettings((s) => s.enabledModules.includes('food'));
-  const trainEnabled = useSettings((s) => s.enabledModules.includes('workouts') || s.enabledModules.includes('cardio') || s.enabledModules.includes('gps'));
+  const trainEnabled = useSettings((s) => s.enabledModules.some((m) => m === 'workouts' || m === 'cardio' || m === 'gps'));
   return (
     <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Tabs.Screen name="index" options={{ title: 'Today' }} />
@@ -169,7 +197,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3, height: '100%' },
-  menu: { position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: 10 },
+  menu: { position: 'absolute', left: 0, right: 0, flexGrow: 0 },
+  menuContent: { alignItems: 'center', gap: 10, paddingTop: 10, flexGrow: 1, justifyContent: 'flex-end' },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
