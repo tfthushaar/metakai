@@ -11,3 +11,6 @@ node_modules/
 supabase/.temp/
 supabase/.branches/
 app/.claude/
+
+# OAuth client files downloaded from Google Cloud
+client_secret*.json
