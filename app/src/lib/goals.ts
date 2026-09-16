@@ -144,23 +144,8 @@ export const GOALS: Record<GoalType, GoalDefinition> = {
   },
 };
 
-export const AVAILABLE_GOALS = Object.values(GOALS).filter((g) => g.available);
-
 /** The everyday goals offered during onboarding; the rest are phases chosen later. */
 export const CORE_GOALS = (['cut', 'lean_bulk', 'bulk', 'recomp', 'maintain'] as GoalType[]).map((g) => GOALS[g]);
-
-/** Goals that run for a fixed length of time. */
-export const TIMED_GOALS: Partial<Record<GoalType, number[]>> = {
-  diet_break: [7, 14],
-  mini_cut: [14, 28, 42],
-};
-
-/** Suggested lean-bulk rate by training experience (% body weight / week). */
-export const BULK_RATE_BY_EXPERIENCE: Record<Experience, number> = {
-  beginner: 0.35,
-  intermediate: 0.25,
-  advanced: 0.15,
-};
 
 export interface Recommendation {
   goal: GoalType;

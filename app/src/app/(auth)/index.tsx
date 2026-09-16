@@ -1,11 +1,8 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { signInWithGoogle } from '../../core/auth/auth';
-import { cloudEnabled } from '../../core/auth/supabase';
 import { pickAndRestoreBackup } from '../../core/backup';
 import { getActivePhase, getProfile } from '../../core/db/repo';
 import { connectDrive, restoreFromDrive } from '../../core/drive';
@@ -33,9 +30,7 @@ function LogoRings() {
 
 export default function Welcome() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const setSettings = useSettings((s) => s.set);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [restoring, setRestoring] = useState<'drive' | 'file' | null>(null);
 
   /** After a restore, skip onboarding when the backup brought a profile. */
@@ -71,17 +66,6 @@ export default function Welcome() {
     }
   };
 
-  const google = async () => {
-    setGoogleLoading(true);
-    try {
-      await signInWithGoogle();
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Google sign-in failed.');
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
   return (
     <View style={[styles.root, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + SPACE.xl }]}>
       <View style={styles.hero}>
@@ -105,16 +89,6 @@ export default function Welcome() {
         <Button title="Get started" onPress={() => setSettings({ authMode: 'guest' })} />
         <Button title="Restore from Google Drive" variant="gray" icon="cloud" onPress={fromDrive} loading={restoring === 'drive'} disabled={restoring != null} />
         <Button title="Restore from a backup file" variant="plain" onPress={fromFile} loading={restoring === 'file'} disabled={restoring != null} />
-        {cloudEnabled && (
-          <View style={{ flexDirection: 'row', gap: SPACE.sm }}>
-            <View style={{ flex: 1 }}>
-              <Button title="Google account" size="sm" variant="gray" onPress={google} loading={googleLoading} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button title="Email account" size="sm" variant="gray" icon="mail" onPress={() => router.push('/email-auth')} />
-            </View>
-          </View>
-        )}
         <Text variant="footnote" tone="tertiary" align="center">
           No account needed. Your data stays on this phone, with optional backup to your own Google Drive.
         </Text>

@@ -5,7 +5,6 @@
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
     "@react-native-google-signin/google-signin": "^16.1.5",
-    "@supabase/supabase-js": "^2.116.0",
     "expo": "~57.0.22",
     "expo-blur": "~57.0.3",
     "expo-camera": "~57.0.5",
@@ -17,7 +16,6 @@
     "expo-image-manipulator": "~57.0.18",
     "expo-image-picker": "~57.0.18",
     "expo-keep-awake": "~57.0.2",
-    "expo-linear-gradient": "~57.0.2",
     "expo-linking": "~57.0.10",
     "expo-local-authentication": "~57.0.3",
     "expo-location": "~57.0.18",
@@ -31,7 +29,6 @@
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
     "expo-task-manager": "~57.0.18",
-    "expo-web-browser": "~57.0.3",
     "lucide-react-native": "^1.46.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -41,7 +38,6 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
     "react-native-svg": "15.15.4",
-    "react-native-url-polyfill": "^4.0.0",
     "react-native-web": "^0.21.2",
     "react-native-worklets": "0.10.1",
     "zustand": "^5.0.15"

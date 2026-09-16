@@ -6,7 +6,8 @@ import type { AccentId, Appearance, DarkStyle } from '../theme/palette';
 import type { UnitSystem } from '../../lib/units';
 import { kvStorage } from './kvStorage';
 
-export type AuthMode = 'none' | 'guest' | 'account';
+/** 'none' shows the welcome screen; 'guest' means the user has started (all data is local). */
+export type AuthMode = 'none' | 'guest';
 
 export interface GymSettings {
   barKg: number;
@@ -134,7 +135,7 @@ export const useSettings = create<SettingsState>()(
     {
       name: 'metakai.settings',
       storage: createJSONStorage(() => kvStorage),
-      version: 6,
+      version: 7,
       migrate: (state, version) => {
         const s = state as Record<string, unknown>;
         if (version < 2) {
@@ -154,6 +155,7 @@ export const useSettings = create<SettingsState>()(
         }
         if (version < 5) s.drive = DEFAULT_DRIVE;
         if (version < 6) s.gpsVoice = true;
+        if (version < 7 && s.authMode === 'account') s.authMode = 'guest';
         return s as never;
       },
     },

@@ -1,5 +1,3 @@
-import '../core/auth/supabase';
-
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, useFonts } from '@expo-google-fonts/inter';
 import * as Notifications from 'expo-notifications';
 import { Stack, useRouter } from 'expo-router';
@@ -11,10 +9,8 @@ import { AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { startAuth, useAuth } from '../core/auth/auth';
 import { getDb } from '../core/db/database';
 import { useSettings } from '../core/store/settings';
-import { syncNow } from '../core/sync/sync';
 import { ThemeProvider, useTheme } from '../core/theme/ThemeProvider';
 import { ToastHost } from '../ui/Toast';
 import { AppLockGate } from '../core/AppLock';
@@ -30,24 +26,7 @@ getDb();
 try {
   backfillWorkoutCalories();
 } catch {}
-startAuth();
 restoreRecording().catch(() => {});
-
-function useBackgroundSync() {
-  const session = useAuth((s) => s.session);
-  useEffect(() => {
-    if (!session) return;
-    syncNow();
-    const interval = setInterval(syncNow, 5 * 60 * 1000);
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active' || state === 'background') syncNow();
-    });
-    return () => {
-      clearInterval(interval);
-      sub.remove();
-    };
-  }, [session]);
-}
 
 function useDriveBackup() {
   const enabled = useSettings((s) => s.drive.enabled);
@@ -144,8 +123,6 @@ function RootStack() {
           <Stack.Screen name="targets" />
           <Stack.Screen name="settings" />
         </Stack.Protected>
-        <Stack.Screen name="auth-callback" options={{ animation: 'fade' }} />
-        <Stack.Screen name="email-auth" />
       </Stack>
       <ToastHost />
       <AppLockGate />
@@ -155,7 +132,6 @@ function RootStack() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
-  useBackgroundSync();
 
   useEffect(() => {
     if (fontsLoaded || fontError) SplashScreen.hideAsync().catch(() => {});

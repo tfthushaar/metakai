@@ -29,7 +29,3 @@ export function cmToFtIn(cm: number): { ft: number; inches: number } {
 }
 
 export const ftInToCm = (ft: number, inches: number) => (ft * 12 + inches) * CM_PER_IN;
-
-export function formatNumber(n: number): string {
-  return Math.round(n).toLocaleString('en-US');
-}

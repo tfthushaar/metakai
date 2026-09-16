@@ -3,12 +3,9 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { hasAiKey, useAiKeys } from '../../core/aiKey';
-import { useAuth } from '../../core/auth/auth';
-import { cloudEnabled } from '../../core/auth/supabase';
 import { useBody } from '../../core/goals/useBody';
 import { ACCENTS } from '../../core/theme/palette';
 import { useSettings } from '../../core/store/settings';
-import { useSync } from '../../core/sync/sync';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../../core/theme/typography';
 import { ageFromBirthDate } from '../../lib/energy';
@@ -26,8 +23,6 @@ export default function You() {
   const { profile, phase, targets, currentKg } = useBody();
   const settings = useSettings();
   const aiKeys = useAiKeys();
-  const session = useAuth((s) => s.session);
-  const lastSynced = useSync((s) => s.lastSyncedAt);
 
   const goal = phase ? GOALS[phase.goalType] : null;
   const height = profile
@@ -49,7 +44,7 @@ export default function You() {
             <Icon name="user" size={28} color={colors.onAccent} />
           </View>
           <View style={{ flex: 1, gap: 2 }}>
-            <Text variant="title3">{profile?.name || (session?.user.email ?? 'Your profile')}</Text>
+            <Text variant="title3">{profile?.name || 'Your profile'}</Text>
             {profile && (
               <Text variant="subhead" tone="secondary">
                 {[
@@ -105,17 +100,7 @@ export default function You() {
           onPress={() => router.push('/settings/backup')}
         />
         <ListRow icon="sparkles" title="AI" value={hasAiKey(aiKeys) ? 'On' : 'Off'} onPress={() => router.push('/settings/ai')} />
-        {cloudEnabled ? (
-          <ListRow
-            icon={session ? 'cloud' : 'cloudOff'}
-            iconColor={session ? colors.success : colors.fill}
-            title={session ? 'Account & sync' : 'Account'}
-            subtitle={session ? (lastSynced ? `Synced ${new Date(lastSynced).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'Not synced yet') : undefined}
-            onPress={() => router.push('/settings/account')}
-          />
-        ) : (
-          <ListRow icon="trash" iconColor={colors.fill} title="Manage data" onPress={() => router.push('/settings/account')} />
-        )}
+          <ListRow icon="trash" iconColor={colors.fill} title="Manage data" onPress={() => router.push('/settings/data')} />
       </ListGroup>
 
       <Text variant="footnote" tone="tertiary" align="center" style={{ marginTop: SPACE.xxl }}>

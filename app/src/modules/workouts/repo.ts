@@ -630,12 +630,6 @@ export function listWorkouts(limit = 30): WorkoutSummary[] {
   }));
 }
 
-export function workoutsSince(fromDateKey: string): number {
-  return (
-    db().getFirstSync<{ n: number }>('SELECT COUNT(*) AS n FROM workouts WHERE deleted_at IS NULL AND ended_at IS NOT NULL AND date_key >= ?', [fromDateKey])?.n ?? 0
-  );
-}
-
 export interface ExerciseSession {
   workoutId: string;
   dateKey: string;

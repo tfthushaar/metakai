@@ -1,12 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useAuth } from '../core/auth/auth';
 import { hasAiKey, useAiKeys } from '../core/aiKey';
-import { cloudEnabled } from '../core/auth/supabase';
 import { addCustomFood, addLogEntries, frequentFoods, listCustomFoods, MEAL_SLOTS, type LogEntry, type MealSlot, type NewLogEntry } from '../core/db/repo';
 import { useQuery } from '../core/db/useQuery';
 import { useTheme } from '../core/theme/ThemeProvider';
@@ -15,7 +13,7 @@ import { dateKey } from '../lib/dates';
 import { parseWithAi } from '../modules/food/ai';
 import { MacroInline } from '../modules/food/components';
 import type { Food } from '../modules/food/foods';
-import { listSavedMeals, saveMeal, type SavedMeal } from '../modules/food/savedMeals';
+import { deleteSavedMeal, listSavedMeals, saveMeal, type SavedMeal } from '../modules/food/savedMeals';
 import { formatAmount, parseMeal, resolveItem, sumMacros, unitOptions, withQuantity, type ParsedItem } from '../modules/food/parse';
 import { useScanHandoff } from '../modules/food/barcode';
 import { Button } from '../ui/Button';
@@ -179,7 +177,6 @@ export default function LogFood() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ slot?: MealSlot; date?: string }>();
-  const session = useAuth((s) => s.session);
   const inputRef = useRef<TextInput>(null);
 
   const [slot, setSlot] = useState<MealSlot>(params.slot ?? defaultSlot());
@@ -235,7 +232,7 @@ export default function LogFood() {
   const hasUnknown = items.some((i) => i.confidence === 'none' && i.macros.kcal === 0);
   const canSave = items.length > 0 && !hasUnknown;
   const aiKeys = useAiKeys();
-  const canUseAi = hasAiKey(aiKeys) || (cloudEnabled && session != null);
+  const canUseAi = hasAiKey(aiKeys);
 
   const updateItem = (item: ParsedItem, next: ParsedItem | null) => {
     if (extraItems.some((e) => e.key === item.key)) {
@@ -422,9 +419,23 @@ export default function LogFood() {
             </Text>
             <View style={styles.chips}>
               {savedMeals.map((m) => (
-                <Chip key={m.id} label={`${m.name} · ${Math.round(m.kcal)}`} icon="plus" onPress={() => addSavedMeal(m)} />
+                <Chip
+                  key={m.id}
+                  label={`${m.name} · ${Math.round(m.kcal)}`}
+                  icon="plus"
+                  onPress={() => addSavedMeal(m)}
+                  onLongPress={() =>
+                    Alert.alert(`Delete “${m.name}”?`, 'Meals you already logged are kept.', [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: () => deleteSavedMeal(m.id) },
+                    ])
+                  }
+                />
               ))}
             </View>
+            <Text variant="caption" tone="tertiary" style={{ paddingHorizontal: 4 }}>
+              Press and hold a saved meal to delete it.
+            </Text>
           </Animated.View>
         )}
 

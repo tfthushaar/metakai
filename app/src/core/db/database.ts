@@ -121,11 +121,3 @@ export function clearAllData() {
   notify(...SYNCED_TABLES);
 }
 
-/** Marks every row as unsynced so a later sign-in (possibly another account) uploads it all again. */
-export function resetSyncState() {
-  const database = getDb();
-  database.withTransactionSync(() => {
-    for (const t of SYNCED_TABLES) database.execSync(`UPDATE ${t} SET synced_at = NULL, user_id = NULL`);
-    database.execSync('DELETE FROM sync_state');
-  });
-}

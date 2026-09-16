@@ -232,8 +232,6 @@ export const FOODS: Food[] = [
   f('coconut_chutney', 'Coconut chutney', ['chutney'], [206, 3, 8, 18, 4], { tbsp: 20 }, 'tbsp'),
 ];
 
-export const FOOD_BY_ID = new Map(FOODS.map((food) => [food.id, food]));
-
 export function macrosFor(per100: Macros, grams: number): Macros {
   const k = grams / 100;
   return {

@@ -1,8 +1,6 @@
 import Storage from 'expo-sqlite/kv-store';
 
 import { hasAiKey } from '../../core/aiKey';
-import { useAuth } from '../../core/auth/auth';
-import { supabase } from '../../core/auth/supabase';
 import type { Food } from './foods';
 import { routeChat } from './aiRouter';
 import { matchFood, resolveItem, withQuantity, type MealHint, type ParsedItem } from './parse';
@@ -19,9 +17,6 @@ interface AiItem {
   fiber: number;
 }
 
-export const aiAvailable = () => hasAiKey() || (supabase != null && useAuth.getState().session != null);
-
-// Keep in sync with supabase/functions/parse-food.
 const SYSTEM = `You convert meal descriptions into food items with nutrition estimates.
 Rules:
 - One item per distinct food. Split "2 rotis with ghee" into roti and ghee.
@@ -108,27 +103,13 @@ async function viaOwnKeys(text: string) {
   }
 }
 
-async function viaServer(text: string): Promise<{ items: AiItem[]; meal: MealHint }> {
-  if (!supabase) throw new Error('Add a free Gemini or Groq key in Settings → AI.');
-  const { data, error } = await supabase.functions.invoke<{ items: AiItem[]; meal: MealHint; error?: string }>('parse-food', {
-    body: { text },
-  });
-  if (error) {
-    const context = (error as { context?: Response }).context;
-    const body = context ? await context.json().catch(() => null) : null;
-    throw new Error(body?.error ?? error.message);
-  }
-  if (!data) throw new Error('No response from AI.');
-  return data;
-}
-
 /**
  * AI reads the text; the local food database supplies numbers wherever it knows the food.
  * AI macro estimates are only used for foods the database does not have.
  */
 export async function parseWithAi(text: string, extraFoods: Food[] = []): Promise<{ items: ParsedItem[]; meal: MealHint }> {
   const cached = readCache()[cacheKey(text)];
-  const data = cached ?? (hasAiKey() ? await viaOwnKeys(text) : await viaServer(text));
+  const data = cached ?? (await viaOwnKeys(text));
   if (!cached && data.items.length) writeCache(text, data);
 
   const items = data.items.map((ai): ParsedItem => {

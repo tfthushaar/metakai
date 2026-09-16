@@ -38,8 +38,6 @@ export const JP3_SITES: Record<Sex, string[]> = {
   female: ['triceps', 'suprailiac', 'thigh'],
 };
 
-export const JP7_SITES = ['chest', 'midaxillary', 'triceps', 'subscapular', 'abdomen', 'suprailiac', 'thigh'];
-
 export interface Composition {
   leanKg: number;
   fatKg: number;

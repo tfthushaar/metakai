@@ -126,8 +126,6 @@ const POPULAR = new Set([
   'Cable_Crossover',
 ]);
 
-export const isPopular = (id: string) => POPULAR.has(id);
-
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
 export function searchExercises(all: Exercise[], query: string, group: string | null, equipment: Equipment | null): Exercise[] {

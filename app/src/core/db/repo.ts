@@ -164,12 +164,6 @@ export function getActivePhase(): Phase | null {
   return r ? toPhase(r) : null;
 }
 
-export function listPhases(): Phase[] {
-  return getDb()
-    .getAllSync<PhaseRow>('SELECT * FROM phases WHERE deleted_at IS NULL ORDER BY start_date DESC')
-    .map(toPhase);
-}
-
 /** Starts a new active phase, completing the previous one. */
 export function startPhase(p: Omit<Phase, 'id' | 'status' | 'endDate'> & { endDate?: string | null }): Phase {
   const db = getDb();
@@ -226,13 +220,6 @@ export function listWeights(): WeightEntry[] {
   return getDb()
     .getAllSync<WeightRow>('SELECT * FROM weight_entries WHERE deleted_at IS NULL ORDER BY measured_at ASC')
     .map(toWeight);
-}
-
-export function latestWeight(): WeightEntry | null {
-  const r = getDb().getFirstSync<WeightRow>(
-    'SELECT * FROM weight_entries WHERE deleted_at IS NULL ORDER BY measured_at DESC LIMIT 1',
-  );
-  return r ? toWeight(r) : null;
 }
 
 export function addWeight(dateKey: string, kg: number, note: string | null = null): WeightEntry {

@@ -6,8 +6,6 @@ import { useBody } from '../../core/goals/useBody';
 import { addWater, listLog, MEAL_SLOTS, undoLastWater, waterTotal } from '../../core/db/repo';
 import { useQuery } from '../../core/db/useQuery';
 import { orderedTodayCards, useFeature, useSettings, type TodayCardId } from '../../core/store/settings';
-import { useAuth } from '../../core/auth/auth';
-import { useSync } from '../../core/sync/sync';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../../core/theme/typography';
 import { addDays, dateKey, formatLong, formatShort, relativeDay } from '../../lib/dates';
@@ -36,19 +34,6 @@ function greeting() {
   if (h < 12) return 'Good morning';
   if (h < 17) return 'Good afternoon';
   return 'Good evening';
-}
-
-function SyncBadge() {
-  const { colors } = useTheme();
-  const session = useAuth((s) => s.session);
-  const status = useSync((s) => s.status);
-  if (!session) return null;
-  const offline = status === 'offline' || status === 'error';
-  return (
-    <View style={[styles.syncBadge, { backgroundColor: colors.fill }]}>
-      <Icon name={offline ? 'cloudOff' : 'cloud'} size={16} color={offline ? colors.warning : colors.textSecondary} />
-    </View>
-  );
 }
 
 export default function Today() {
@@ -364,7 +349,7 @@ export default function Today() {
   };
 
   return (
-    <Screen title="Today" subtitle={`${greeting()} · ${formatShort(today)}`} tabBar accessory={<SyncBadge />}>
+    <Screen title="Today" subtitle={`${greeting()} · ${formatShort(today)}`} tabBar>
       {phaseEnded && phase && (
         <Card index={0} style={{ marginBottom: SPACE.md, borderColor: colors.accent, borderWidth: 1.5 }} onPress={() => router.push('/goal')}>
           <Text variant="headline">{`${GOALS[phase.goalType].title} complete`}</Text>

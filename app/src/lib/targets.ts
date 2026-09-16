@@ -89,7 +89,3 @@ export function computeTargets(input: TargetInput): TargetResult {
     warnings,
   };
 }
-
-export function kcalFromMacros(m: Pick<MacroTargets, 'protein' | 'carbs' | 'fat'>): number {
-  return m.protein * 4 + m.carbs * 4 + m.fat * 9;
-}

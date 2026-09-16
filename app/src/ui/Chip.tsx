@@ -6,11 +6,12 @@ import { Icon, type IconName } from './Icon';
 import { PressableScale } from './PressableScale';
 import { Text } from './Text';
 
-export function Chip({ label, selected, onPress, icon }: { label: string; selected?: boolean; onPress?: () => void; icon?: IconName }) {
+export function Chip({ label, selected, onPress, onLongPress, icon }: { label: string; selected?: boolean; onPress?: () => void; onLongPress?: () => void; icon?: IconName }) {
   const { colors } = useTheme();
   return (
     <PressableScale
       onPress={onPress}
+      onLongPress={onLongPress}
       feedback="selection"
       scaleTo={0.95}
       style={[styles.chip, { backgroundColor: selected ? colors.text : colors.fill }]}
