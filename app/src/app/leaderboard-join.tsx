@@ -1,7 +1,9 @@
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { usesAppleSignIn } from '../core/apple';
 import { useSettings } from '../core/store/settings';
 import { useTheme } from '../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../core/theme/typography';
@@ -20,7 +22,7 @@ import { TextField } from '../ui/TextField';
 import { toast } from '../ui/Toast';
 
 export default function LeaderboardJoin() {
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   const router = useRouter();
   const person = usePerson();
   const lb = useSettings((s) => s.leaderboard);
@@ -125,19 +127,26 @@ export default function LeaderboardJoin() {
             <ListRow icon="ruler" title="Sex, age group, weight class and height band" subtitle="Rounded buckets, never exact numbers" />
             <ListRow icon="trophy" title="Pass scores and GPS run times" />
           </ListGroup>
-          <ListGroup header="Never shared" footer="Signing in with Google proves you’re a real person. Metakai stores a one-way code, not your email.">
+          <ListGroup header="Never shared" footer={`Signing in with ${usesAppleSignIn ? 'Apple' : 'Google'} proves you’re a real person. Metakai stores a one-way code, not your email.`}>
             <ListRow icon="lock" title="Food, weigh-ins, photos, routes, health data and your email" />
           </ListGroup>
         </>
       )}
 
       <View style={{ marginTop: SPACE.xl }}>
-        <Button
-          title={editing ? 'Save' : 'Continue with Google'}
-          onPress={join}
-          loading={busy}
-          disabled={!person || name.trim().length < 3}
-        />
+        {usesAppleSignIn && !editing ? (
+          <View style={{ opacity: !person || name.trim().length < 3 || busy ? 0.4 : 1 }} pointerEvents={!person || name.trim().length < 3 || busy ? 'none' : 'auto'}>
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+              buttonStyle={dark ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={RADIUS.lg}
+              style={{ height: 54 }}
+              onPress={join}
+            />
+          </View>
+        ) : (
+          <Button title={editing ? 'Save' : 'Continue with Google'} onPress={join} loading={busy} disabled={!person || name.trim().length < 3} />
+        )}
         {!person && (
           <Text variant="caption" tone="tertiary" align="center" style={{ marginTop: SPACE.sm }}>
             Log a weigh-in first so you’re placed in the right weight class.

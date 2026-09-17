@@ -1,3 +1,6 @@
+import * as SecureStore from 'expo-secure-store';
+
+import { signInWithApple, usesAppleSignIn } from '../../core/apple';
 import { googleTokens, signInWithGoogle } from '../../core/google';
 import { DEFAULT_LEADERBOARD, useSettings } from '../../core/store/settings';
 import type { Person, PhysiqueRank, RunRank } from '../../lib/ranks';
@@ -53,33 +56,69 @@ export interface RemoteProfile {
   heightBand: string;
 }
 
-async function call<T>(path: string, init: RequestInit = {}, interactive = false): Promise<T> {
-  if (!API) throw new Error('Leaderboards are not available in this build.');
-  if (DEV_TOKEN) return request<T>(path, init, DEV_TOKEN);
+class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+/** iOS keeps a Metakai session from Sign in with Apple, since Apple can't refresh tokens silently. */
+const SESSION_KEY = 'metakai.leaderboardSession';
+
+async function appleSession(interactive: boolean): Promise<string> {
+  const saved = await SecureStore.getItemAsync(SESSION_KEY);
+  if (saved) return saved;
+  if (!interactive) throw new Error('Sign in with Apple to see leaderboards.');
+  const apple = await signInWithApple();
+  if (!apple) throw new Error('Sign-in cancelled.');
+  const { session } = await request<{ session: string }>('/v1/auth/apple', { method: 'POST', body: JSON.stringify({ identityToken: apple.identityToken }) }, null);
+  await SecureStore.setItemAsync(SESSION_KEY, session);
+  return session;
+}
+
+async function googleIdToken(interactive: boolean): Promise<string> {
   let tokens;
   try {
     tokens = await googleTokens();
   } catch {
     if (!interactive) throw new Error('Sign in with Google to see leaderboards.');
-    if (!(await signInWithGoogle('Leaderboards'))) throw new Error('Sign-in cancelled.');
+    if (!(await signInWithGoogle('leaderboards'))) throw new Error('Sign-in cancelled.');
     tokens = await googleTokens();
   }
   if (!tokens.idToken) throw new Error('Leaderboards are not set up in this build yet.');
-  return request<T>(path, init, tokens.idToken);
+  return tokens.idToken;
 }
 
-async function request<T>(path: string, init: RequestInit, token: string): Promise<T> {
+async function call<T>(path: string, init: RequestInit = {}, interactive = false): Promise<T> {
+  if (!API) throw new Error('Leaderboards are not available in this build.');
+  if (DEV_TOKEN) return request<T>(path, init, DEV_TOKEN);
+  if (!usesAppleSignIn) return request<T>(path, init, await googleIdToken(interactive));
+  try {
+    return await request<T>(path, init, await appleSession(interactive));
+  } catch (e) {
+    if (!(e instanceof ApiError && e.status === 401)) throw e;
+    // The session expired or was signed with an old key: sign in again once.
+    await SecureStore.deleteItemAsync(SESSION_KEY);
+    if (!interactive) throw new Error('Sign in with Apple again to see leaderboards.');
+    return request<T>(path, init, await appleSession(true));
+  }
+}
+
+async function request<T>(path: string, init: RequestInit, token: string | null): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${API}${path}`, {
       ...init,
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}`, ...(init.headers as Record<string, string>) },
+      headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}), ...(init.headers as Record<string, string>) },
     });
   } catch {
     throw new Error('No connection. Try again when you’re online.');
   }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string }).error ?? `Server error ${res.status}.`);
+  if (!res.ok) throw new ApiError(res.status, (data as { error?: string }).error ?? `Server error ${res.status}.`);
   return data as T;
 }
 
@@ -101,7 +140,14 @@ export async function joinLeaderboards(p: { displayName: string; country: string
 }
 
 export async function leaveLeaderboards() {
-  await call('/v1/me', { method: 'DELETE' });
+  let body: string | undefined;
+  if (usesAppleSignIn && !DEV_TOKEN) {
+    // Apple asks apps to revoke Sign in with Apple tokens on deletion, which needs a fresh code.
+    const apple = await signInWithApple().catch(() => null);
+    if (apple?.authorizationCode) body = JSON.stringify({ appleAuthorizationCode: apple.authorizationCode });
+  }
+  await call('/v1/me', { method: 'DELETE', body });
+  if (usesAppleSignIn) await SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
   useSettings.getState().set({ leaderboard: DEFAULT_LEADERBOARD });
 }
 

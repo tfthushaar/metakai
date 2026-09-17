@@ -99,6 +99,14 @@ async function listFiles(): Promise<RemoteFile[]> {
   return out;
 }
 
+/** Deletes every Metakai file from the Drive app folder, then disconnects. */
+export async function deleteDriveBackup() {
+  const files = await listFiles();
+  for (const f of files) await api(`/files/${f.id}`, { method: 'DELETE' });
+  await disconnectDrive();
+  return files.length;
+}
+
 async function uploadJson(existing: RemoteFile | undefined, body: string): Promise<string> {
   if (existing) {
     const res = await api(`/files/${existing.id}?uploadType=media&fields=modifiedTime`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body }, UPLOAD);

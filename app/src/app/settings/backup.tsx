@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Alert, View } from 'react-native';
 
 import { exportBackup, pickAndRestoreBackup } from '../../core/backup';
-import { connectDrive, disconnectDrive, syncDrive, useDrive } from '../../core/drive';
+import { connectDrive, deleteDriveBackup, disconnectDrive, syncDrive, useDrive } from '../../core/drive';
 import { useSettings } from '../../core/store/settings';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { SPACE } from '../../core/theme/typography';
@@ -41,9 +41,17 @@ export default function BackupSettings() {
   };
 
   const disconnect = () =>
-    Alert.alert('Stop backing up?', 'Your data stays on this phone. The copy already in Google Drive is kept until you remove Metakai’s access in your Google account.', [
+    Alert.alert('Stop backing up?', 'Your data stays on this phone. You can keep the copy in Google Drive or delete it.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Disconnect', style: 'destructive', onPress: () => disconnectDrive() },
+      { text: 'Keep backup', onPress: () => disconnectDrive() },
+      {
+        text: 'Delete backup',
+        style: 'destructive',
+        onPress: () =>
+          deleteDriveBackup()
+            .then(() => toast('Backup deleted from Google Drive'))
+            .catch((e) => toast(e instanceof Error ? e.message : 'Could not delete the backup.')),
+      },
     ]);
 
   const doExport = async () => {

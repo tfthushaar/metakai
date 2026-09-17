@@ -1,5 +1,4 @@
-import { createRemoteJWKSet, jwtVerify } from 'jose';
-
+import { appleUserId, corsHeaders, HttpError, issueSession, revokeApple, userId, type AuthEnv } from './auth';
 import {
   ageGroup,
   BOARDS,
@@ -17,17 +16,10 @@ import {
   type ScoresUpload,
 } from './rules';
 
-export interface Env {
+export interface Env extends AuthEnv {
   DB: D1Database;
-  /** OAuth web client ID the app requests ID tokens for. */
-  GOOGLE_CLIENT_ID: string;
-  /** Secret mixed into user IDs so they can't be linked back to Google accounts. */
-  ID_PEPPER: string;
-  /** Local development only (set in .dev.vars): accepts `Bearer dev:<name>` tokens. */
-  DEV_AUTH?: string;
 }
 
-const GOOGLE_JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 const UPLOAD_INTERVAL_MS = 10 * 60 * 1000;
 const MAX_BODY = 16_000;
 const LIVE_COUNT_LIMIT = 1000;
@@ -44,43 +36,13 @@ interface UserRow {
   last_upload_at: string | null;
 }
 
-class HttpError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-  ) {
-    super(message);
-  }
-}
-
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
 
-async function sha256(text: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function userId(req: Request, env: Env): Promise<string> {
-  const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
-  if (!token) throw new HttpError(401, 'Sign in required.');
-  if (!env.ID_PEPPER) throw new HttpError(503, 'Leaderboards are being set up. Try again soon.');
-  if (env.DEV_AUTH === '1' && token.startsWith('dev:')) return sha256(`${token}:${env.ID_PEPPER}`);
-  try {
-    const { payload } = await jwtVerify(token, GOOGLE_JWKS, {
-      issuer: ['https://accounts.google.com', 'accounts.google.com'],
-      audience: env.GOOGLE_CLIENT_ID,
-    });
-    if (!payload.sub) throw new Error('no subject');
-    return sha256(`${payload.sub}:${env.ID_PEPPER}`);
-  } catch {
-    throw new HttpError(401, 'Your sign-in expired. Try again.');
-  }
-}
-
-async function body<T>(req: Request): Promise<T> {
+async function body<T>(req: Request, optional = false): Promise<T> {
   const text = await req.text();
   if (text.length > MAX_BODY) throw new HttpError(413, 'Request too large.');
+  if (optional && !text.trim()) return {} as T;
   try {
     return JSON.parse(text) as T;
   } catch {
@@ -327,18 +289,40 @@ async function refreshHistograms(env: Env) {
   }
 }
 
+/** Profiles with no uploads or profile changes for this long are deleted. */
+const INACTIVE_DAYS = 365;
+
+async function deleteInactive(env: Env) {
+  const cutoff = new Date(Date.now() - INACTIVE_DAYS * 86400_000).toISOString();
+  const stale = 'SELECT id FROM users WHERE COALESCE(last_upload_at, updated_at) < ?';
+  await env.DB.batch([
+    env.DB.prepare(`DELETE FROM scores WHERE user_id IN (${stale})`).bind(cutoff),
+    env.DB.prepare(`DELETE FROM friends WHERE user_id IN (${stale}) OR friend_id IN (${stale})`).bind(cutoff, cutoff),
+    env.DB.prepare(`DELETE FROM users WHERE COALESCE(last_upload_at, updated_at) < ?`).bind(cutoff),
+  ]);
+}
+
 /* ---------------- router ---------------- */
 
 async function route(req: Request, env: Env): Promise<Response> {
   const url = new URL(req.url);
   const path = url.pathname.replace(/\/+$/, '');
   if (path === '/v1/health') return json({ ok: true });
+  if (path === '/v1/auth/apple' && req.method === 'POST') {
+    const { identityToken } = await body<{ identityToken?: string }>(req);
+    if (!identityToken) throw new HttpError(400, 'Missing Apple identity token.');
+    return json({ session: await issueSession(env, await appleUserId(env, identityToken)) });
+  }
 
   const id = await userId(req, env);
   if (path === '/v1/me') {
     if (req.method === 'GET') return json(await getMe(env, id));
     if (req.method === 'PUT') return json(await putProfile(env, id, await body<ProfileInput>(req)));
-    if (req.method === 'DELETE') return json(await deleteMe(env, id));
+    if (req.method === 'DELETE') {
+      const { appleAuthorizationCode } = await body<{ appleAuthorizationCode?: string }>(req, true);
+      const result = await deleteMe(env, id);
+      return json({ ...result, appleRevoked: await revokeApple(env, appleAuthorizationCode) });
+    }
   }
   if (path === '/v1/names/check' && req.method === 'GET') {
     const name = url.searchParams.get('name') ?? '';
@@ -364,15 +348,23 @@ async function route(req: Request, env: Env): Promise<Response> {
 
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
+    const cors = corsHeaders(req.headers.get('origin'));
+    if (req.method === 'OPTIONS') return new Response(null, { status: cors['access-control-allow-origin'] ? 204 : 403, headers: cors });
+    let res: Response;
     try {
-      return await route(req, env);
+      res = await route(req, env);
     } catch (e) {
-      if (e instanceof HttpError) return json({ error: e.message }, e.status);
-      console.error(e);
-      return json({ error: 'Something went wrong. Try again shortly.' }, 500);
+      if (e instanceof HttpError) res = json({ error: e.message }, e.status);
+      else {
+        console.error(e);
+        res = json({ error: 'Something went wrong. Try again shortly.' }, 500);
+      }
     }
+    for (const [k, v] of Object.entries(cors)) res.headers.set(k, v);
+    return res;
   },
   async scheduled(_event: ScheduledController, env: Env): Promise<void> {
+    await deleteInactive(env);
     await refreshHistograms(env);
   },
 } satisfies ExportedHandler<Env>;

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Delete your Metakai data</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://accounts.google.com/gsi/client" async></script>
+</head>
+<body>
+<main>
+  <nav>
+    <a href="./">Metakai</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+  </nav>
+
+  <h1>Delete your data</h1>
+  <p class="lead">Metakai keeps your logs on your phone. The only account data on a Metakai server is an optional leaderboard profile.</p>
+
+  <h2>Leaderboard profile</h2>
+  <p>A leaderboard profile holds your display name, country, rounded body buckets (sex, age group, weight class, height band), scores, run times and friend links. Deleting it removes all of these from the server immediately.</p>
+
+  <p><strong>In the app:</strong> Progress → Leaderboards → profile icon → Leave leaderboards.</p>
+
+  <p><strong>Online, if you joined on Android with Google:</strong></p>
+  <div id="signin"></div>
+  <div id="status" class="muted" aria-live="polite"></div>
+  <p id="confirm" hidden><a class="button" href="#" id="delete">Delete my leaderboard profile</a></p>
+
+  <p><strong>If you joined on iPhone with Apple:</strong> delete the profile in the app as above. You can also stop Metakai from using your Apple ID at <a href="https://account.apple.com">account.apple.com</a> → Sign-In and Security → Sign in with Apple. Profiles that upload no scores for 12 months are deleted automatically.</p>
+
+  <h2>Data on your phone</h2>
+  <p>Open Metakai and go to You → Manage data → Erase all data, or uninstall the app. This deletes your logs, photos and settings from the phone.</p>
+
+  <h2>Google Drive backup</h2>
+  <p>In the app, go to You → Backup &amp; sync → Disconnect Google Drive → Delete backup. Without the app, open <a href="https://drive.google.com/drive/settings">Google Drive settings</a> → Manage apps → Metakai → Options → Delete hidden app data.</p>
+
+  <footer class="muted"><a href="./">Metakai</a> · <a href="privacy.html">Privacy Policy</a></footer>
+</main>
+<script>
+  const API = 'https://metakai-ranks.thushaarr-bsc23.workers.dev';
+  const CLIENT_ID = '510560795620-br9d6gv72om2rfgk4rmrdkjhssebh1ac.apps.googleusercontent.com';
+  const status = document.getElementById('status');
+  const confirmRow = document.getElementById('confirm');
+  let token = null;
+
+  const say = (text) => { status.textContent = text; };
+
+  async function api(method) {
+    const res = await fetch(`${API}/v1/me`, { method, headers: { authorization: `Bearer ${token}` } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+    return data;
+  }
+
+  async function onSignIn({ credential }) {
+    token = credential;
+    confirmRow.hidden = true;
+    say('Checking…');
+    try {
+      const { profile } = await api('GET');
+      if (!profile) return say('There is no leaderboard profile for this Google account.');
+      say(`Found the profile “${profile.displayName}”.`);
+      confirmRow.hidden = false;
+    } catch (e) {
+      say(e.message);
+    }
+  }
+
+  document.getElementById('delete').addEventListener('click', async (event) => {
+    event.preventDefault();
+    if (!window.confirm('Delete your leaderboard profile, scores and friends? This cannot be undone.')) return;
+    confirmRow.hidden = true;
+    say('Deleting…');
+    try {
+      await api('DELETE');
+      say('Your leaderboard profile has been deleted.');
+    } catch (e) {
+      say(e.message);
+      confirmRow.hidden = false;
+    }
+  });
+
+  window.addEventListener('load', () => {
+    if (!window.google) return say('Google sign-in could not load. Delete your profile in the app instead.');
+    google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onSignIn });
+    const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    google.accounts.id.renderButton(document.getElementById('signin'), { theme: dark ? 'filled_black' : 'outline', size: 'large', shape: 'pill', text: 'continue_with' });
+  });
+</script>
+</body>
+</html>
