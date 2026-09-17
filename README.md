@@ -124,7 +124,7 @@ npm run typecheck     # TypeScript
 npx expo run:android  # build and run a development build
 ```
 
-**Release builds.** The signing config reads these environment variables:
+**Android release builds.** The signing config reads these environment variables:
 
 | Variable | Purpose |
 |---|---|
@@ -133,19 +133,23 @@ npx expo run:android  # build and run a development build
 | `METAKAI_KEY_ALIAS` | Key alias |
 | `METAKAI_KEY_PASSWORD` | Key password |
 
+`scripts/release-android.sh` sets them from `~/.metakai-signing` and builds a Play Store bundle and an APK into `dist/`. Tagged pushes (`v*`) also build a signed APK through GitHub Actions when the matching `ANDROID_KEYSTORE_*` secrets are set.
+
+**iOS builds** run on EAS Build, so no Mac is needed:
+
 ```bash
-npx expo prebuild --platform android --clean
-cd android && ./gradlew assembleRelease
+cd app
+npx eas-cli build --platform ios --profile production
 ```
 
-Tagged pushes (`v*`) build and publish a signed APK through GitHub Actions when the matching `ANDROID_KEYSTORE_*` secrets are set.
+Publishing steps, store text and policy answers for Google Play and the App Store are in [store/](store/README.md).
 
-**Google Drive backup in your own build:**
+**Google sign-in in your own build** (Drive backup, and leaderboards on Android):
 1. In Google Cloud, enable the Google Drive API.
 2. Configure the OAuth consent screen with the `drive.appdata` scope.
-3. Create an Android OAuth client with package `com.tfthushaar.metakai` and your signing certificate's SHA-1.
-
-No client ID goes into the code.
+3. Create a web OAuth client and set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in `app/.env`.
+4. Create an Android OAuth client with package `com.tfthushaar.metakai` and your signing certificate's SHA-1.
+5. For iOS, create an iOS OAuth client and set `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` in `app/.env`.
 
 **Leaderboard server in your own build:**
 
@@ -156,10 +160,11 @@ npx wrangler login
 npx wrangler d1 create metakai-ranks     # put the database_id in wrangler.toml
 npm run migrate
 npx wrangler secret put ID_PEPPER        # any long random string
+npx wrangler secret put SESSION_SECRET   # another long random string
 npm run deploy
 ```
 
-Then set `EXPO_PUBLIC_RANKS_API` in `app/.env` to the Worker URL. `GOOGLE_CLIENT_ID` in `wrangler.toml` and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in `app/.env` must be the same OAuth web client. To test locally, create `cloud/.dev.vars` with `ID_PEPPER` and `DEV_AUTH=1`, run `npm run dev`, and point `app/.env.local` at it with `EXPO_PUBLIC_RANKS_DEV_TOKEN=dev:you`.
+Then set `EXPO_PUBLIC_RANKS_API` in `app/.env` to the Worker URL. `GOOGLE_CLIENT_ID` in `wrangler.toml` and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in `app/.env` must be the same OAuth web client. On iOS the leaderboards use Sign in with Apple; to revoke Apple sign-in when a profile is deleted, also set `APPLE_TEAM_ID`, `APPLE_KEY_ID` and `APPLE_PRIVATE_KEY` (a Sign in with Apple key). To test locally, create `cloud/.dev.vars` with `ID_PEPPER` and `DEV_AUTH=1`, run `npm run dev`, and point `app/.env.local` at it with `EXPO_PUBLIC_RANKS_DEV_TOKEN=dev:you`.
 
 ## Project structure
 
@@ -171,9 +176,10 @@ app/
   src/modules/    Feature modules: food, workouts, cardio, gps, ranks, achievements, recovery, health, body, habits
   src/ui/         Design system components
   plugins/        Expo config plugins (release signing)
-docs/             Product plan and website (privacy policy, terms)
+docs/             Product plan and website (privacy policy, terms, data deletion)
 cloud/            Leaderboard API (Cloudflare Workers + D1)
-scripts/          Icon and exercise data generators
+store/            Store listing, policy answers and graphics for Google Play and the App Store
+scripts/          Release build, icon, store graphic and exercise data generators
 .github/          CI and release workflows
 ```
 

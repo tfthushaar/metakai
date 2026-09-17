@@ -873,7 +873,7 @@ Each module folder owns its screens, components, queries, dashboard cards and re
 | **v0.7 AI & sharing** | AI coach chat, AI program and meal-plan builders, meal photo AI, label OCR, voice food logging, coach sharing, share cards, phase recaps, Strong / Hevy / MFP import |
 | **v0.8 Experimental** | Pose rep counter + range of motion, gym geofence check-in, accountability partner, gamification badges |
 | **v0.9 Rank passes** | Physique and Run passes (offline ranks vs population norms), Achievements with shareable cards, customisable layouts, then Cloudflare leaderboards with filters |
-| **v1.0** | Export, account deletion, guest → account merge, safety review, polish. iOS and Play Store only if paid. |
+| **v1.0** | AI coach notes on weekly check-ins, under-18 and pregnancy target limits, minimal UI pass, store readiness for Google Play and the App Store (Sign in with Apple for leaderboards, web data deletion, iOS config, store listing and policy answers). |
 
 ---
 

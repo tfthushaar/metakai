@@ -8,6 +8,7 @@ node_modules/
 *.jks
 *.keystore
 *.p12
+*.p8
 supabase/.temp/
 supabase/.branches/
 app/.claude/
@@ -18,3 +19,6 @@ __pycache__/
 
 # Public build-time values (no secrets)
 !app/.env
+
+# Release builds
+dist/
