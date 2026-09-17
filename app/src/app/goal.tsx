@@ -37,6 +37,7 @@ export default function Goal() {
   const router = useRouter();
   const { colors } = useTheme();
   const units = useSettings((s) => s.units);
+  const pregnant = useSettings((s) => s.pregnant);
   const { profile, phase, currentKg, targets } = useBody();
   const [width, setWidth] = useState(0);
   const [goal, setGoal] = useState<GoalType>(phase?.goalType ?? 'cut');
@@ -79,7 +80,7 @@ export default function Goal() {
     });
     const p = predict({ ...bodyInput(profile, weight), goal, startDate: dateKey(), targetKg: def.direction !== 0 ? targetKg : null, intakeKcal: t.kcal, maxWeeks: 156 });
     return { targets: t, eta: p.etaDate };
-  }, [profile, weight, goal, effectiveRate, targetKg, def.direction, reverseStep, targets]);
+  }, [profile, weight, goal, effectiveRate, targetKg, def.direction, reverseStep, targets, pregnant]);
 
   const invalid = def.direction < 0 ? targetKg >= weight : def.direction > 0 ? targetKg <= weight : false;
   const changedOnlySettings = sameGoal && phase && !['diet_break', 'mini_cut', 'event_prep', 'reverse'].includes(goal);

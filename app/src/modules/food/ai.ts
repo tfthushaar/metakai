@@ -2,7 +2,7 @@ import Storage from 'expo-sqlite/kv-store';
 
 import { hasAiKey } from '../../core/aiKey';
 import type { Food } from './foods';
-import { routeChat } from './aiRouter';
+import { routeChat } from '../../core/aiRouter';
 import { matchFood, resolveItem, withQuantity, type MealHint, type ParsedItem } from './parse';
 
 interface AiItem {

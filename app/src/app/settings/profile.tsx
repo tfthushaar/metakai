@@ -15,6 +15,7 @@ import { ListGroup, ListRow } from '../../ui/List';
 import { Screen } from '../../ui/Screen';
 import { SegmentedControl } from '../../ui/SegmentedControl';
 import { Text } from '../../ui/Text';
+import { Toggle } from '../../ui/Toggle';
 import { TextField } from '../../ui/TextField';
 import { toast } from '../../ui/Toast';
 
@@ -27,6 +28,8 @@ const EXPERIENCE: { value: Experience; label: string }[] = [
 export default function ProfileSettings() {
   const profile = useQuery(['profile'], getProfile);
   const units = useSettings((s) => s.units);
+  const pregnant = useSettings((s) => s.pregnant);
+  const setSettings = useSettings((s) => s.set);
 
   const [name, setName] = useState(profile?.name ?? '');
   const [sex, setSex] = useState<Sex>(profile?.sex ?? 'male');
@@ -109,6 +112,12 @@ export default function ProfileSettings() {
           <ListRow key={e.value} title={e.label} selected={experience === e.value} chevron={false} onPress={() => setExperience(e.value)} />
         ))}
       </ListGroup>
+
+      {sex === 'female' && (
+        <ListGroup footer="Keeps calorie targets at maintenance, with no deficit or surplus.">
+          <ListRow title="Pregnant or breastfeeding" chevron={false} accessory={<Toggle value={pregnant} onChange={(v) => setSettings({ pregnant: v })} />} />
+        </ListGroup>
+      )}
 
       <View style={{ marginTop: SPACE.xl }}>
         <Button title="Save" onPress={save} disabled={!valid} />

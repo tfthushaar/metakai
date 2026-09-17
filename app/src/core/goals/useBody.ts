@@ -35,8 +35,9 @@ export interface BodyState {
   phaseEnded: boolean;
 }
 
-export function bodyInput(profile: Profile, weightKg: number): BodyInput {
+export function bodyInput(profile: Profile, weightKg: number): BodyInput & { pregnant: boolean } {
   return {
+    pregnant: profile.sex === 'female' && useSettings.getState().pregnant,
     sex: profile.sex,
     weightKg,
     heightCm: profile.heightCm,
@@ -66,6 +67,8 @@ export function useBody(): BodyState {
   const schedule = useQuery(['routines', 'workouts'], () => trainingSchedule(today), [today]);
   const adaptiveOn = useSettings((s) => s.adaptiveTargets);
   const carbCycling = useSettings((s) => s.carbCycling);
+  // Read inside bodyInput; subscribed here so targets update when it changes.
+  const pregnant = useSettings((s) => s.pregnant);
 
   return useMemo<BodyState>(() => {
     const trend = computeTrend(weights.map((w) => ({ date: w.dateKey, kg: w.kg })));
@@ -160,5 +163,5 @@ export function useBody(): BodyState {
       dayType,
       phaseEnded: phase.endDate != null && today > phase.endDate,
     };
-  }, [profile, phase, weights, intake, schedule, adaptiveOn, carbCycling, today]);
+  }, [profile, phase, weights, intake, schedule, adaptiveOn, carbCycling, pregnant, today]);
 }

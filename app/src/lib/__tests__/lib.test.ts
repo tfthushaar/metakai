@@ -45,6 +45,20 @@ describe('targets', () => {
     expect(Math.abs(t.kcal - t.tdee)).toBeLessThanOrEqual(3);
   });
 
+  it('keeps under-18 targets close to maintenance', () => {
+    const cut = computeTargets({ ...body, age: 16, goal: 'cut', ratePctWeek: 1 });
+    expect(cut.dailyAdjustment).toBe(Math.round(-0.1 * cut.tdee));
+    expect(cut.warnings.join(' ')).toMatch(/Under 18/);
+    const bulk = computeTargets({ ...body, age: 16, goal: 'bulk', ratePctWeek: 0.5 });
+    expect(bulk.dailyAdjustment).toBe(250);
+  });
+
+  it('removes deficits and surpluses when pregnant', () => {
+    const t = computeTargets({ ...body, sex: 'female', goal: 'cut', ratePctWeek: 0.75, pregnant: true });
+    expect(t.dailyAdjustment).toBe(0);
+    expect(Math.abs(t.kcal - t.tdee)).toBeLessThanOrEqual(3);
+  });
+
   it('never drops below the safety floor', () => {
     const t = computeTargets({
       sex: 'female',

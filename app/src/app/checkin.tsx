@@ -5,13 +5,16 @@ import { useBody } from '../core/goals/useBody';
 import { getDb } from '../core/db/database';
 import { dailyTotals, updatePhase } from '../core/db/repo';
 import { useQuery } from '../core/db/useQuery';
-import { useSettings } from '../core/store/settings';
+import { useFeature, useSettings } from '../core/store/settings';
 import { useTheme } from '../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../core/theme/typography';
 import { weeklyCheckin, type Checkin, type Verdict } from '../lib/checkin';
+import { ageFromBirthDate } from '../lib/energy';
 import { addDays, dateKey, formatShort } from '../lib/dates';
 import { GOALS, signedRate } from '../lib/goals';
+import { HARD_MIN_KCAL } from '../lib/targets';
 import { displayWeight, weightUnit } from '../lib/units';
+import { CoachCard } from '../modules/coach/CoachCard';
 import { Button } from '../ui/Button';
 import { Card, SectionHeader } from '../ui/Card';
 import { haptic } from '../ui/haptics';
@@ -65,7 +68,8 @@ export default function CheckinScreen() {
   const { colors } = useTheme();
   const units = useSettings((s) => s.units);
   const adaptiveOn = useSettings((s) => s.adaptiveTargets);
-  const { phase, trend, targets, currentKg, adaptive } = useBody();
+  const coachOn = useFeature('coach');
+  const { profile, phase, trend, targets, currentKg, adaptive } = useBody();
   const today = dateKey();
   const from = addDays(today, -35);
   const totals = useQuery(['log_entries'], () => dailyTotals(from), [from]);
@@ -155,6 +159,23 @@ export default function CheckinScreen() {
           <Metric label="Workouts" value={current.plannedWorkouts ? `${current.workouts} / ${current.plannedWorkouts}` : String(current.workouts)} />
         </View>
       </Card>
+
+      {coachOn && profile && currentKg != null && (
+        <CoachCard
+          input={{
+            goal: GOALS[phase.goalType].title,
+            sex: profile.sex,
+            age: ageFromBirthDate(profile.birthDate),
+            experience: profile.experience,
+            weightKg: currentKg,
+            targetKcal: targets.kcal,
+            targetProtein: targets.protein,
+            minimumKcal: HARD_MIN_KCAL[profile.sex],
+            maintenanceKcal: adaptive?.tdee ?? null,
+            weeks: checkins,
+          }}
+        />
+      )}
 
       {adaptive && (
         <Card index={2} style={{ marginTop: SPACE.md }}>

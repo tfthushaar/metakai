@@ -1,7 +1,7 @@
 import Storage from 'expo-sqlite/kv-store';
 
-import { useAiKeys, type AiProvider } from '../../core/aiKey';
-import { block, emptyUsage, estimateTokens, nextPacificMidnight, pacificDay, parseDelay, recordUse, waitMs, type ModelLimits, type ModelUsage } from '../../lib/rateBudget';
+import { useAiKeys, type AiProvider } from './aiKey';
+import { block, emptyUsage, estimateTokens, nextPacificMidnight, pacificDay, parseDelay, recordUse, waitMs, type ModelLimits, type ModelUsage } from '../lib/rateBudget';
 
 /**
  * Routes AI requests across the user's own free-tier models. Each model has its own quota, so when
@@ -69,6 +69,8 @@ export interface ChatRequest {
   /** JSON schema for Gemini's structured output; Groq gets the shape in the system prompt. */
   schema: object;
   shapeHint: string;
+  /** Defaults to 0.1 for extraction; slightly higher for written advice. */
+  temperature?: number;
 }
 
 async function withTimeout(url: string, init: RequestInit): Promise<Response> {
@@ -90,7 +92,7 @@ async function callGemini(route: Route, key: string, req: ChatRequest): Promise<
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: req.system }] },
       contents: [{ role: 'user', parts: [{ text: req.user }] }],
-      generationConfig: { temperature: 0.1, maxOutputTokens: OUTPUT_TOKENS * 2, responseMimeType: 'application/json', responseSchema: req.schema },
+      generationConfig: { temperature: req.temperature ?? 0.1, maxOutputTokens: OUTPUT_TOKENS * 2, responseMimeType: 'application/json', responseSchema: req.schema },
     }),
   });
   if (res.ok) {
@@ -125,7 +127,7 @@ async function callGroq(route: Route, key: string, req: ChatRequest): Promise<st
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
     body: JSON.stringify({
       model: route.model,
-      temperature: 0.1,
+      temperature: req.temperature ?? 0.1,
       reasoning_effort: 'low',
       max_completion_tokens: OUTPUT_TOKENS,
       response_format: { type: 'json_object' },

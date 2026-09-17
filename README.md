@@ -34,6 +34,7 @@ Three principles shape the app:
 - **Goal types:** cut, lean bulk, bulk, recomp, maintain, mini cut, diet break, reverse diet, strength focus and event prep.
 - **Predictions:** a week-by-week forecast with a confidence band, a smoothed trend weight, goal date and ahead/behind status.
 - **Physique planner** that turns a target body into a phase timeline, plus weekly check-ins with suggested adjustments.
+- **AI coach (optional):** short, safety-filtered notes on your weekly check-in from your own AI key, using weekly totals only.
 - **Body tracking:** measurements, body fat (tape, calipers or manual), lean mass and FFMI.
 - **Private progress photos** with a before/after slider and milestone cards.
 

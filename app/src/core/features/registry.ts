@@ -180,11 +180,11 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
   coach: {
     id: 'coach',
     name: 'AI coach',
-    description: 'Weekly check-ins and suggestions.',
+    description: 'Short notes on your weekly check-in from your own AI key.',
     group: 'Coaching',
     requires: ['food'],
     permissions: [],
-    status: 'planned',
+    status: 'available',
   },
 };
 

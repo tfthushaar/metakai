@@ -95,6 +95,8 @@ interface SettingsState {
   leaderboard: LeaderboardSettings;
   adaptiveTargets: boolean;
   carbCycling: boolean;
+  /** Pregnant or breastfeeding: targets stay at maintenance. */
+  pregnant: boolean;
   drive: DriveSettings;
   /** Spoken split announcements while recording GPS activities. */
   gpsVoice: boolean;
@@ -127,6 +129,7 @@ export const useSettings = create<SettingsState>()(
       leaderboard: DEFAULT_LEADERBOARD,
       adaptiveTargets: true,
       carbCycling: false,
+      pregnant: false,
       drive: DEFAULT_DRIVE,
       gpsVoice: true,
 

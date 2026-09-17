@@ -6,7 +6,7 @@ import { Alert, View } from 'react-native';
 import { setAiKey, testAiKey, useAiKeys, type AiProvider } from '../../core/aiKey';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { SPACE } from '../../core/theme/typography';
-import { aiAllowanceToday } from '../../modules/food/aiRouter';
+import { aiAllowanceToday } from '../../core/aiRouter';
 import { Button } from '../../ui/Button';
 import { ListGroup, ListRow } from '../../ui/List';
 import { ProgressBar } from '../../ui/ProgressBar';

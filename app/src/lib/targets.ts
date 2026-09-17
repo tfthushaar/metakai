@@ -27,7 +27,13 @@ export interface TargetInput extends BodyInput {
   adaptiveTdee?: number | null;
   /** Reverse diet: calories start here and rise by stepKcal each week until maintenance. */
   reverse?: { startKcal: number; stepKcal: number; weeksElapsed: number } | null;
+  /** Pregnant or breastfeeding: no deficit or surplus. */
+  pregnant?: boolean;
 }
+
+/** Under 18: deficits stay within 10% of maintenance and surpluses small. */
+export const MINOR_MAX_DEFICIT = 0.1;
+export const MINOR_MAX_SURPLUS_KCAL = 250;
 
 /** Small surplus that supports strength work without a real bulk. */
 export const STRENGTH_SURPLUS_KCAL = 150;
@@ -49,7 +55,14 @@ export function computeTargets(input: TargetInput): TargetResult {
     dailyAdjustment = Math.min(0, planned - tdee);
   }
 
-  if (def.direction !== 0 && input.ratePctWeek > def.warnRate) {
+  if (input.pregnant) {
+    dailyAdjustment = 0;
+    warnings.push('Targets stay at maintenance while pregnant or breastfeeding. Check them with your doctor or midwife.');
+  } else if (input.age < 18) {
+    const capped = Math.max(-MINOR_MAX_DEFICIT * tdee, Math.min(MINOR_MAX_SURPLUS_KCAL, dailyAdjustment));
+    if (Math.round(capped) !== Math.round(dailyAdjustment)) warnings.push('Under 18, targets stay close to maintenance while you’re still growing.');
+    dailyAdjustment = capped;
+  } else if (def.direction !== 0 && input.ratePctWeek > def.warnRate) {
     warnings.push(
       def.direction < 0
         ? 'This rate of loss risks muscle and energy. Consider a slower cut.'
