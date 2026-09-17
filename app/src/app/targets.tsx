@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 
 import { useBody } from '../core/goals/useBody';
 import { useSettings } from '../core/store/settings';
@@ -7,7 +7,9 @@ import { ListRow } from '../ui/List';
 import { MACRO_KEYS, updatePhase } from '../core/db/repo';
 import { useTheme } from '../core/theme/ThemeProvider';
 import { SPACE } from '../core/theme/typography';
-import { type MacroTargets } from '../lib/targets';
+import { displayWeight, weightUnit } from '../lib/units';
+import { ageFromBirthDate } from '../lib/energy';
+import { lowCalorieNotice, type MacroTargets } from '../lib/targets';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { haptic } from '../ui/haptics';
@@ -30,7 +32,8 @@ export default function Targets() {
   const adaptiveOn = useSettings((st) => st.adaptiveTargets);
   const carbCycling = useSettings((st) => st.carbCycling);
   const setSettings = useSettings((st) => st.set);
-  const { profile, phase, targets, recommended, currentKg, adaptive, dayType } = useBody();
+  const units = useSettings((st) => st.units);
+  const { profile, phase, targets, recommended, currentKg, adaptive, dayType, customKcal, plannedWeeklyKg } = useBody();
 
   if (!profile || !phase || !targets || !recommended || currentKg == null) {
     return (
@@ -48,6 +51,13 @@ export default function Targets() {
     const next = { ...overrides, [key]: Math.max(0, value) };
     if (next[key] === recommended[key]) delete next[key];
     updatePhase(phase.id, { overrides: next });
+    if (key === 'kcal' && !useSettings.getState().lowCalorieNoticeShown) {
+      const notice = lowCalorieNotice({ sex: profile.sex, age: ageFromBirthDate(profile.birthDate), pregnant: profile.sex === 'female' && useSettings.getState().pregnant }, recommended.tdee, value);
+      if (notice) {
+        setSettings({ lowCalorieNoticeShown: true });
+        Alert.alert('Very low calories', notice);
+      }
+    }
   };
 
   return (
@@ -60,7 +70,14 @@ export default function Targets() {
         </Text>
       </Card>
 
-      <ListGroup header="Daily targets" footer="Adjusted values stay fixed; recommended values update as your weight changes.">
+      <ListGroup
+        header="Daily targets"
+        footer={
+          customKcal && plannedWeeklyKg != null && plannedWeeklyKg !== 0
+            ? `At ${targets.kcal.toLocaleString('en-US')} kcal expect about ${plannedWeeklyKg > 0 ? '+' : '−'}${displayWeight(Math.abs(plannedWeeklyKg), units, 2)} ${weightUnit(units)} a week. Predictions use these calories. Adjusted values stay fixed.`
+            : 'Adjusted values stay fixed; recommended values update as your weight changes.'
+        }
+      >
         {FIELDS.map((f) => {
           const value = targets[f.key];
           const custom = overrides[f.key] != null;
@@ -85,6 +102,12 @@ export default function Targets() {
           );
         })}
       </ListGroup>
+
+      {targets.warnings.map((w) => (
+        <Text key={w} variant="footnote" tone="warning" style={{ marginTop: SPACE.sm, paddingHorizontal: SPACE.lg }}>
+          {w}
+        </Text>
+      ))}
 
       <ListGroup header="Smart adjustments">
         <ListRow

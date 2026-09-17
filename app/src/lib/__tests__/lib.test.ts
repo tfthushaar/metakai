@@ -3,7 +3,7 @@ import { addDays, daysBetween } from '../dates';
 import { ageFromBirthDate, estimateTdee, mifflinStJeor, type BodyInput } from '../energy';
 import { recommendGoal } from '../goals';
 import { expectedOn, predict } from '../prediction';
-import { computeTargets, HARD_MIN_KCAL } from '../targets';
+import { calorieFloor, computeTargets, HARD_MIN_KCAL, lowCalorieNotice, macrosFor, weeklyChangeAt, withCustomCalories } from '../targets';
 import { computeTrend, weeklyTrendChange } from '../trend';
 import { cmToFtIn, ftInToCm, kgToLb } from '../units';
 
@@ -43,6 +43,34 @@ describe('targets', () => {
   it('keeps maintenance at TDEE', () => {
     const t = computeTargets({ ...body, goal: 'maintain', ratePctWeek: 0 });
     expect(Math.abs(t.kcal - t.tdee)).toBeLessThanOrEqual(3);
+  });
+
+  it('uses custom calories for macros, pace and warnings', () => {
+    const input = { ...body, goal: 'cut' as const, ratePctWeek: 0.5 };
+    const recommended = computeTargets(input);
+    const custom = withCustomCalories(recommended, input, 2000);
+    expect(custom.kcal).toBe(2000);
+    expect(custom.dailyAdjustment).toBe(2000 - recommended.tdee);
+    expect(custom).toMatchObject(macrosFor(input, 2000));
+    expect(custom.protein).toBe(recommended.protein);
+    expect(Math.abs(custom.protein * 4 + custom.carbs * 4 + custom.fat * 9 - 2000)).toBeLessThanOrEqual(15);
+    expect(weeklyChangeAt(2000, 2770)).toBeCloseTo(-0.7, 5);
+    expect(custom.warnings).toEqual([]);
+  });
+
+  it('uses custom calories as chosen and only builds a notice for very low ones', () => {
+    const input = { ...body, goal: 'cut' as const, ratePctWeek: 0.5 };
+    const low = withCustomCalories(computeTargets(input), input, 900);
+    expect(low.kcal).toBe(900);
+    expect(low.floored).toBe(false);
+    expect(low.warnings).toEqual([]);
+    expect(lowCalorieNotice(input, 2700, 900)).toMatch(/Below 1,500 kcal/);
+    expect(lowCalorieNotice(input, 2700, 1800)).toBeNull();
+
+    expect(calorieFloor({ sex: 'female', age: 30 }, 2200)).toBe(HARD_MIN_KCAL.female);
+    expect(calorieFloor({ sex: 'female', age: 16 }, 2200)).toBe(1980);
+    expect(calorieFloor({ sex: 'female', age: 30, pregnant: true }, 2203)).toBe(2205);
+    expect(lowCalorieNotice({ sex: 'female', age: 30, pregnant: true }, 2200, 2000)).toMatch(/pregnant/);
   });
 
   it('keeps under-18 targets close to maintenance', () => {

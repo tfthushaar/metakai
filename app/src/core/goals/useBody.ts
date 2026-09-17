@@ -3,9 +3,9 @@ import { useMemo } from 'react';
 import { adaptiveTdee, type AdaptiveResult } from '../../lib/adaptiveTdee';
 import { addDays, dateKey, daysBetween, parseDateKey } from '../../lib/dates';
 import { ageFromBirthDate, estimateTdee, type BodyInput } from '../../lib/energy';
-import { GOALS } from '../../lib/goals';
-import { expectedOn, predict, type Prediction } from '../../lib/prediction';
-import { computeTargets, type TargetResult } from '../../lib/targets';
+import { GOALS, signedRate } from '../../lib/goals';
+import { predict, type Prediction } from '../../lib/prediction';
+import { computeTargets, weeklyChangeAt, withCustomCalories, type TargetResult } from '../../lib/targets';
 import { computeTrend, weeklyTrendChange, type TrendPoint } from '../../lib/trend';
 import { dailyTotals, getActivePhase, getProfile, listWeights, type Phase, type Profile } from '../db/repo';
 import { getDb } from '../db/database';
@@ -23,9 +23,11 @@ export interface BodyState {
   targets: TargetResult | null;
   /** Targets before manual overrides. */
   recommended: TargetResult | null;
+  /** The user set their own daily calories instead of following the pace. */
+  customKcal: boolean;
+  /** Expected weekly change in kg: from the pace, or from custom calories against maintenance. */
+  plannedWeeklyKg: number | null;
   prediction: Prediction | null;
-  /** Positive = ahead of plan (further toward the goal than expected). */
-  aheadKg: number | null;
   progress: number | null;
   etaDate: string | null;
   adaptive: (AdaptiveResult & { applied: boolean }) | null;
@@ -76,7 +78,7 @@ export function useBody(): BodyState {
     const currentKg = last?.trend ?? phase?.startKg ?? null;
     const latestRawKg = weights.length ? weights[weights.length - 1].kg : null;
     const weeklyChange = weeklyTrendChange(trend);
-    const empty = { recommended: null, targets: null, prediction: null, aheadKg: null, progress: null, etaDate: null, adaptive: null, dayType: null, phaseEnded: false };
+    const empty = { recommended: null, customKcal: false, plannedWeeklyKg: null, targets: null, prediction: null, progress: null, etaDate: null, adaptive: null, dayType: null, phaseEnded: false };
 
     if (!profile || !phase || currentKg == null) {
       return { profile, phase, trend, currentKg, latestRawKg, weeklyChange, ...empty };
@@ -98,14 +100,18 @@ export function useBody(): BodyState {
         : null;
 
     const recommended = computeTargets({ ...input, goal: phase.goalType, ratePctWeek: phase.ratePctWeek, adaptiveTdee: applyAdaptive ? measured!.tdee : null, reverse });
+    const goalInput = { ...input, goal: phase.goalType, ratePctWeek: phase.ratePctWeek };
+    // Custom calories replace the pace; macros follow them unless set separately.
+    const base = o.kcal != null ? withCustomCalories(recommended, goalInput, o.kcal) : recommended;
     let targets: TargetResult = {
-      ...recommended,
-      kcal: o.kcal ?? recommended.kcal,
-      protein: o.protein ?? recommended.protein,
-      carbs: o.carbs ?? recommended.carbs,
-      fat: o.fat ?? recommended.fat,
-      fiber: o.fiber ?? recommended.fiber,
+      ...base,
+      protein: o.protein ?? base.protein,
+      carbs: o.carbs ?? base.carbs,
+      fat: o.fat ?? base.fat,
+      fiber: o.fiber ?? base.fiber,
     };
+    const def = GOALS[phase.goalType];
+    const plannedWeeklyKg = def.direction === 0 ? 0 : o.kcal != null ? weeklyChangeAt(base.kcal, recommended.tdee) : signedRate(phase.goalType, phase.ratePctWeek) * currentKg;
 
     // Carb cycling: shift ~10% of calories onto training days, keeping the weekly total.
     let dayType: BodyState['dayType'] = null;
@@ -118,32 +124,22 @@ export function useBody(): BodyState {
       dayType = schedule.isTrainingDay ? 'training' : 'rest';
     }
 
-    const startTargets = computeTargets({ ...bodyInput(profile, phase.startKg), goal: phase.goalType, ratePctWeek: phase.ratePctWeek, reverse });
+    // Forward from today's trend weight at today's calories, so changing calories changes the curve and goal date.
     const prediction = predict({
-      ...bodyInput(profile, phase.startKg),
-      goal: phase.goalType,
-      startDate: phase.startDate,
+      ...goalInput,
+      startDate: today,
       targetKg: phase.targetKg,
-      intakeKcal: o.kcal ?? startTargets.kcal,
+      intakeKcal: base.kcal,
+      adaptiveTdee: applyAdaptive ? measured!.tdee : null,
       maxWeeks: 104,
     });
 
-    const def = GOALS[phase.goalType];
-    const expected = expectedOn(prediction, today);
-    const aheadKg = expected != null && def.direction !== 0 ? (currentKg - expected) * -def.direction : null;
-
     let progress: number | null = null;
-    let etaDate = prediction.etaDate;
+    let etaDate: string | null = null;
     if (phase.targetKg != null && def.direction !== 0) {
       const total = phase.targetKg - phase.startKg;
       progress = total === 0 ? 1 : Math.min(1, Math.max(0, (currentKg - phase.startKg) / total));
-      const remaining = phase.targetKg - currentKg;
-      const movingRightWay = weeklyChange != null && Math.sign(weeklyChange) === Math.sign(remaining) && Math.abs(weeklyChange) > 0.05;
-      if (movingRightWay && daysBetween(phase.startDate, today) >= 14) {
-        const weeks = remaining / weeklyChange!;
-        if (weeks < 156) etaDate = addDays(today, Math.round(weeks * 7));
-      }
-      if (progress >= 1) etaDate = null;
+      etaDate = progress >= 1 ? null : prediction.etaDate;
     }
 
     return {
@@ -155,8 +151,9 @@ export function useBody(): BodyState {
       weeklyChange,
       targets,
       recommended,
+      customKcal: o.kcal != null,
+      plannedWeeklyKg,
       prediction,
-      aheadKg,
       progress,
       etaDate,
       adaptive: measured ? { ...measured, applied: applyAdaptive } : null,

@@ -79,26 +79,50 @@ export function computeTargets(input: TargetInput): TargetResult {
     warnings.push('Calories were raised to a safe minimum. Your loss will be slower than chosen.');
   }
 
-  const lean = leanMass(input.weightKg, input.bodyFatPct);
-  const proteinPerKg = def.direction < 0 || input.goal === 'recomp' ? 2.0 : 1.8;
-  const protein = lean != null ? lean * (proteinPerKg + 0.3) : input.weightKg * proteinPerKg;
-
-  const fatMin = input.weightKg * 0.6;
-  const fat = Math.max(fatMin, (kcal * 0.25) / 9);
-
-  const carbs = Math.max(0, (kcal - protein * 4 - fat * 9) / 4);
-  const fiber = (kcal / 1000) * 14;
-
   return {
     kcal: round5(kcal),
-    protein: Math.round(protein),
-    carbs: Math.round(carbs),
-    fat: Math.round(fat),
-    fiber: Math.round(fiber),
+    ...macrosFor(input, kcal),
     tdee: Math.round(tdee),
     bmr: Math.round(baseBmr),
     dailyAdjustment: Math.round(dailyAdjustment),
     floored,
     warnings,
   };
+}
+
+/** Protein, fat, carbs and fiber for a daily calorie target. */
+export function macrosFor(input: BodyInput & { goal: GoalType }, kcal: number): Omit<MacroTargets, 'kcal'> {
+  const def = GOALS[input.goal];
+  const lean = leanMass(input.weightKg, input.bodyFatPct);
+  const proteinPerKg = def.direction < 0 || input.goal === 'recomp' ? 2.0 : 1.8;
+  const protein = lean != null ? lean * (proteinPerKg + 0.3) : input.weightKg * proteinPerKg;
+  const fat = Math.max(input.weightKg * 0.6, (kcal * 0.25) / 9);
+  const carbs = Math.max(0, (kcal - protein * 4 - fat * 9) / 4);
+  const fiber = (kcal / 1000) * 14;
+  return { protein: Math.round(protein), carbs: Math.round(carbs), fat: Math.round(fat), fiber: Math.round(fiber) };
+}
+
+/** Expected weekly weight change in kg when eating `kcal` a day against maintenance `tdee`. */
+export const weeklyChangeAt = (kcal: number, tdee: number) => ((kcal - tdee) * 7) / KCAL_PER_KG;
+
+/** Lowest daily calories anyone can set, including a custom target. */
+export function calorieFloor(input: Pick<TargetInput, 'sex' | 'age' | 'pregnant'>, tdee: number): number {
+  if (input.pregnant) return round5(tdee);
+  if (input.age < 18) return round5(Math.max(HARD_MIN_KCAL[input.sex], tdee * (1 - MINOR_MAX_DEFICIT)));
+  return HARD_MIN_KCAL[input.sex];
+}
+
+/** Targets for calories the user chose instead of a pace. Macros follow the chosen calories as they are. */
+export function withCustomCalories(recommended: TargetResult, input: TargetInput, chosenKcal: number): TargetResult {
+  const kcal = Math.max(0, Math.round(chosenKcal));
+  return { ...recommended, kcal, ...macrosFor(input, kcal), dailyAdjustment: Math.round(kcal - recommended.tdee), floored: false, warnings: [] };
+}
+
+/** The one-time notice shown the first time someone sets calories below the usual minimum. */
+export function lowCalorieNotice(input: Pick<TargetInput, 'sex' | 'age' | 'pregnant'>, tdee: number, kcal: number): string | null {
+  const floor = calorieFloor(input, tdee);
+  if (kcal >= floor) return null;
+  if (input.pregnant) return 'Eating below maintenance while pregnant or breastfeeding isn’t usually recommended. Check with your doctor or midwife.';
+  if (input.age < 18) return 'Large deficits aren’t recommended while you’re still growing. Consider staying closer to maintenance.';
+  return `Below ${floor.toLocaleString('en-US')} kcal a day it’s hard to get enough nutrients and keep muscle. Metakai will use your number, and won’t warn you again.`;
 }

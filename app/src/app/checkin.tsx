@@ -11,7 +11,7 @@ import { RADIUS, SPACE } from '../core/theme/typography';
 import { weeklyCheckin, type Checkin, type Verdict } from '../lib/checkin';
 import { ageFromBirthDate } from '../lib/energy';
 import { addDays, dateKey, formatShort } from '../lib/dates';
-import { GOALS, signedRate } from '../lib/goals';
+import { GOALS } from '../lib/goals';
 import { HARD_MIN_KCAL } from '../lib/targets';
 import { displayWeight, weightUnit } from '../lib/units';
 import { CoachCard } from '../modules/coach/CoachCard';
@@ -69,7 +69,7 @@ export default function CheckinScreen() {
   const units = useSettings((s) => s.units);
   const adaptiveOn = useSettings((s) => s.adaptiveTargets);
   const coachOn = useFeature('coach');
-  const { profile, phase, trend, targets, currentKg, adaptive } = useBody();
+  const { profile, phase, trend, targets, currentKg, adaptive, plannedWeeklyKg } = useBody();
   const today = dateKey();
   const from = addDays(today, -35);
   const totals = useQuery(['log_entries'], () => dailyTotals(from), [from]);
@@ -79,8 +79,7 @@ export default function CheckinScreen() {
   }));
 
   const checkins = useMemo<Checkin[]>(() => {
-    if (!phase || !targets || currentKg == null) return [];
-    const plannedWeeklyKg = signedRate(phase.goalType, phase.ratePctWeek) * currentKg;
+    if (!phase || !targets || currentKg == null || plannedWeeklyKg == null) return [];
     return [0, 1, 2, 3].map((w) =>
       weeklyCheckin({
         weekEnd: addDays(today, -w * 7),
@@ -94,7 +93,7 @@ export default function CheckinScreen() {
         plannedWorkouts: workoutsData.planned,
       }),
     );
-  }, [phase, targets, currentKg, totals, trend, today, workoutsData]);
+  }, [phase, targets, currentKg, plannedWeeklyKg, totals, trend, today, workoutsData]);
 
   if (!phase || !targets || checkins.length === 0) {
     return (

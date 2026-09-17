@@ -97,6 +97,8 @@ interface SettingsState {
   carbCycling: boolean;
   /** Pregnant or breastfeeding: targets stay at maintenance. */
   pregnant: boolean;
+  /** The low-calorie notice has been shown once. */
+  lowCalorieNoticeShown: boolean;
   drive: DriveSettings;
   /** Spoken split announcements while recording GPS activities. */
   gpsVoice: boolean;
@@ -130,6 +132,7 @@ export const useSettings = create<SettingsState>()(
       adaptiveTargets: true,
       carbCycling: false,
       pregnant: false,
+      lowCalorieNoticeShown: false,
       drive: DEFAULT_DRIVE,
       gpsVoice: true,
 

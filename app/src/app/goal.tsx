@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 
 import { bodyInput, useBody } from '../core/goals/useBody';
 import { startPhase, updatePhase } from '../core/db/repo';
@@ -10,7 +10,7 @@ import { RADIUS, SPACE } from '../core/theme/typography';
 import { addDays, dateKey, formatLong } from '../lib/dates';
 import { CORE_GOALS, GOALS, type GoalType } from '../lib/goals';
 import { predict } from '../lib/prediction';
-import { computeTargets } from '../lib/targets';
+import { computeTargets, lowCalorieNotice, weeklyChangeAt, withCustomCalories } from '../lib/targets';
 import { displayWeight, kgToLb, lbToKg, weightUnit } from '../lib/units';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -19,6 +19,7 @@ import { haptic } from '../ui/haptics';
 import { ListGroup, ListRow } from '../ui/List';
 import { RulerPicker } from '../ui/RulerPicker';
 import { Screen } from '../ui/Screen';
+import { SegmentedControl } from '../ui/SegmentedControl';
 import { Text } from '../ui/Text';
 import { toast } from '../ui/Toast';
 
@@ -32,14 +33,19 @@ const DIET_BREAK_DAYS = [7, 14];
 const MINI_CUT_WEEKS = [2, 4, 6];
 const EVENT_WEEKS = [4, 8, 12, 16, 20, 24];
 const REVERSE_STEPS = [50, 100, 150];
+/** Goals whose calories follow fixed rules (a date, weekly steps or maintenance). */
+const FIXED_CALORIE_GOALS: GoalType[] = ['event_prep', 'reverse', 'diet_break'];
+
+type Mode = 'pace' | 'calories';
 
 export default function Goal() {
   const router = useRouter();
   const { colors } = useTheme();
   const units = useSettings((s) => s.units);
   const pregnant = useSettings((s) => s.pregnant);
-  const { profile, phase, currentKg, targets } = useBody();
+  const { profile, phase, currentKg, targets, adaptive } = useBody();
   const [width, setWidth] = useState(0);
+  const [kcalWidth, setKcalWidth] = useState(0);
   const [goal, setGoal] = useState<GoalType>(phase?.goalType ?? 'cut');
   const def = GOALS[goal];
   const weight = currentKg ?? phase?.startKg ?? 75;
@@ -50,6 +56,8 @@ export default function Goal() {
   const [miniWeeks, setMiniWeeks] = useState(4);
   const [eventWeeks, setEventWeeks] = useState(12);
   const [reverseStep, setReverseStep] = useState(phase?.overrides.reverseStepKcal ?? 100);
+  const [mode, setMode] = useState<Mode>(phase?.overrides.kcal != null ? 'calories' : 'pace');
+  const [customKcal, setCustomKcal] = useState(phase?.overrides.kcal ?? targets?.kcal ?? 2000);
 
   const choose = (g: GoalType) => {
     haptic.selection();
@@ -58,6 +66,7 @@ export default function Goal() {
     if (phase?.goalType === g) {
       setTargetKg(phase.targetKg ?? weight);
       setRate(phase.ratePctWeek);
+      setMode(phase.overrides.kcal != null ? 'calories' : 'pace');
     } else {
       setRate(d.defaultRate);
       if (d.direction !== 0) setTargetKg(Math.round(weight * (d.direction < 0 ? (g === 'mini_cut' ? 0.96 : 0.92) : 1.05)));
@@ -70,29 +79,57 @@ export default function Goal() {
   const endDate =
     goal === 'diet_break' ? addDays(dateKey(), breakDays) : goal === 'mini_cut' ? addDays(dateKey(), miniWeeks * 7) : goal === 'event_prep' ? addDays(dateKey(), eventWeeks * 7) : null;
 
+  const byCalories = mode === 'calories' && !FIXED_CALORIE_GOALS.includes(goal);
+  const adaptiveTdee = adaptive?.applied ? adaptive.tdee : null;
+
   const preview = useMemo(() => {
     if (!profile) return null;
-    const t = computeTargets({
+    const input = {
       ...bodyInput(profile, weight),
       goal,
       ratePctWeek: effectiveRate,
+      adaptiveTdee,
       reverse: goal === 'reverse' && targets ? { startKcal: targets.kcal, stepKcal: reverseStep, weeksElapsed: 0 } : null,
-    });
-    const p = predict({ ...bodyInput(profile, weight), goal, startDate: dateKey(), targetKg: def.direction !== 0 ? targetKg : null, intakeKcal: t.kcal, maxWeeks: 156 });
-    return { targets: t, eta: p.etaDate };
-  }, [profile, weight, goal, effectiveRate, targetKg, def.direction, reverseStep, targets, pregnant]);
+    };
+    const paced = computeTargets(input);
+    const t = byCalories ? withCustomCalories(paced, input, customKcal) : paced;
+    const p = predict({ ...input, startDate: dateKey(), targetKg: def.direction !== 0 ? targetKg : null, intakeKcal: t.kcal, maxWeeks: 156 });
+    return { targets: t, paced, eta: p.etaDate, weeklyKg: weeklyChangeAt(t.kcal, paced.tdee) };
+  }, [profile, weight, goal, effectiveRate, adaptiveTdee, targetKg, def.direction, reverseStep, targets, pregnant, byCalories, customKcal]);
+
+  const switchMode = (m: Mode) => {
+    // Start the ruler from the calories the current pace gives.
+    if (m === 'calories' && mode === 'pace' && preview) setCustomKcal(preview.paced.kcal);
+    setMode(m);
+  };
 
   const invalid = def.direction < 0 ? targetKg >= weight : def.direction > 0 ? targetKg <= weight : false;
   const changedOnlySettings = sameGoal && phase && !['diet_break', 'mini_cut', 'event_prep', 'reverse'].includes(goal);
 
   const save = () => {
+    if (!profile || !preview) return;
+    const notice = byCalories && !useSettings.getState().lowCalorieNoticeShown ? lowCalorieNotice(bodyInput(profile, weight), preview.paced.tdee, customKcal) : null;
+    if (notice) {
+      useSettings.getState().set({ lowCalorieNoticeShown: true });
+      Alert.alert('Very low calories', notice, [{ text: 'OK', onPress: commit }], { cancelable: false });
+      return;
+    }
+    commit();
+  };
+
+  const commit = () => {
     if (!profile) return;
     const target = def.direction !== 0 ? targetKg : null;
+    const kcal = byCalories ? customKcal : undefined;
     if (changedOnlySettings) {
-      updatePhase(phase!.id, { targetKg: target, ratePctWeek: effectiveRate });
+      const { kcal: _previous, ...rest } = phase!.overrides;
+      updatePhase(phase!.id, { targetKg: target, ratePctWeek: effectiveRate, overrides: kcal != null ? { ...rest, kcal } : rest });
       toast('Goal updated');
     } else {
-      const overrides = goal === 'reverse' && targets ? { reverseStartKcal: targets.kcal, reverseStepKcal: reverseStep } : {};
+      const overrides = {
+        ...(goal === 'reverse' && targets ? { reverseStartKcal: targets.kcal, reverseStepKcal: reverseStep } : {}),
+        ...(kcal != null ? { kcal } : {}),
+      };
       startPhase({ goalType: goal, startDate: dateKey(), endDate, startKg: weight, targetKg: target, ratePctWeek: effectiveRate, overrides });
       toast(`${def.title} started`);
     }
@@ -135,19 +172,46 @@ export default function Goal() {
         </Card>
       )}
 
-      {def.direction !== 0 && goal !== 'event_prep' && (
+      {!FIXED_CALORIE_GOALS.includes(goal) && (
         <Card style={{ marginTop: SPACE.md }}>
-          <Text variant="footnote" tone="secondary">
-            Pace per week
-          </Text>
-          <View style={styles.chips}>
-            {steps.map((r) => (
-              <Chip key={r} label={`${r}%`} selected={Math.abs(r - rate) < 1e-6} onPress={() => setRate(r)} />
-            ))}
-          </View>
-          <Text variant="subhead" tone="secondary" tabular>
-            {`${def.direction < 0 ? '−' : '+'}${displayWeight((weight * rate) / 100, units, 2)} ${weightUnit(units)} per week`}
-          </Text>
+          <SegmentedControl<Mode>
+            value={mode}
+            onChange={switchMode}
+            segments={[
+              { value: 'pace', label: def.direction === 0 ? 'Recommended' : 'Set pace' },
+              { value: 'calories', label: 'Set calories' },
+            ]}
+          />
+          {mode === 'calories' ? (
+            <>
+              <Text variant="largeTitle" tabular style={{ marginTop: SPACE.md }}>{`${customKcal.toLocaleString('en-US')} kcal`}</Text>
+              <View onLayout={(e) => setKcalWidth(e.nativeEvent.layout.width)} style={{ marginTop: SPACE.sm }}>
+                <RulerPicker key={`kcal-${kcalWidth}`} width={kcalWidth} min={0} max={6000} step={25} majorEvery={20} value={customKcal} onChange={setCustomKcal} />
+              </View>
+              {preview && (
+                <Text variant="subhead" tone="secondary" tabular style={{ marginTop: SPACE.sm }}>
+                  {def.direction === 0
+                    ? `${preview.targets.kcal >= preview.paced.tdee ? '+' : '−'}${Math.abs(preview.targets.kcal - preview.paced.tdee)} kcal vs maintenance (${preview.paced.tdee.toLocaleString('en-US')})`
+                    : `About ${preview.weeklyKg > 0 ? '+' : preview.weeklyKg < 0 ? '−' : ''}${displayWeight(Math.abs(preview.weeklyKg), units, 2)} ${weightUnit(units)} per week · maintenance ${preview.paced.tdee.toLocaleString('en-US')} kcal`}
+                </Text>
+              )}
+            </>
+          ) : def.direction !== 0 ? (
+            <>
+              <View style={styles.chips}>
+                {steps.map((r) => (
+                  <Chip key={r} label={`${r}%`} selected={Math.abs(r - rate) < 1e-6} onPress={() => setRate(r)} />
+                ))}
+              </View>
+              <Text variant="subhead" tone="secondary" tabular>
+                {`${def.direction < 0 ? '−' : '+'}${displayWeight((weight * rate) / 100, units, 2)} ${weightUnit(units)} per week`}
+              </Text>
+            </>
+          ) : (
+            <Text variant="subhead" tone="secondary" style={{ marginTop: SPACE.md }}>
+              Calories follow your goal and update as your weight changes.
+            </Text>
+          )}
         </Card>
       )}
 

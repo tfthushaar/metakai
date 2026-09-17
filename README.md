@@ -28,11 +28,11 @@ Three principles shape the app:
 - **Plain-language logging:** “2 rotis, 1 katori dal and 150g paneer” becomes an itemised list with calories, protein, carbs, fat and fiber.
 - **Offline food database** with Indian and international foods, barcode scanning (Open Food Facts), saved meals and quick add.
 - **AI for unknown foods** using your own free Google Gemini or Groq key. Requests are spread across several models with per-model quota tracking and automatic failover. Answers are cached and learned foods are saved for offline use.
-- **Targets** from Mifflin-St Jeor or Katch-McArdle, with safe calorie and protein floors, adaptive maintenance estimates and optional training-day carbs.
+- **Targets** from Mifflin-St Jeor or Katch-McArdle, with adaptive maintenance estimates and optional training-day carbs. Follow a weekly pace, or set your own daily calories and the macros, goal date and forecast follow them.
 
 ### Goals and progress
 - **Goal types:** cut, lean bulk, bulk, recomp, maintain, mini cut, diet break, reverse diet, strength focus and event prep.
-- **Predictions:** a week-by-week forecast with a confidence band, a smoothed trend weight, goal date and ahead/behind status.
+- **Predictions:** a forecast from today's trend weight at your current calories, with a confidence band and goal date.
 - **Physique planner** that turns a target body into a phase timeline, plus weekly check-ins with suggested adjustments.
 - **AI coach (optional):** short, safety-filtered notes on your weekly check-in from your own AI key, using weekly totals only.
 - **Body tracking:** measurements, body fat (tape, calipers or manual), lean mass and FFMI.
