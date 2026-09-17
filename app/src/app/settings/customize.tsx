@@ -33,7 +33,7 @@ export default function Customize() {
       </Text>
 
       <ListGroup header="Features">
-        <ListRow icon="grid" iconColor={colors.text} title="Features" subtitle="Turn whole features on or off" onPress={() => router.push('/settings/features')} />
+        <ListRow icon="grid" title="Features" subtitle="Turn whole features on or off" onPress={() => router.push('/settings/features')} />
       </ListGroup>
 
       <ListGroup header="Screens">

@@ -9,18 +9,17 @@ import { useLayout } from '../../core/store/layouts';
 import { useFeature, useSettings } from '../../core/store/settings';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../../core/theme/typography';
-import { addDays, dateKey, formatLong, formatShort, relativeDay } from '../../lib/dates';
+import { addDays, dateKey, formatShort } from '../../lib/dates';
 import { GOALS } from '../../lib/goals';
 import { displayWeight, weightUnit } from '../../lib/units';
 import { MacroInline, MacroSummary } from '../../modules/food/components';
 import { sumMacros } from '../../modules/food/parse';
-import { cardioStats } from '../../modules/cardio/repo';
 import { HabitsCard } from '../../modules/habits/HabitsCard';
 import { listSupplements, setTaken, takenOn } from '../../modules/health/repo';
 import { RanksTodayCard } from '../../modules/ranks/RanksSummary';
 import { readinessFor } from '../../modules/recovery/repo';
 import { ElapsedText } from '../../modules/workouts/components';
-import { activeWorkout, listWorkouts, overloadSummary, routinesForWeekday, startWorkout, trainingStats } from '../../modules/workouts/repo';
+import { activeWorkout, listWorkouts, routinesForWeekday, startWorkout } from '../../modules/workouts/repo';
 import { Button } from '../../ui/Button';
 import { Card } from '../../ui/Card';
 import { Icon } from '../../ui/Icon';
@@ -48,21 +47,11 @@ export default function Today() {
   const predictionsOn = useFeature('predictions');
   const trainOn = useFeature('workouts');
   const habitsOn = useFeature('habits');
-  const cardioOn = useFeature('cardio');
   const recoveryOn = useFeature('recovery');
   const healthOn = useFeature('health');
   const active = useQuery(['workouts'], activeWorkout);
   const lastWorkout = useQuery(['workouts', 'workout_sets'], () => listWorkouts(1)[0] ?? null);
   const todayDay = useQuery(['routines', 'routine_items', 'splits'], () => routinesForWeekday(new Date().getDay()).find((r) => r.items.length > 0) ?? null);
-  const weekLifting = useQuery(['workouts', 'workout_sets'], () => trainingStats(addDays(dateKey(), -6)));
-  const weekCardio = useQuery(['cardio_sessions'], () => cardioStats(addDays(dateKey(), -6)));
-  const weekTraining = {
-    workouts: (trainOn ? weekLifting.workouts : 0) + (cardioOn ? weekCardio.sessions : 0),
-    kcal: (trainOn ? weekLifting.kcal : 0) + (cardioOn ? weekCardio.kcal : 0),
-  };
-  const overloadRows = useQuery(['workouts', 'workout_sets'], () => overloadSummary(addDays(dateKey(), -56)));
-  const overloadTotal = overloadRows.filter((o) => o.status !== 'new').length;
-  const overloadUp = overloadRows.filter((o) => o.status === 'progressing').length;
   const today = dateKey();
 
   const body = useBody();
@@ -73,7 +62,7 @@ export default function Today() {
   const supplements = useQuery(['supplements'], listSupplements);
   const taken = useQuery(['supplement_logs'], () => takenOn(today), [today]);
 
-  const { phase, targets, currentKg, weeklyChange, trend, progress, etaDate, aheadKg, phaseEnded, dayType } = body;
+  const { phase, targets, currentKg, weeklyChange, trend, progress, etaDate, phaseEnded, dayType } = body;
   const goalDef = phase ? GOALS[phase.goalType] : null;
   const wu = weightUnit(units);
 
@@ -151,11 +140,11 @@ export default function Today() {
                   {wu}
                 </Text>
               </View>
-              <Text variant="footnote" tone="secondary" tabular>
-                {weeklyChange == null
-                  ? 'Weigh in daily to see your weekly rate'
-                  : `${weeklyChange > 0 ? '+' : weeklyChange < 0 ? '−' : ''}${displayWeight(Math.abs(weeklyChange), units, 2)} ${wu} per week`}
-              </Text>
+              {weeklyChange != null && (
+                <Text variant="footnote" tone="secondary" tabular>
+                  {`${weeklyChange > 0 ? '+' : weeklyChange < 0 ? '−' : ''}${displayWeight(Math.abs(weeklyChange), units, 2)} ${wu} per week`}
+                </Text>
+              )}
             </View>
             <Button
               title={weighedToday ? 'Logged' : 'Weigh in'}
@@ -179,21 +168,14 @@ export default function Today() {
             </View>
           )}
           {predictionsOn && phase && goalDef && goalDef.direction !== 0 && phase.targetKg != null && progress != null && (
-            <View style={{ marginTop: SPACE.lg, gap: SPACE.sm }}>
+            <View style={{ marginTop: SPACE.md, gap: SPACE.sm }}>
               <View style={styles.goalRow}>
-                <Text variant="footnote" tone="secondary">
-                  {`${goalDef.title} · ${displayWeight(phase.startKg, units)} → ${displayWeight(phase.targetKg, units)} ${wu}`}
+                <Text variant="footnote" tone="secondary" numberOfLines={1} style={{ flexShrink: 1 }}>
+                  {`${goalDef.title} to ${displayWeight(phase.targetKg, units)} ${wu}${progress >= 1 ? ' · reached' : etaDate ? ` · ${formatShort(etaDate)}` : ''}`}
                 </Text>
                 <Text variant="footnote" weight="semibold" tabular>{`${Math.round(progress * 100)}%`}</Text>
               </View>
               <ProgressBar progress={progress} height={6} />
-              <Text variant="footnote" tone="secondary">
-                {progress >= 1
-                  ? 'Goal reached. Choose your next phase in You → Goal.'
-                  : etaDate
-                    ? `On pace for ${formatLong(etaDate)}${aheadKg != null && Math.abs(aheadKg) >= 0.3 ? ` · ${displayWeight(Math.abs(aheadKg), units)} ${wu} ${aheadKg > 0 ? 'ahead' : 'behind'}` : ''}`
-                    : 'Keep logging to estimate your goal date'}
-              </Text>
             </View>
           )}
         </Card>
@@ -208,21 +190,15 @@ export default function Today() {
               <Icon name="dumbbell" size={20} color={active ? colors.onAccent : colors.text} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text variant="footnote" tone="secondary">
-                {active ? 'In progress' : todayDay ? 'Today' : 'Training'}
-              </Text>
-              <Text variant="headline" numberOfLines={2}>
-                {active ? active.name : todayDay ? todayDay.name : lastWorkout ? `Last: ${lastWorkout.name}` : 'No workouts yet'}
+              <Text variant="headline" numberOfLines={1}>
+                {active ? active.name : todayDay ? todayDay.name : 'Workout'}
               </Text>
               {active ? (
                 <ElapsedText since={active.startedAt} variant="footnote" color={colors.textSecondary} />
               ) : (
-                !todayDay &&
-                lastWorkout && (
-                  <Text variant="footnote" tone="secondary" numberOfLines={1}>
-                    {relativeDay(lastWorkout.dateKey)}
-                  </Text>
-                )
+                <Text variant="footnote" tone="secondary" numberOfLines={1}>
+                  {todayDay ? 'Planned for today' : lastWorkout ? `Last: ${lastWorkout.name}` : 'No workouts yet'}
+                </Text>
               )}
             </View>
             {!active && (
@@ -243,32 +219,6 @@ export default function Today() {
               }}
             />
           </View>
-          <View style={[styles.trainStats, { borderTopColor: colors.separator }]}>
-            <View style={styles.trainStat}>
-              <Text variant="headline" tabular>
-                {weekTraining.workouts}
-              </Text>
-              <Text variant="caption" tone="secondary">
-                this week
-              </Text>
-            </View>
-            <View style={styles.trainStat}>
-              <Text variant="headline" tabular>
-                {weekTraining.kcal.toLocaleString('en-US')}
-              </Text>
-              <Text variant="caption" tone="secondary">
-                kcal burned
-              </Text>
-            </View>
-            <View style={styles.trainStat}>
-              <Text variant="headline" tabular color={overloadUp > 0 ? colors.success : colors.text}>
-                {overloadTotal ? `${overloadUp}/${overloadTotal}` : '—'}
-              </Text>
-              <Text variant="caption" tone="secondary">
-                lifts up
-              </Text>
-            </View>
-          </View>
         </Card>
     ) : null,
     ranks: <RanksTodayCard index={idx('ranks')} />,
@@ -279,17 +229,12 @@ export default function Today() {
               <Icon name="heartPulse" size={20} color={ready ? (ready.band === 'high' ? colors.success : ready.band === 'moderate' ? colors.warning : colors.danger) : colors.text} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text variant="footnote" tone="secondary">
-                Readiness
-              </Text>
-              <Text variant="headline" numberOfLines={2}>
-                {ready ? `${ready.score} · ${ready.band === 'high' ? 'Ready to push' : ready.band === 'moderate' ? 'Train smart' : 'Take it easy'}` : 'How do you feel today?'}
-              </Text>
+              <Text variant="headline">{ready ? `Readiness ${ready.score}` : 'Readiness'}</Text>
               <Text variant="footnote" tone="secondary" numberOfLines={1}>
-                {ready ? (ready.flags[0] ?? 'Sleep, soreness and stress look good') : '30-second check-in'}
+                {ready ? (ready.band === 'high' ? 'Ready to push' : ready.band === 'moderate' ? 'Train smart' : 'Take it easy') : 'Check in: how do you feel today?'}
               </Text>
             </View>
-            {!ready && <Button title="Check in" size="sm" variant="tinted" full={false} style={{ alignSelf: 'center' }} onPress={() => router.push('/recovery')} />}
+            <Icon name="chevronRight" size={18} color={colors.textTertiary} />
           </View>
         </Card>
     ) : null,
@@ -392,7 +337,5 @@ const styles = StyleSheet.create({
   goalRow: { flexDirection: 'row', justifyContent: 'space-between' },
   suppRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm },
   supp: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, height: 34, borderRadius: RADIUS.pill },
-  trainStats: { flexDirection: 'row', marginTop: SPACE.md, paddingTop: SPACE.md, borderTopWidth: StyleSheet.hairlineWidth },
-  trainStat: { flex: 1, alignItems: 'center', gap: 2 },
   round: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
 });

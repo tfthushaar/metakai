@@ -42,7 +42,6 @@ export interface ListRowProps {
   subtitle?: string;
   value?: string;
   icon?: IconName;
-  iconColor?: string;
   onPress?: () => void;
   accessory?: ReactNode;
   chevron?: boolean;
@@ -50,13 +49,13 @@ export interface ListRowProps {
   selected?: boolean;
 }
 
-export function ListRow({ title, subtitle, value, icon, iconColor, onPress, accessory, chevron = !!onPress, destructive, selected }: ListRowProps) {
+export function ListRow({ title, subtitle, value, icon, onPress, accessory, chevron = !!onPress, destructive, selected }: ListRowProps) {
   const { colors } = useTheme();
   const content = (
     <View style={styles.row}>
       {icon && (
-        <View style={[styles.iconBadge, { backgroundColor: iconColor ?? colors.accent }]}>
-          <Icon name={icon} size={17} color={iconColor === colors.fill ? colors.text : contrastOn(iconColor ?? colors.accent)} strokeWidth={2.2} />
+        <View style={[styles.iconBadge, { backgroundColor: colors.fill }]}>
+          <Icon name={icon} size={17} color={colors.text} strokeWidth={2} />
         </View>
       )}
       <View style={styles.rowText}>
@@ -85,14 +84,6 @@ export function ListRow({ title, subtitle, value, icon, iconColor, onPress, acce
       {content}
     </PressableScale>
   );
-}
-
-/** Black or white, whichever reads better on the given hex colour. */
-function contrastOn(hex: string): string {
-  const h = hex.replace('#', '').slice(0, 6);
-  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance > 0.6 ? '#000000' : '#FFFFFF';
 }
 
 const styles = StyleSheet.create({

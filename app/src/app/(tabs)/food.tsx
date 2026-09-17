@@ -157,10 +157,6 @@ export default function Food() {
           index={i + 1}
         />
       ))}
-
-      <Text variant="footnote" tone="tertiary" align="center" style={{ marginTop: SPACE.xl }}>
-        Swipe left on an item to remove it.
-      </Text>
     </Screen>
   );
 }

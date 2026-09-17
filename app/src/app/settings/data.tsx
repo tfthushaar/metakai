@@ -35,7 +35,7 @@ export default function ManageData() {
         Everything lives on this phone. Back it up to a file or your own Google Drive before switching phones.
       </Text>
       <ListGroup header="Backup">
-        <ListRow icon="cloud" iconColor={colors.fill} title="Backup & sync" onPress={() => router.push('/settings/backup')} />
+        <ListRow icon="cloud" title="Backup & sync" onPress={() => router.push('/settings/backup')} />
       </ListGroup>
       <ListGroup footer={driveOn ? 'Also disconnects Google Drive. The copy in your Drive is kept.' : undefined}>
         <ListRow title="Erase all data" destructive onPress={erase} chevron={false} />

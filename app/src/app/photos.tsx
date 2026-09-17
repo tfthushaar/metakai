@@ -191,7 +191,7 @@ export default function Photos() {
 
       {photos.length === 0 && (
         <Text variant="subhead" tone="tertiary" align="center" style={{ marginTop: SPACE.xxl }}>
-          Take front, side and back photos every 2–4 weeks. Long-press a photo to delete it.
+          Take front, side and back photos every 2–4 weeks.
         </Text>
       )}
     </Screen>

@@ -68,27 +68,26 @@ export default function You() {
           value={goal ? goal.title : 'Not set'}
           onPress={() => router.push('/goal')}
         />
-        <ListRow icon="flame" iconColor={colors.text} title="Nutrition targets" value={targets ? `${targets.kcal} kcal` : undefined} onPress={() => router.push('/targets')} />
+        <ListRow icon="flame" title="Nutrition targets" value={targets ? `${targets.kcal} kcal` : undefined} onPress={() => router.push('/targets')} />
       </ListGroup>
 
       <ListGroup header="App" index={2}>
-        <ListRow icon="grid" iconColor={colors.text} title="Features" value={settings.preset === 'custom' ? 'Custom' : undefined} onPress={() => router.push('/settings/features')} />
+        <ListRow icon="grid" title="Features" value={settings.preset === 'custom' ? 'Custom' : undefined} onPress={() => router.push('/settings/features')} />
         <ListRow icon="palette" title="Appearance" value={appearanceLabel} onPress={() => router.push('/settings/appearance')} />
-        <ListRow icon="home" iconColor={colors.text} title="Layout" subtitle="Sections, shortcuts and start screen" onPress={() => router.push('/settings/customize')} />
+        <ListRow icon="home" title="Layout" subtitle="Sections, shortcuts and start screen" onPress={() => router.push('/settings/customize')} />
         {settings.enabledModules.includes('habits') && (
-          <ListRow icon="check" iconColor={colors.fill} title="Habits" onPress={() => router.push('/habits')} />
+          <ListRow icon="check" title="Habits" onPress={() => router.push('/habits')} />
         )}
-        <ListRow icon="timer" iconColor={colors.fill} title="Reminders" value={Object.values(settings.reminders).filter((r) => r.on).length ? 'On' : 'Off'} onPress={() => router.push('/settings/reminders')} />
-        <ListRow icon="user" iconColor={colors.fill} title="Privacy" value={settings.appLock ? 'Locked' : undefined} onPress={() => router.push('/settings/privacy')} />
+        <ListRow icon="timer" title="Reminders" value={Object.values(settings.reminders).filter((r) => r.on).length ? 'On' : 'Off'} onPress={() => router.push('/settings/reminders')} />
+        <ListRow icon="user" title="Privacy" value={settings.appLock ? 'Locked' : undefined} onPress={() => router.push('/settings/privacy')} />
         {settings.enabledModules.includes('workouts') && (
-          <ListRow icon="dumbbell" iconColor={colors.text} title="Gym" value={`Rest ${settings.gym.restSeconds}s`} onPress={() => router.push('/settings/gym')} />
+          <ListRow icon="dumbbell" title="Gym" value={`Rest ${settings.gym.restSeconds}s`} onPress={() => router.push('/settings/gym')} />
         )}
       </ListGroup>
 
       <ListGroup header="Data" index={3}>
         <ListRow
           icon={settings.drive.enabled ? 'cloud' : 'cloudOff'}
-          iconColor={settings.drive.enabled ? colors.success : colors.fill}
           title="Backup & sync"
           subtitle={
             settings.drive.enabled
@@ -100,7 +99,7 @@ export default function You() {
           onPress={() => router.push('/settings/backup')}
         />
         <ListRow icon="sparkles" title="AI" value={hasAiKey(aiKeys) ? 'On' : 'Off'} onPress={() => router.push('/settings/ai')} />
-          <ListRow icon="trash" iconColor={colors.fill} title="Manage data" onPress={() => router.push('/settings/data')} />
+          <ListRow icon="trash" title="Manage data" onPress={() => router.push('/settings/data')} />
       </ListGroup>
 
       <Text variant="footnote" tone="tertiary" align="center" style={{ marginTop: SPACE.xxl }}>

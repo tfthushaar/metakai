@@ -96,7 +96,7 @@ export default function BackupSettings() {
         <>
           <ListGroup header="Google Drive" footer="Backs up a few seconds after you make changes and when you leave the app. Photos upload once.">
             <ListRow icon="cloud" title={drive.email ?? 'Google account'} subtitle={statusText ?? undefined} />
-            <ListRow icon="refresh" iconColor={colors.fill} title="Back up now" onPress={() => syncDrive().then(() => toast(useDrive.getState().error ?? 'Backed up'))} chevron={false} />
+            <ListRow icon="refresh" title="Back up now" onPress={() => syncDrive().then(() => toast(useDrive.getState().error ?? 'Backed up'))} chevron={false} />
           </ListGroup>
           <ListGroup>
             <ListRow title="Disconnect Google Drive" destructive onPress={disconnect} chevron={false} />
@@ -113,8 +113,8 @@ export default function BackupSettings() {
 
       <ListGroup header="Backup file" footer="Save the file anywhere, such as Files, email or another cloud. Restoring merges it into this phone.">
         <ListRow title="Include progress photos" accessory={<Toggle value={withPhotos} onChange={setWithPhotos} />} />
-        <ListRow icon="arrowUp" iconColor={colors.fill} title={busy === 'export' ? 'Preparing…' : 'Export backup file'} onPress={busy ? undefined : doExport} chevron={false} />
-        <ListRow icon="arrowDown" iconColor={colors.fill} title={busy === 'import' ? 'Restoring…' : 'Restore from file'} onPress={busy ? undefined : doImport} chevron={false} />
+        <ListRow icon="arrowUp" title={busy === 'export' ? 'Preparing…' : 'Export backup file'} onPress={busy ? undefined : doExport} chevron={false} />
+        <ListRow icon="arrowDown" title={busy === 'import' ? 'Restoring…' : 'Restore from file'} onPress={busy ? undefined : doImport} chevron={false} />
       </ListGroup>
     </Screen>
   );

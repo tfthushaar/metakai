@@ -66,7 +66,7 @@ export default function Health() {
     <Screen title="Health" back>
       <SectionHeader
         title="Supplements"
-        action={<Button title={editing ? 'Done' : supplements.length ? 'Edit' : 'Add'} size="sm" variant="tinted" full={false} onPress={() => setEditing(!editing)} />}
+        action={<Button title={editing ? 'Done' : supplements.length ? 'Edit' : 'Add'} size="sm" variant="plain" full={false} onPress={() => setEditing(!editing)} />}
       />
       <Card index={0} padded={false}>
         {supplements.length === 0 && !editing ? (
@@ -147,7 +147,7 @@ export default function Health() {
         </Animated.View>
       )}
 
-      <SectionHeader title="Health markers" action={<Button title="Log" icon="plus" size="sm" variant="tinted" full={false} onPress={() => router.push('/log-marker')} />} />
+      <SectionHeader title="Health markers" action={<Button title="Log" size="sm" variant="plain" full={false} onPress={() => router.push('/log-marker')} />} />
       <Card index={1} padded={false}>
         {markers.length === 0 ? (
           <PressableScale scaleTo={0.99} onPress={() => router.push('/log-marker')} style={{ padding: SPACE.lg, gap: 4 }}>

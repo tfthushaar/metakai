@@ -121,12 +121,12 @@ export default function LeaderboardJoin() {
       {!editing && (
         <>
           <ListGroup header="Shared">
-            <ListRow icon="user" iconColor={colors.fill} title="Your display name and country" />
-            <ListRow icon="ruler" iconColor={colors.fill} title="Sex, age group, weight class and height band" subtitle="Rounded buckets, never exact numbers" />
-            <ListRow icon="trophy" iconColor={colors.fill} title="Pass scores and GPS run times" />
+            <ListRow icon="user" title="Your display name and country" />
+            <ListRow icon="ruler" title="Sex, age group, weight class and height band" subtitle="Rounded buckets, never exact numbers" />
+            <ListRow icon="trophy" title="Pass scores and GPS run times" />
           </ListGroup>
           <ListGroup header="Never shared" footer="Signing in with Google proves you’re a real person. Metakai stores a one-way code, not your email.">
-            <ListRow icon="lock" iconColor={colors.fill} title="Food, weigh-ins, photos, routes, health data and your email" />
+            <ListRow icon="lock" title="Food, weigh-ins, photos, routes, health data and your email" />
           </ListGroup>
         </>
       )}

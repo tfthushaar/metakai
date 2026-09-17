@@ -82,8 +82,8 @@ export function RanksSection() {
         {leaderboardsAvailable && (physiqueOn || runOn) && (
           <Card onPress={() => router.push('/leaderboard')}>
             <View style={styles.row}>
-              <View style={[styles.lbIcon, { backgroundColor: colors.accentSoft }]}>
-                <Icon name="trophy" size={18} color={colors.accent} />
+              <View style={[styles.lbIcon, { backgroundColor: colors.fill }]}>
+                <Icon name="trophy" size={18} color={colors.text} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text variant="headline">Leaderboards</Text>

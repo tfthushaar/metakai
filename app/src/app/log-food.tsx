@@ -433,9 +433,6 @@ export default function LogFood() {
                 />
               ))}
             </View>
-            <Text variant="caption" tone="tertiary" style={{ paddingHorizontal: 4 }}>
-              Press and hold a saved meal to delete it.
-            </Text>
           </Animated.View>
         )}
 

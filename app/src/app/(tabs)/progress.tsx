@@ -14,7 +14,7 @@ import { useLayout } from '../../core/store/layouts';
 import { RanksSection } from '../../modules/ranks/RanksSummary';
 import { useFeature, useSettings } from '../../core/store/settings';
 import { useTheme } from '../../core/theme/ThemeProvider';
-import { RADIUS, SPACE } from '../../core/theme/typography';
+import { SPACE } from '../../core/theme/typography';
 import { addDays, dateKey, formatLong, formatShort, parseDateKey } from '../../lib/dates';
 import { GOALS } from '../../lib/goals';
 import { displayWeight, weightUnit } from '../../lib/units';
@@ -34,13 +34,12 @@ type Range = '1m' | '3m' | '6m' | 'all';
 const RANGE_DAYS: Record<Exclude<Range, 'all'>, number> = { '1m': 30, '3m': 90, '6m': 180 };
 
 function Stat({ label, value, detail }: { label: string; value: string; detail?: string }) {
-  const { colors } = useTheme();
   return (
-    <View style={[styles.stat, { backgroundColor: colors.surface }]}>
-      <Text variant="footnote" tone="secondary" weight="medium">
+    <View style={styles.stat}>
+      <Text variant="caption" tone="secondary" weight="medium">
         {label}
       </Text>
-      <Text variant="title2" tabular numberOfLines={1} adjustsFontSizeToFit>
+      <Text variant="headline" tabular numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>
       {detail && (
@@ -123,7 +122,7 @@ export default function Progress() {
   const intakeStart = addDays(today, -13);
   const intake = useQuery(['log_entries'], () => dailyTotals(intakeStart), [intakeStart]);
 
-  const { trend, phase, prediction, currentKg, weeklyChange, etaDate, aheadKg, targets, progress } = body;
+  const { trend, phase, prediction, currentKg, weeklyChange, etaDate, targets, progress } = body;
   const wu = weightUnit(units);
   const def = phase ? GOALS[phase.goalType] : null;
 
@@ -212,40 +211,21 @@ export default function Progress() {
     ),
     stats:
       currentKg != null ? (
-        <View style={styles.statGrid}>
-          <Stat
-            label="Trend"
-            value={`${displayWeight(currentKg, units)} ${wu}`}
-            detail={phase ? `Started ${displayWeight(phase.startKg, units)}` : undefined}
-          />
-          <Stat
-            label="Weekly rate"
-            value={weeklyChange == null ? '—' : `${signed(weeklyChange, 2)} ${wu}`}
-            detail={
-              phase && def?.direction !== 0
-                ? `Plan ${def!.direction < 0 ? '−' : '+'}${displayWeight((phase.startKg * phase.ratePctWeek) / 100, units, 2)}`
-                : 'Last 2 weeks'
-            }
-          />
-          <Stat
-            label="Total change"
-            value={totalChange == null ? '—' : `${signed(totalChange)} ${wu}`}
-            detail={phase ? `Since ${formatShort(phase.startDate)}` : undefined}
-          />
-          {predictionsOn && phase?.targetKg != null && def?.direction !== 0 ? (
-            <Stat
-              label="Goal"
-              value={progress != null && progress >= 1 ? 'Reached' : etaDate ? formatShort(etaDate) : '—'}
-              detail={
-                aheadKg != null && Math.abs(aheadKg) >= 0.2
-                  ? `${displayWeight(Math.abs(aheadKg), units)} ${wu} ${aheadKg > 0 ? 'ahead' : 'behind'} plan`
-                  : `${displayWeight(Math.abs(phase.targetKg - currentKg), units)} ${wu} to go`
-              }
-            />
-          ) : (
-            <Stat label="Maintenance" value={targets ? `${targets.tdee}` : '—'} detail="Estimated kcal / day" />
-          )}
-        </View>
+        <Card style={{ marginTop: SPACE.md }}>
+          <View style={styles.statRow}>
+            <Stat label="Weekly rate" value={weeklyChange == null ? '—' : `${signed(weeklyChange, 2)} ${wu}`} />
+            <Stat label="Change" value={totalChange == null ? '—' : `${signed(totalChange)} ${wu}`} detail={phase ? `since ${formatShort(phase.startDate)}` : undefined} />
+            {predictionsOn && phase?.targetKg != null && def?.direction !== 0 ? (
+              <Stat
+                label="Goal"
+                value={progress != null && progress >= 1 ? 'Reached' : etaDate ? formatShort(etaDate) : '—'}
+                detail={`${displayWeight(Math.abs(phase.targetKg - currentKg), units)} ${wu} to go`}
+              />
+            ) : (
+              <Stat label="Maintenance" value={targets ? `${targets.tdee}` : '—'} detail="kcal / day" />
+            )}
+          </View>
+        </Card>
       ) : null,
     ranks: <RanksSection />,
     body:
@@ -254,7 +234,6 @@ export default function Progress() {
           {phase && (
             <ListRow
               icon="check"
-              iconColor={colors.success}
               title="Weekly check-in"
               subtitle="How this week went and what to adjust"
               onPress={() => router.push('/checkin')}
@@ -277,7 +256,6 @@ export default function Progress() {
           {bodyOn && (
             <ListRow
               icon="ruler"
-              iconColor={colors.text}
               title="Body"
               subtitle={latestBf ? `Body fat ${latestBf.bfPct.toFixed(1)}%` : 'Measurements, body fat and FFMI'}
               onPress={() => router.push('/body')}
@@ -286,7 +264,6 @@ export default function Progress() {
           {photosOn && (
             <ListRow
               icon="user"
-              iconColor={colors.fill}
               title="Photos"
               subtitle={photoCount ? `${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}` : 'Private progress photos'}
               onPress={() => router.push('/photos')}
@@ -303,7 +280,6 @@ export default function Progress() {
           {healthOn && (
             <ListRow
               icon="pill"
-              iconColor={colors.text}
               title="Health"
               subtitle="Supplements, blood pressure, heart rate and labs"
               onPress={() => router.push('/health')}
@@ -357,7 +333,7 @@ export default function Progress() {
         <>
           <SectionHeader
             title="Weigh-ins"
-            action={<Button title="Add" size="sm" variant="tinted" icon="plus" full={false} onPress={() => router.push('/log-weight')} />}
+            action={<Button title="Add" size="sm" variant="plain" full={false} onPress={() => router.push('/log-weight')} />}
           />
           <Card index={3} padded={false}>
             {[...weights]
@@ -391,8 +367,8 @@ const styles = StyleSheet.create({
   legendLine: { width: 14, height: 3, borderRadius: 2 },
   legendDot: { width: 6, height: 6, borderRadius: 3 },
   legendBand: { width: 14, height: 8, borderRadius: 2, borderWidth: 1 },
-  statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.md, marginTop: SPACE.md },
-  stat: { flexBasis: '47%', flexGrow: 1, padding: SPACE.lg, borderRadius: RADIUS.xl, gap: 2 },
+  statRow: { flexDirection: 'row', gap: SPACE.md },
+  stat: { flex: 1, gap: 2 },
   intakeHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: SPACE.lg },
   bars: { flexDirection: 'row', alignItems: 'flex-end', height: 110, gap: 5 },
   barSlot: { flex: 1, height: '100%', justifyContent: 'flex-end' },

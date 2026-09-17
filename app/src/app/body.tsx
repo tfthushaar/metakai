@@ -115,7 +115,7 @@ export default function Body() {
         </Card>
       )}
 
-      <SectionHeader title="Measurements" action={<Button title="Log" icon="ruler" size="sm" variant="tinted" full={false} onPress={() => router.push('/log-measurements')} />} />
+      <SectionHeader title="Measurements" action={<Button title="Log" size="sm" variant="plain" full={false} onPress={() => router.push('/log-measurements')} />} />
       {measurements.length === 0 ? (
         <Card index={2}>
           <Text variant="headline">Measure every 2–4 weeks</Text>
@@ -193,7 +193,7 @@ export default function Body() {
             ))}
           </Card>
           <Text variant="caption" tone="tertiary" style={{ marginTop: SPACE.sm, paddingHorizontal: SPACE.sm }}>
-            Long-press an entry to delete it. Compare readings from the same method; methods differ by several percent.
+            Compare readings from the same method; methods differ by several percent.
           </Text>
         </>
       )}

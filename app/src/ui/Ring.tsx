@@ -31,6 +31,8 @@ export function Ring({ size, stroke, progress, color, trackColor, children, dela
 
   const mainProps = useAnimatedProps(() => ({
     strokeDashoffset: circumference * (1 - Math.min(value.value, 1)),
+    // A round cap would still draw a dot at zero.
+    opacity: value.value > 0.002 ? 1 : 0,
   }));
   const overflowProps = useAnimatedProps(() => ({
     strokeDashoffset: circumference * (1 - Math.min(Math.max(value.value - 1, 0), 1)),

@@ -88,7 +88,6 @@ export default function LeaderboardAccount() {
       <ListGroup header="Friends" footer="Share your code with a friend. When either of you adds the other’s code, you both appear on each other’s friends board.">
         <ListRow
           icon="share"
-          iconColor={colors.fill}
           title={friendCode ? `Your code: ${friendCode}` : 'Loading your code…'}
           subtitle="Tap to share"
           onPress={

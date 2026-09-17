@@ -101,7 +101,7 @@ export default function Train() {
       relativeDay(c.dateKey),
       `${Math.round(c.durationMin)} min`,
       dist != null ? `${dist.toFixed(1)} ${metric ? 'km' : 'mi'}` : null,
-      pace != null ? `${formatPace(metric ? pace : pace * 1.609344)} /${metric ? 'km' : 'mi'}` : null,
+      pace != null ? `${formatPace(metric ? pace : pace * 1.609344)}/${metric ? 'km' : 'mi'}` : null,
       c.intervals ? c.intervals.name : null,
     ]
       .filter(Boolean)
@@ -139,11 +139,6 @@ export default function Train() {
               <Stat value={String(cardioWeek.minutes)} label="cardio min" />
             )}
           </View>
-          {liftOn && cardioOn && cardioWeek.sessions > 0 && (
-            <Text variant="caption" tone="tertiary" align="center" style={{ marginTop: SPACE.sm }}>
-              {`Includes ${cardioWeek.sessions} cardio ${cardioWeek.sessions === 1 ? 'session' : 'sessions'} · ${cardioWeek.minutes} min`}
-            </Text>
-          )}
         </Card>
 
         {cardioOn && !liftOn && (
@@ -209,7 +204,7 @@ export default function Train() {
       <>
         <SectionHeader
           title="Split"
-          action={<Button title={split ? 'Edit' : 'Choose'} size="sm" variant="tinted" full={false} onPress={() => router.push('/split')} />}
+          action={<Button title={split ? 'Edit' : 'Choose'} size="sm" variant="plain" full={false} onPress={() => router.push('/split')} />}
         />
         <Card index={2} onPress={() => router.push('/split')}>
           {split ? (
@@ -254,7 +249,7 @@ export default function Train() {
       <>
         <SectionHeader
           title="Progressive overload"
-          action={<Button title="All" size="sm" variant="tinted" full={false} onPress={() => router.push('/overload')} />}
+          action={<Button title="All" size="sm" variant="plain" full={false} onPress={() => router.push('/overload')} />}
         />
         <Card index={3} padded={false} onPress={() => router.push('/overload')}>
           {overload.length === 0 ? (
@@ -293,9 +288,9 @@ export default function Train() {
           title="Cardio"
           action={
             liftOn ? (
-              <View style={{ flexDirection: 'row', gap: SPACE.sm }}>
-                <Button title="Intervals" icon="timer" size="sm" variant="gray" full={false} onPress={() => router.push('/interval-timer')} />
-                <Button title="Log" icon="plus" size="sm" variant="tinted" full={false} onPress={() => router.push('/log-cardio')} />
+              <View style={{ flexDirection: 'row' }}>
+                <Button title="Intervals" size="sm" variant="plain" full={false} onPress={() => router.push('/interval-timer')} />
+                <Button title="Log" size="sm" variant="plain" full={false} onPress={() => router.push('/log-cardio')} />
               </View>
             ) : undefined
           }
@@ -363,11 +358,6 @@ export default function Train() {
             ))
           )}
         </Card>
-        {cardio.length > 0 && (
-          <Text variant="caption" tone="tertiary" style={{ marginTop: SPACE.sm, paddingHorizontal: SPACE.lg }}>
-            Press and hold a session to delete it.
-          </Text>
-        )}
       </>
     ) : null,
     routines:
@@ -375,7 +365,7 @@ export default function Train() {
         <>
           <SectionHeader
             title="Routines"
-            action={<Button title="New" icon="plus" size="sm" variant="tinted" full={false} onPress={() => router.push('/routine')} />}
+            action={<Button title="New" size="sm" variant="plain" full={false} onPress={() => router.push('/routine')} />}
           />
           <Card padded={false} index={4}>
             {ownRoutines.map((r, i) => (
@@ -405,10 +395,11 @@ export default function Train() {
     tools: liftOn ? (
       <ListGroup index={5}>
         <ListRow icon="dumbbell" title="Exercise library" subtitle="876 exercises with demos" onPress={() => router.push('/exercises')} />
-        <ListRow icon="activity" iconColor={colors.text} title="Muscle volume" subtitle="Weekly sets per muscle" onPress={() => router.push('/volume')} />
-        <ListRow icon="ruler" iconColor={colors.fill} title="Plate calculator" onPress={() => router.push('/plates')} />
+        <ListRow icon="activity" title="Muscle volume" subtitle="Weekly sets per muscle" onPress={() => router.push('/volume')} />
+        <ListRow icon="arrowUp" title="Progressive overload" onPress={() => router.push('/overload')} />
+        <ListRow icon="ruler" title="Plate calculator" onPress={() => router.push('/plates')} />
         {recoveryOn && <ListRow icon="heartPulse" title="Recovery" subtitle="Readiness and muscle recovery" onPress={() => router.push('/recovery')} />}
-        {ownRoutines.length === 0 && <ListRow icon="plus" iconColor={colors.fill} title="New routine" onPress={() => router.push('/routine')} />}
+        {ownRoutines.length === 0 && <ListRow icon="plus" title="New routine" onPress={() => router.push('/routine')} />}
       </ListGroup>
     ) : null,
     history:
