@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { hasAiKey, useAiKeys } from '../../core/aiKey';
 import { useBody } from '../../core/goals/useBody';
-import { ACCENTS } from '../../core/theme/palette';
+import { accentName } from '../../core/theme/palette';
 import { useSettings } from '../../core/store/settings';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../../core/theme/typography';
@@ -34,7 +34,7 @@ export default function You() {
         })()
     : '';
 
-  const appearanceLabel = `${settings.appearance[0].toUpperCase()}${settings.appearance.slice(1)} · ${ACCENTS[settings.accent].name}`;
+  const appearanceLabel = `${settings.appearance[0].toUpperCase()}${settings.appearance.slice(1)} · ${accentName(settings.accent)}`;
 
   return (
     <Screen title="You" tabBar>

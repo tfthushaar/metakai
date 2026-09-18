@@ -16,7 +16,7 @@ import { formatAmount, sumMacros } from '../../modules/food/parse';
 import { Card } from '../../ui/Card';
 import { haptic } from '../../ui/haptics';
 import { Icon } from '../../ui/Icon';
-import { layout } from '../../ui/motion';
+import { layout, rowEnter, rowExit } from '../../ui/motion';
 import { PressableScale } from '../../ui/PressableScale';
 import { Screen } from '../../ui/Screen';
 import { Text } from '../../ui/Text';
@@ -94,7 +94,7 @@ function MealSection({ slot, title, entries, dateKeyValue, index }: { slot: Meal
         </PressableScale>
       </View>
       {entries.map((e) => (
-        <Animated.View key={e.id} layout={layout} entering={FadeIn.duration(220)}>
+        <Animated.View key={e.id} layout={layout} entering={rowEnter} exiting={rowExit}>
           <View style={[styles.separator, { backgroundColor: colors.separator }]} />
           <EntryRow entry={e} />
         </Animated.View>

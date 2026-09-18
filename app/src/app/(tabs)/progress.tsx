@@ -23,7 +23,7 @@ import { Button } from '../../ui/Button';
 import { Card, SectionHeader } from '../../ui/Card';
 import { haptic } from '../../ui/haptics';
 import { Icon } from '../../ui/Icon';
-import { EASE_OUT } from '../../ui/motion';
+import { EASE_OUT, layout, rowEnter, rowExit } from '../../ui/motion';
 import { PressableScale } from '../../ui/PressableScale';
 import { Screen } from '../../ui/Screen';
 import { SegmentedControl } from '../../ui/SegmentedControl';
@@ -204,7 +204,7 @@ export default function Progress() {
               />
               <View style={styles.legend}>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendLine, { backgroundColor: colors.text }]} />
+                  <View style={[styles.legendLine, { backgroundColor: colors.accent2 }]} />
                   <Text variant="caption" tone="secondary">
                     Trend
                   </Text>
@@ -360,10 +360,10 @@ export default function Progress() {
               .reverse()
               .slice(0, 20)
               .map((w, i) => (
-                <View key={w.id}>
+                <Animated.View key={w.id} layout={layout} entering={rowEnter} exiting={rowExit}>
                   {i > 0 && <View style={[styles.separator, { backgroundColor: colors.separator }]} />}
                   <WeightRow entry={w} units={units} />
-                </View>
+                </Animated.View>
               ))}
           </Card>
         </>

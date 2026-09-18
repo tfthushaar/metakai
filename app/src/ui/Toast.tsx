@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
+import Animated, { FadeOutDown, withSpring, withTiming, ZoomIn, type EntryAnimationsValues, type LayoutAnimation } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { create } from 'zustand';
 
 import { useTheme } from '../core/theme/ThemeProvider';
 import { RADIUS } from '../core/theme/typography';
-import { EASE_OUT } from './motion';
+import { EASE_OUT, SPRING } from './motion';
+import { Icon } from './Icon';
 import { PressableScale } from './PressableScale';
 import { Text } from './Text';
 
@@ -27,6 +28,17 @@ export const useToast = create<ToastState>((set) => ({
 
 export const toast = (message: string, action?: ToastState['action']) => useToast.getState().show(message, action);
 
+const toastIn = (_values: EntryAnimationsValues): LayoutAnimation => {
+  'worklet';
+  return {
+    initialValues: { opacity: 0, transform: [{ translateY: 24 }, { scale: 0.94 }] },
+    animations: {
+      opacity: withTiming(1, { duration: 200, easing: EASE_OUT }),
+      transform: [{ translateY: withSpring(0, SPRING) }, { scale: withSpring(1, SPRING) }],
+    },
+  };
+};
+
 export function ToastHost({ bottomOffset = 100 }: { bottomOffset?: number }) {
   const { colors, dark, accentId } = useTheme();
   const insets = useSafeAreaInsets();
@@ -43,10 +55,15 @@ export function ToastHost({ bottomOffset = 100 }: { bottomOffset?: number }) {
     <View pointerEvents="box-none" style={[styles.host, { bottom: insets.bottom + bottomOffset }]}>
       <Animated.View
         key={id}
-        entering={FadeInDown.duration(320).easing(EASE_OUT).withInitialValues({ opacity: 0, transform: [{ translateY: 16 }] })}
-        exiting={FadeOutDown.duration(200)}
+        entering={toastIn}
+        exiting={FadeOutDown.duration(180)}
         style={[styles.toast, { backgroundColor: dark ? colors.surfaceRaised : '#1C1C1E' }]}
       >
+        {!action && (
+          <Animated.View entering={ZoomIn.springify().damping(12).stiffness(260).delay(80)} style={[styles.check, { backgroundColor: colors.success }]}>
+            <Icon name="check" size={12} color="#FFFFFF" strokeWidth={3.4} />
+          </Animated.View>
+        )}
         <Text variant="subhead" weight="medium" color="#FFFFFF" style={{ flexShrink: 1 }}>
           {message}
         </Text>
@@ -58,7 +75,7 @@ export function ToastHost({ bottomOffset = 100 }: { bottomOffset?: number }) {
               hide();
             }}
           >
-            <Text variant="subhead" weight="semibold" color={accentId === 'mono' ? '#FFFFFF' : colors.accent}>
+            <Text variant="subhead" weight="semibold" color={accentId === 'mono' || accentId === 'custom' ? '#FFFFFF' : colors.accent}>
               {action.label}
             </Text>
           </PressableScale>
@@ -69,6 +86,7 @@ export function ToastHost({ bottomOffset = 100 }: { bottomOffset?: number }) {
 }
 
 const styles = StyleSheet.create({
+  check: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: -6 },
   host: { position: 'absolute', left: 16, right: 16, alignItems: 'center' },
   toast: {
     flexDirection: 'row',

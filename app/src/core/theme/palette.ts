@@ -1,6 +1,21 @@
+import { luminance, mixHex, textOn } from '../../lib/color';
+
 export type Appearance = 'system' | 'light' | 'dark';
-export type AccentId = 'crimson' | 'mono' | 'ember' | 'ocean' | 'forest' | 'iris';
+export type PresetAccent = 'crimson' | 'mono' | 'ember' | 'ocean' | 'forest' | 'iris';
+export type AccentId = PresetAccent | 'custom';
 export type DarkStyle = 'black' | 'graphite';
+
+/** Colours picked by the user for the Custom theme. */
+export interface CustomColors {
+  /** Colour 1: buttons, rings and highlights. */
+  primary: string;
+  /** Colour 2: secondary highlights such as carbs and trend lines. */
+  secondary: string;
+  /** Background; null keeps the light or dark background. Cards and text are derived from it. */
+  background: string | null;
+}
+
+export const DEFAULT_CUSTOM_COLORS: CustomColors = { primary: '#FF453A', secondary: '#0A84FF', background: null };
 
 export interface Colors {
   background: string;
@@ -13,6 +28,8 @@ export interface Colors {
   separator: string;
   accent: string;
   accentSoft: string;
+  /** Second colour for secondary highlights such as carbs and trend lines. */
+  accent2: string;
   onAccent: string;
   success: string;
   warning: string;
@@ -27,7 +44,7 @@ export interface Theme {
   colors: Colors;
 }
 
-export const ACCENTS: Record<AccentId, { name: string; light: string; dark: string }> = {
+export const ACCENTS: Record<PresetAccent, { name: string; light: string; dark: string }> = {
   crimson: { name: 'Crimson', light: '#E5262A', dark: '#FF453A' },
   mono: { name: 'Mono', light: '#000000', dark: '#FFFFFF' },
   ember: { name: 'Ember', light: '#F57A00', dark: '#FF9F0A' },
@@ -36,7 +53,9 @@ export const ACCENTS: Record<AccentId, { name: string; light: string; dark: stri
   iris: { name: 'Iris', light: '#8E44C9', dark: '#BF5AF2' },
 };
 
-export const ACCENT_ORDER: AccentId[] = ['crimson', 'mono', 'ember', 'ocean', 'forest', 'iris'];
+export const ACCENT_ORDER: PresetAccent[] = ['crimson', 'mono', 'ember', 'ocean', 'forest', 'iris'];
+
+export const accentName = (id: AccentId) => (id === 'custom' ? 'Custom' : ACCENTS[id].name);
 
 function withAlpha(hex: string, alpha: number): string {
   const a = Math.round(alpha * 255)
@@ -94,10 +113,42 @@ const DARK: Record<DarkStyle, typeof LIGHT> = {
   },
 };
 
-export function buildTheme(dark: boolean, accentId: AccentId, darkStyle: DarkStyle): Theme {
-  const base = dark ? DARK[darkStyle] : LIGHT;
-  const accent = dark ? ACCENTS[accentId].dark : ACCENTS[accentId].light;
-  const onAccent = accentId === 'mono' ? (dark ? '#000000' : '#FFFFFF') : '#FFFFFF';
+/** Whether a custom background reads as dark, so text, status bar and charts follow it. */
+export const isDarkBackground = (hex: string) => luminance(hex) < 0.2;
+
+/** Cards, fills, borders and text tones derived from any background colour. */
+function fromBackground(bg: string): typeof LIGHT {
+  const dark = isDarkBackground(bg);
+  const text = dark ? '#FFFFFF' : '#000000';
+  const status = dark ? DARK.black : LIGHT;
+  return {
+    background: bg,
+    surface: mixHex(bg, text, dark ? 0.08 : 0.04),
+    surfaceRaised: mixHex(bg, text, dark ? 0.13 : 0.02),
+    fill: mixHex(bg, text, dark ? 0.15 : 0.09),
+    text,
+    textSecondary: mixHex(text, bg, 0.42),
+    textTertiary: mixHex(text, bg, 0.64),
+    separator: mixHex(bg, text, dark ? 0.14 : 0.1),
+    success: status.success,
+    warning: status.warning,
+    danger: status.danger,
+    overlay: status.overlay,
+    tabBar: withAlpha(mixHex(bg, text, dark ? 0.06 : 0.03), 0.97),
+  };
+}
+
+/** Whether the theme should be dark, given the appearance setting and any custom background. */
+export function themeIsDark(systemDark: boolean, accentId: AccentId, custom: CustomColors): boolean {
+  if (accentId === 'custom' && custom.background) return isDarkBackground(custom.background);
+  return systemDark;
+}
+
+export function buildTheme(dark: boolean, accentId: AccentId, darkStyle: DarkStyle, custom: CustomColors = DEFAULT_CUSTOM_COLORS): Theme {
+  const isCustom = accentId === 'custom';
+  const base = isCustom && custom.background ? fromBackground(custom.background) : dark ? DARK[darkStyle] : LIGHT;
+  const accent = isCustom ? custom.primary : dark ? ACCENTS[accentId].dark : ACCENTS[accentId].light;
+  const onAccent = isCustom ? textOn(accent) : accentId === 'mono' ? (dark ? '#000000' : '#FFFFFF') : '#FFFFFF';
   return {
     dark,
     accentId,
@@ -105,6 +156,7 @@ export function buildTheme(dark: boolean, accentId: AccentId, darkStyle: DarkSty
       ...base,
       accent,
       accentSoft: withAlpha(accent, dark ? 0.2 : 0.12),
+      accent2: isCustom ? custom.secondary : base.text,
       onAccent,
     },
   };

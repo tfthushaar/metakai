@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import { Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { haptic } from './haptics';
-import { SPRING } from './motion';
+import { TAP_SPRING } from './motion';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -26,11 +26,11 @@ export function PressableScale({ children, style, scaleTo = 0.97, feedback = 'no
       {...rest}
       disabled={disabled}
       onPressIn={(e) => {
-        pressed.value = withTiming(1, { duration: 90 });
+        pressed.value = withSpring(1, TAP_SPRING);
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
-        pressed.value = withSpring(0, SPRING);
+        pressed.value = withSpring(0, TAP_SPRING);
         onPressOut?.(e);
       }}
       onPress={(e) => {

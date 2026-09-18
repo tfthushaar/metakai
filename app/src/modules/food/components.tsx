@@ -11,7 +11,7 @@ import type { Macros } from './foods';
 
 export function useMacroColors() {
   const { colors } = useTheme();
-  return { protein: colors.accent, carbs: colors.text, fat: colors.textSecondary };
+  return { protein: colors.accent, carbs: colors.accent2, fat: colors.textSecondary };
 }
 
 function MacroRow({ label, eaten, target, color, delay }: { label: string; eaten: number; target: number; color: string; delay: number }) {

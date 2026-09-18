@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { dependents, PRESETS, withDependencies, type ModuleId, type PresetId } from '../features/registry';
-import type { AccentId, Appearance, DarkStyle } from '../theme/palette';
+import { DEFAULT_CUSTOM_COLORS, type AccentId, type Appearance, type CustomColors, type DarkStyle } from '../theme/palette';
 import type { UnitSystem } from '../../lib/units';
 import type { LayoutPrefs, LayoutScreen } from './layouts';
 import { kvStorage } from './kvStorage';
@@ -74,6 +74,8 @@ export const DEFAULT_LEADERBOARD: LeaderboardSettings = { joined: false, display
 interface SettingsState {
   appearance: Appearance;
   accent: AccentId;
+  /** Colours used when the accent is 'custom'. */
+  customColors: CustomColors;
   darkStyle: DarkStyle;
   units: UnitSystem;
   haptics: boolean;
@@ -115,6 +117,7 @@ export const useSettings = create<SettingsState>()(
     (set, get) => ({
       appearance: 'dark',
       accent: 'crimson',
+      customColors: DEFAULT_CUSTOM_COLORS,
       darkStyle: 'black',
       units: 'metric',
       haptics: true,

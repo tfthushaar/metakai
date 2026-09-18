@@ -176,7 +176,7 @@ export function WeightChart({ trend, prediction = [], goalKg, startDate, endDate
           {model.trendPath !== '' && (
             <AnimatedPath
               d={model.trendPath}
-              stroke={colors.text}
+              stroke={colors.accent2}
               strokeWidth={2.6}
               strokeLinejoin="round"
               strokeLinecap="round"

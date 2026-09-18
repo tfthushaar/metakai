@@ -78,7 +78,7 @@ Three principles shape the app:
 ### Personalisation
 - **Features:** turn any feature on or off, or start from a preset.
 - **Layout:** reorder or hide cards on Today, sections on Train and Progress, and shortcuts in the + menu. Choose which tab the app opens on.
-- **Appearance:** light, dark or system mode, six accent colours, true-black or graphite dark style, four text sizes, reduce motion and haptics.
+- **Appearance:** light, dark or system mode, six accent colours or a custom theme (any accent, second colour and background from a colour wheel), true-black or graphite dark style, four text sizes, reduce motion and haptics.
 - **Units:** metric or imperial.
 
 ### Your data

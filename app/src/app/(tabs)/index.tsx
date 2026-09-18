@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useMemo, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedStyle, withSpring, withTiming, ZoomIn } from 'react-native-reanimated';
 
 import { useBody } from '../../core/goals/useBody';
 import { addWater, listLog, MEAL_SLOTS, undoLastWater, waterTotal } from '../../core/db/repo';
@@ -27,6 +28,7 @@ import { PressableScale } from '../../ui/PressableScale';
 import { ProgressBar } from '../../ui/ProgressBar';
 import { Screen } from '../../ui/Screen';
 import { Text } from '../../ui/Text';
+import { SPRING } from '../../ui/motion';
 import { WeightChart } from '../../ui/WeightChart';
 
 function greeting() {
@@ -35,6 +37,29 @@ function greeting() {
   if (h < 12) return 'Good morning';
   if (h < 17) return 'Good afternoon';
   return 'Good evening';
+}
+
+/** Ticking a supplement fills it with the accent and gives a small pop. */
+function SupplementChip({ name, on, onToggle }: { name: string; on: boolean; onToggle: () => void }) {
+  const { colors } = useTheme();
+  const style = useAnimatedStyle(() => ({
+    backgroundColor: withTiming(on ? colors.accent : colors.fill, { duration: 200 }),
+    transform: [{ scale: withSpring(on ? 1 : 0.97, SPRING) }],
+  }));
+  return (
+    <PressableScale feedback="selection" scaleTo={0.94} onPress={onToggle}>
+      <Animated.View style={[styles.supp, style]}>
+        {on && (
+          <Animated.View entering={ZoomIn.springify().damping(12).stiffness(260)}>
+            <Icon name="check" size={14} color={colors.onAccent} strokeWidth={3} />
+          </Animated.View>
+        )}
+        <Text variant="subhead" weight="medium" color={on ? colors.onAccent : colors.text}>
+          {name}
+        </Text>
+      </Animated.View>
+    </PressableScale>
+  );
 }
 
 export default function Today() {
@@ -254,23 +279,9 @@ export default function Today() {
             <Icon name="chevronRight" size={18} color={colors.textTertiary} />
           </PressableScale>
           <View style={styles.suppRow}>
-            {supplements.map((s) => {
-              const on = taken.has(s.id);
-              return (
-                <PressableScale
-                  key={s.id}
-                  feedback="selection"
-                  scaleTo={0.95}
-                  onPress={() => setTaken(s.id, today, !on)}
-                  style={[styles.supp, { backgroundColor: on ? colors.accent : colors.fill }]}
-                >
-                  {on && <Icon name="check" size={14} color={colors.onAccent} strokeWidth={3} />}
-                  <Text variant="subhead" weight="medium" color={on ? colors.onAccent : colors.text}>
-                    {s.name}
-                  </Text>
-                </PressableScale>
-              );
-            })}
+            {supplements.map((s) => (
+              <SupplementChip key={s.id} name={s.name} on={taken.has(s.id)} onToggle={() => setTaken(s.id, today, !taken.has(s.id))} />
+            ))}
           </View>
         </Card>
     ) : null,

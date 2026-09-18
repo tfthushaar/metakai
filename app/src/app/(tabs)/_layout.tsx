@@ -9,7 +9,7 @@ import { useLayout } from '../../core/store/layouts';
 import { useSettings } from '../../core/store/settings';
 import { dateKey } from '../../lib/dates';
 import { activeWorkout, startWorkout } from '../../modules/workouts/repo';
-import { EASE_OUT, SPRING } from '../../ui/motion';
+import { EASE_OUT, SPRING, TAP_SPRING } from '../../ui/motion';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { useLive } from '../../modules/gps/tracker';
 import { AchievementWatcher, LeaderboardSync } from '../../modules/ranks/RanksSummary';
@@ -28,6 +28,20 @@ const TAB_ICONS: Record<string, IconName> = {
   progress: 'chart',
   you: 'user',
 };
+
+/** The icon springs up a touch when its tab becomes active. */
+function TabIcon({ name, color, focused }: { name: IconName; color: string; focused: boolean }) {
+  const lift = useSharedValue(focused ? 1 : 0);
+  useEffect(() => {
+    lift.value = withSpring(focused ? 1 : 0, TAP_SPRING);
+  }, [focused, lift]);
+  const style = useAnimatedStyle(() => ({ transform: [{ translateY: -2 * lift.value }, { scale: 1 + 0.06 * lift.value }] }));
+  return (
+    <Animated.View style={style}>
+      <Icon name={name} size={23} color={color} strokeWidth={focused ? 2.4 : 2} />
+    </Animated.View>
+  );
+}
 
 function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
@@ -97,7 +111,7 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
         }}
       >
-        <Icon name={TAB_ICONS[route.name] ?? 'grid'} size={23} color={color} strokeWidth={focused ? 2.4 : 2} />
+        <TabIcon name={TAB_ICONS[route.name] ?? 'grid'} color={color} focused={focused} />
         <Text variant="caption" color={color} weight={focused ? 'semibold' : 'medium'} style={{ fontSize: 10.5 }}>
           {options.title}
         </Text>
@@ -180,7 +194,7 @@ export default function TabsLayout() {
     <>
       <AchievementWatcher />
       <LeaderboardSync />
-      <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, animation: 'fade' }}>
+      <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, animation: 'shift' }}>
         <Tabs.Screen name="index" options={{ title: 'Today' }} />
         <Tabs.Screen name="food" options={{ title: 'Food', href: foodEnabled ? undefined : null }} />
         <Tabs.Screen name="train" options={{ title: 'Train', href: trainEnabled ? undefined : null }} />

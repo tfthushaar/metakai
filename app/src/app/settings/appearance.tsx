@@ -1,7 +1,10 @@
+import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
-import { ACCENT_ORDER, ACCENTS, buildTheme, type AccentId, type Appearance, type DarkStyle } from '../../core/theme/palette';
+import { ACCENT_ORDER, ACCENTS, buildTheme, type Appearance, type DarkStyle, type PresetAccent } from '../../core/theme/palette';
+import { hsvToHex } from '../../lib/color';
 import { useSettings, type TextScale } from '../../core/store/settings';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../../core/theme/typography';
@@ -16,7 +19,7 @@ import { SegmentedControl } from '../../ui/SegmentedControl';
 import { Text } from '../../ui/Text';
 import { Toggle } from '../../ui/Toggle';
 
-function Swatch({ id, selected, dark, onPress }: { id: AccentId; selected: boolean; dark: boolean; onPress: () => void }) {
+function Swatch({ id, selected, dark, onPress }: { id: PresetAccent; selected: boolean; dark: boolean; onPress: () => void }) {
   const { colors } = useTheme();
   const color = dark ? ACCENTS[id].dark : ACCENTS[id].light;
   const ring = useAnimatedStyle(() => ({ transform: [{ scale: withSpring(selected ? 1 : 0.8, SPRING) }], opacity: withSpring(selected ? 1 : 0, SPRING) }));
@@ -35,9 +38,40 @@ function Swatch({ id, selected, dark, onPress }: { id: AccentId; selected: boole
   );
 }
 
+/** Multicolour swatch that opens the colour picker. */
+function CustomSwatch({ selected, onPress }: { selected: boolean; onPress: () => void }) {
+  const { colors } = useTheme();
+  const ring = useAnimatedStyle(() => ({ transform: [{ scale: withSpring(selected ? 1 : 0.8, SPRING) }], opacity: withSpring(selected ? 1 : 0, SPRING) }));
+  const r = 20;
+  const wedges = Array.from({ length: 12 }, (_, i) => {
+    const a0 = (i * 30 * Math.PI) / 180;
+    const a1 = ((i + 1) * 30 * Math.PI) / 180 + 0.02;
+    return { d: `M${r} ${r} L${r + r * Math.cos(a0)} ${r + r * Math.sin(a0)} A${r} ${r} 0 0 1 ${r + r * Math.cos(a1)} ${r + r * Math.sin(a1)} Z`, fill: hsvToHex({ h: i * 30, s: 0.85, v: 1 }) };
+  });
+  return (
+    <PressableScale onPress={onPress} feedback="selection" scaleTo={0.9} style={styles.swatchWrap} accessibilityLabel="Custom colours">
+      <View style={styles.swatchOuter}>
+        <Animated.View style={[styles.swatchRing, { borderColor: colors.text }, ring]} />
+        <View style={[styles.swatch, { overflow: 'hidden', borderColor: colors.separator }]}>
+          <Svg width={40} height={40} style={StyleSheet.absoluteFill}>
+            {wedges.map((w) => (
+              <Path key={w.d} d={w.d} fill={w.fill} />
+            ))}
+          </Svg>
+          {selected && <Icon name="check" size={18} color="#FFFFFF" strokeWidth={3} />}
+        </View>
+      </View>
+      <Text variant="caption" tone={selected ? 'primary' : 'secondary'} numberOfLines={1} adjustsFontSizeToFit>
+        Custom
+      </Text>
+    </PressableScale>
+  );
+}
+
 function DarkStylePreview({ style, selected, onPress }: { style: DarkStyle; selected: boolean; onPress: () => void }) {
   const { colors, accentId } = useTheme();
-  const preview = buildTheme(true, accentId, style).colors;
+  const custom = useSettings((s) => s.customColors);
+  const preview = buildTheme(true, accentId, style, { ...custom, background: null }).colors;
   return (
     <PressableScale onPress={onPress} feedback="selection" scaleTo={0.96} style={{ flex: 1, gap: SPACE.sm, alignItems: 'center' }}>
       <View style={[styles.preview, { backgroundColor: preview.background, borderColor: selected ? colors.accent : colors.separator }]}>
@@ -56,7 +90,9 @@ function DarkStylePreview({ style, selected, onPress }: { style: DarkStyle; sele
 
 export default function AppearanceSettings() {
   const { colors, dark } = useTheme();
+  const router = useRouter();
   const settings = useSettings();
+  const customBackground = settings.accent === 'custom' && settings.customColors.background != null;
 
   return (
     <Screen title="Appearance" back>
@@ -83,6 +119,11 @@ export default function AppearanceSettings() {
         <Text variant="footnote" tone="secondary" style={styles.label}>
           MODE
         </Text>
+        {customBackground && (
+          <Text variant="caption" tone="tertiary" style={styles.label}>
+            Your custom background sets light or dark.
+          </Text>
+        )}
         <SegmentedControl<Appearance>
           value={settings.appearance}
           onChange={(appearance) => settings.set({ appearance })}
@@ -103,8 +144,31 @@ export default function AppearanceSettings() {
             {ACCENT_ORDER.map((id) => (
               <Swatch key={id} id={id} dark={dark} selected={settings.accent === id} onPress={() => settings.set({ accent: id })} />
             ))}
+            <CustomSwatch
+              selected={settings.accent === 'custom'}
+              onPress={() => {
+                settings.set({ accent: 'custom' });
+                router.push('/settings/colors');
+              }}
+            />
           </View>
         </Card>
+        {settings.accent === 'custom' && (
+          <ListGroup>
+            <ListRow
+              title="Edit custom colours"
+              subtitle="Colour 1, colour 2 and background"
+              onPress={() => router.push('/settings/colors')}
+              accessory={
+                <View style={styles.dots}>
+                  {[settings.customColors.primary, settings.customColors.secondary, settings.customColors.background ?? colors.background].map((c, i) => (
+                    <View key={i} style={[styles.dot, { backgroundColor: c, borderColor: colors.separator }]} />
+                  ))}
+                </View>
+              }
+            />
+          </ListGroup>
+        )}
       </View>
 
       <View style={{ marginTop: SPACE.xl, gap: SPACE.sm }}>
@@ -153,11 +217,13 @@ export default function AppearanceSettings() {
 }
 
 const styles = StyleSheet.create({
+  dots: { flexDirection: 'row', gap: 4 },
+  dot: { width: 16, height: 16, borderRadius: 8, borderWidth: StyleSheet.hairlineWidth },
   hero: { flexDirection: 'row', alignItems: 'center', gap: SPACE.xl },
   pill: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 5, borderRadius: RADIUS.pill, marginTop: 4 },
   label: { paddingHorizontal: SPACE.lg },
-  swatches: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: SPACE.lg },
-  swatchWrap: { alignItems: 'center', gap: 6, width: 56 },
+  swatches: { flexDirection: 'row', flexWrap: 'wrap', rowGap: SPACE.lg },
+  swatchWrap: { alignItems: 'center', gap: 6, width: '25%' },
   swatchOuter: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   swatchRing: { position: 'absolute', width: 48, height: 48, borderRadius: 24, borderWidth: 2.5 },
   swatch: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth },
