@@ -17,6 +17,11 @@ export const TREND_ALPHA = 0.1;
 /**
  * Exponentially smoothed daily trend. Multiple weigh-ins on one day are averaged;
  * days without a weigh-in carry the trend forward unchanged.
+ *
+ * The average is bias-corrected: a plain moving average starts at the first weigh-in and takes
+ * weeks to let go of it, so early on the trend lags far behind the scale. Dividing by the total
+ * weight given so far makes the first few weigh-ins count properly; after a few weeks it is the
+ * same as a plain exponential average.
  */
 export function computeTrend(points: WeightPoint[], alpha = TREND_ALPHA): TrendPoint[] {
   if (points.length === 0) return [];
@@ -31,13 +36,19 @@ export function computeTrend(points: WeightPoint[], alpha = TREND_ALPHA): TrendP
   const first = days[0];
   const last = days[days.length - 1];
   const out: TrendPoint[] = [];
+  let sum = 0;
+  let weight = 0;
   let trend = byDay.get(first)!.sum / byDay.get(first)!.n;
   const span = daysBetween(first, last);
   for (let i = 0; i <= span; i++) {
     const date = addDays(first, i);
     const entry = byDay.get(date);
     const kg = entry ? entry.sum / entry.n : null;
-    if (kg != null && i > 0) trend = trend + alpha * (kg - trend);
+    if (kg != null) {
+      sum = (1 - alpha) * sum + alpha * kg;
+      weight = (1 - alpha) * weight + alpha;
+      trend = sum / weight;
+    }
     out.push({ date, kg, trend });
   }
   return out;

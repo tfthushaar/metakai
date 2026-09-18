@@ -138,7 +138,9 @@ export function useBody(): BodyState {
     let etaDate: string | null = null;
     if (phase.targetKg != null && def.direction !== 0) {
       const total = phase.targetKg - phase.startKg;
-      progress = total === 0 ? 1 : Math.min(1, Math.max(0, (currentKg - phase.startKg) / total));
+      // Progress follows the latest weigh-in, the same number shown as your weight everywhere.
+      const nowKg = latestRawKg ?? currentKg;
+      progress = total === 0 ? 1 : Math.min(1, Math.max(0, (nowKg - phase.startKg) / total));
       etaDate = progress >= 1 ? null : prediction.etaDate;
     }
 

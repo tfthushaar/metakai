@@ -140,7 +140,9 @@ export default function Progress() {
   const intakeStart = addDays(today, -13);
   const intake = useQuery(['log_entries'], () => dailyTotals(intakeStart), [intakeStart]);
 
-  const { trend, phase, prediction, currentKg, weeklyChange, etaDate, targets, progress } = body;
+  const { trend, phase, prediction, currentKg, latestRawKg, weeklyChange, etaDate, targets, progress } = body;
+  // Change and distance to goal use the latest weigh-in, matching the weigh-in list below.
+  const weightNow = latestRawKg ?? currentKg;
   const wu = weightUnit(units);
   const def = phase ? GOALS[phase.goalType] : null;
 
@@ -163,7 +165,7 @@ export default function Progress() {
   const logged = intake.filter((d) => d.dateKey < today);
   const avgIntake = logged.length ? logged.reduce((s, d) => s + d.kcal, 0) / logged.length : null;
 
-  const totalChange = currentKg != null && phase ? currentKg - phase.startKg : null;
+  const totalChange = weightNow != null && phase ? weightNow - phase.startKg : null;
   const signed = (v: number, digits = 1) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${displayWeight(Math.abs(v), units, digits)}`;
 
   const sections = useLayout('progress');
@@ -237,7 +239,7 @@ export default function Progress() {
               <Stat
                 label="Goal"
                 value={progress != null && progress >= 1 ? 'Reached' : etaDate ? formatShort(etaDate) : '—'}
-                detail={`${displayWeight(Math.abs(phase.targetKg - currentKg), units)} ${wu} to go`}
+                detail={`${displayWeight(Math.abs(phase.targetKg - (weightNow ?? currentKg)), units)} ${wu} to go`}
               />
             ) : (
               <Stat label="Maintenance" value={targets ? `${targets.tdee}` : '—'} detail="kcal / day" />
@@ -313,7 +315,7 @@ export default function Progress() {
             <View style={styles.intakeHeader}>
               <View>
                 <Text variant="footnote" tone="secondary">
-                  Daily average
+                  Daily average, before today
                 </Text>
                 <Text variant="title2" tabular>
                   {avgIntake == null ? '—' : `${Math.round(avgIntake).toLocaleString('en-US')} kcal`}

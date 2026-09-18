@@ -62,7 +62,7 @@ export default function Today() {
   const supplements = useQuery(['supplements'], listSupplements);
   const taken = useQuery(['supplement_logs'], () => takenOn(today), [today]);
 
-  const { phase, targets, currentKg, weeklyChange, trend, progress, etaDate, phaseEnded, dayType } = body;
+  const { phase, targets, currentKg, latestRawKg, weeklyChange, trend, progress, etaDate, phaseEnded, dayType } = body;
   const goalDef = phase ? GOALS[phase.goalType] : null;
   const wu = weightUnit(units);
 
@@ -130,21 +130,24 @@ export default function Today() {
           <View style={styles.weightHeader}>
             <View style={{ flex: 1 }}>
               <Text variant="footnote" tone="secondary" weight="medium">
-                Trend weight
+                Weight
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4 }}>
                 <Text variant="title1" tabular>
-                  {displayWeight(currentKg, units)}
+                  {displayWeight(latestRawKg ?? currentKg, units)}
                 </Text>
                 <Text variant="callout" tone="secondary" style={{ marginBottom: 4 }}>
                   {wu}
                 </Text>
               </View>
-              {weeklyChange != null && (
-                <Text variant="footnote" tone="secondary" tabular>
-                  {`${weeklyChange > 0 ? '+' : weeklyChange < 0 ? '−' : ''}${displayWeight(Math.abs(weeklyChange), units, 2)} ${wu} per week`}
-                </Text>
-              )}
+              <Text variant="footnote" tone="secondary" tabular>
+                {[
+                  `Trend ${displayWeight(currentKg, units)} ${wu}`,
+                  weeklyChange != null ? `${weeklyChange > 0 ? '+' : weeklyChange < 0 ? '−' : ''}${displayWeight(Math.abs(weeklyChange), units, 2)} ${wu} a week` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Text>
             </View>
             <Button
               title={weighedToday ? 'Logged' : 'Weigh in'}

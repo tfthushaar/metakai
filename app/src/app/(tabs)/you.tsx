@@ -20,7 +20,7 @@ import { Text } from '../../ui/Text';
 export default function You() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { profile, phase, targets, currentKg } = useBody();
+  const { profile, phase, targets, currentKg, latestRawKg } = useBody();
   const settings = useSettings();
   const aiKeys = useAiKeys();
 
@@ -50,7 +50,7 @@ export default function You() {
                 {[
                   `${ageFromBirthDate(profile.birthDate)} yrs`,
                   height,
-                  currentKg != null ? `${displayWeight(currentKg, settings.units)} ${weightUnit(settings.units)}` : null,
+                  (latestRawKg ?? currentKg) != null ? `${displayWeight((latestRawKg ?? currentKg)!, settings.units)} ${weightUnit(settings.units)}` : null,
                 ]
                   .filter(Boolean)
                   .join(' · ')}

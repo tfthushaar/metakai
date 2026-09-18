@@ -117,10 +117,26 @@ describe('trend', () => {
       { date: '2026-09-04', kg: 79 },
     ]);
     expect(trend).toHaveLength(4);
-    expect(trend[1].trend).toBeCloseTo(80.1);
+    expect(trend[0].trend).toBe(80);
+    // Bias-corrected: the second weigh-in counts almost as much as the first.
+    expect(trend[1].trend).toBeCloseTo((0.9 * 80 + 81) / 1.9);
     expect(trend[2].kg).toBeNull();
-    expect(trend[2].trend).toBeCloseTo(80.1);
-    expect(trend[3].trend).toBeCloseTo(80.1 + 0.1 * (79 - 80.1));
+    expect(trend[2].trend).toBeCloseTo(trend[1].trend);
+    expect(trend[3].trend).toBeCloseTo((0.81 * 80 + 0.9 * 81 + 79) / (0.81 + 0.9 + 1));
+  });
+
+  it('keeps the trend close to recent weigh-ins early on', () => {
+    const trend = computeTrend([
+      { date: '2026-09-17', kg: 75 },
+      { date: '2026-09-18', kg: 74.2 },
+    ]);
+    expect(trend[1].trend).toBeCloseTo(74.58, 2);
+  });
+
+  it('matches a plain moving average once there is plenty of data', () => {
+    const pts = Array.from({ length: 120 }, (_, i) => ({ date: addDays('2026-01-01', i), kg: 80 }));
+    const trend = computeTrend([...pts, { date: addDays('2026-01-01', 120), kg: 70 }]);
+    expect(trend[trend.length - 1].trend).toBeCloseTo(80 + 0.1 * (70 - 80), 3);
   });
 
   it('averages multiple weigh-ins on one day', () => {
