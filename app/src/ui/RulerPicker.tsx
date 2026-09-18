@@ -37,43 +37,67 @@ export function RulerPicker({ min, max, step, value, onChange, majorEvery = 10, 
   const { colors } = useTheme();
   const count = Math.round((max - min) / step) + 1;
   const data = useMemo(() => Array.from({ length: count }, (_, i) => i), [count]);
-  const lastIndex = useRef(Math.round((value - min) / step));
+  const indexOf = useCallback((v: number) => Math.min(count - 1, Math.max(0, Math.round((v - min) / step))), [count, min, step]);
+  const valueAt = useCallback((i: number) => Number((min + i * step).toFixed(4)), [min, step]);
+  const lastIndex = useRef(indexOf(value));
   const listRef = useRef<FlatList<number>>(null);
+  /** True from the moment the user touches the list until it comes to rest. */
+  const userDriven = useRef(false);
+  const lastHaptic = useRef(0);
+  /** True between lifting a finger and the list coming to rest. */
+  const gliding = useRef(false);
+  const restTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const side = width / 2 - TICK / 2;
 
-  // Follow external value changes (e.g. +/- buttons) without echoing our own scroll updates.
+  // Follow external value changes (+/- buttons, typed numbers) without echoing them back as new values.
   useEffect(() => {
-    const i = Math.round((value - min) / step);
-    if (i !== lastIndex.current) {
+    const i = indexOf(value);
+    if (i !== lastIndex.current && !userDriven.current) {
       lastIndex.current = i;
       listRef.current?.scrollToOffset({ offset: i * TICK, animated: true });
     }
-  }, [value, min, step]);
+  }, [value, indexOf]);
 
   const onScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const i = Math.min(count - 1, Math.max(0, Math.round(e.nativeEvent.contentOffset.x / TICK)));
-      if (i !== lastIndex.current) {
-        lastIndex.current = i;
-        haptic.selection();
-        onChange(Number((min + i * step).toFixed(4)));
+      const i = indexOf(min + (e.nativeEvent.contentOffset.x / TICK) * step);
+      if (i === lastIndex.current) return;
+      lastIndex.current = i;
+      // Only the user's own scrolling changes the value; programmatic scrolls just keep the index in sync.
+      if (userDriven.current) {
+        // Haptics are throttled so fast drags stay smooth.
+        const now = Date.now();
+        if (now - lastHaptic.current > 40) {
+          lastHaptic.current = now;
+          haptic.selection();
+        }
+        onChange(valueAt(i));
       }
     },
-    [count, min, step, onChange],
+    [indexOf, min, step, onChange, valueAt],
   );
+
+  // Report the tick the list actually came to rest on, so the saved value is exactly what is shown.
+  const settleAt = useCallback(
+    (offset: number) => {
+      const i = indexOf(min + (offset / TICK) * step);
+      lastIndex.current = i;
+      gliding.current = false;
+      // Programmatic scrolls (from +/- or a typed number) must not report a value of their own.
+      if (!userDriven.current) return;
+      userDriven.current = false;
+      onChange(valueAt(i));
+    },
+    [indexOf, min, step, onChange, valueAt],
+  );
+
+  useEffect(() => () => (restTimer.current ? clearTimeout(restTimer.current) : undefined), []);
 
   const renderItem = useCallback(
     ({ item }: { item: number }) => {
       const v = min + item * step;
       const major = Math.round(v / step) % majorEvery === 0;
-      return (
-        <Tick
-          major={major}
-          label={major ? (format ? format(v) : String(Math.round(v))) : undefined}
-          color={colors.textSecondary}
-          labelColor={colors.textTertiary}
-        />
-      );
+      return <Tick major={major} label={major ? (format ? format(v) : String(Math.round(v))) : undefined} color={colors.textSecondary} labelColor={colors.textTertiary} />;
     },
     [majorEvery, min, step, format, colors.textSecondary, colors.textTertiary],
   );
@@ -89,16 +113,33 @@ export function RulerPicker({ min, max, step, value, onChange, majorEvery = 10, 
         keyExtractor={(i) => String(i)}
         renderItem={renderItem}
         getItemLayout={(_, index) => ({ length: TICK, offset: TICK * index, index })}
-        initialScrollIndex={Math.round((value - min) / step)}
+        initialScrollIndex={indexOf(value)}
         snapToInterval={TICK}
         decelerationRate="fast"
         showsHorizontalScrollIndicator={false}
         onScroll={onScroll}
+        onScrollBeginDrag={() => {
+          userDriven.current = true;
+        }}
+        onScrollEndDrag={(e) => {
+          // The list often glides on after the finger lifts; wait for it to stop before settling.
+          const offset = e.nativeEvent.contentOffset.x;
+          if (restTimer.current) clearTimeout(restTimer.current);
+          restTimer.current = setTimeout(() => {
+            if (!gliding.current) settleAt(offset);
+          }, 80);
+        }}
+        onMomentumScrollBegin={() => {
+          gliding.current = true;
+          if (restTimer.current) clearTimeout(restTimer.current);
+        }}
+        onMomentumScrollEnd={(e) => settleAt(e.nativeEvent.contentOffset.x)}
         scrollEventThrottle={16}
         contentContainerStyle={{ paddingHorizontal: side }}
         initialNumToRender={Math.ceil(width / TICK) + 10}
-        windowSize={7}
-        maxToRenderPerBatch={80}
+        maxToRenderPerBatch={Math.ceil(width / TICK)}
+        updateCellsBatchingPeriod={20}
+        windowSize={5}
       />
       <View pointerEvents="none" style={[styles.indicator, { left: width / 2 - 1.5, backgroundColor: colors.accent }]} />
     </View>

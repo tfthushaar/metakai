@@ -63,6 +63,12 @@ function workingSetsSince(fromDay: string, toDay: string): number {
 }
 
 /** Hard sets per day: last 3 days vs last 28 days. Null until there are three weeks of history to compare against. */
+export function deleteCheckIn(day: string) {
+  const now = nowIso();
+  getDb().runSync('UPDATE recovery_checkins SET deleted_at = ?, updated_at = ? WHERE date_key = ? AND deleted_at IS NULL', [now, now, day]);
+  notify('recovery_checkins');
+}
+
 export function trainingLoad(today = dateKey()): TrainingLoad | null {
   const first = getDb().getFirstSync<{ d: string | null }>('SELECT MIN(date_key) AS d FROM workouts WHERE deleted_at IS NULL AND ended_at IS NOT NULL');
   if (!first?.d || first.d > addDays(today, -21)) return null;

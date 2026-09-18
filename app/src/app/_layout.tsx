@@ -94,6 +94,8 @@ function RootStack() {
           <Stack.Screen name="log-food" options={modal} />
           <Stack.Screen name="log-weight" options={modal} />
           <Stack.Screen name="quick-add" options={modal} />
+          <Stack.Screen name="log-entry" options={modal} />
+          <Stack.Screen name="recipes" />
           <Stack.Screen name="workout" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
           <Stack.Screen name="workout-summary" />
           <Stack.Screen name="exercises" options={{ animation: 'slide_from_bottom' }} />

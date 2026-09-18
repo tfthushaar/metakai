@@ -27,6 +27,7 @@ Three principles shape the app:
 ### Nutrition
 - **Plain-language logging:** “2 rotis, 1 katori dal and 150g paneer” becomes an itemised list with calories, protein, carbs, fat and fiber.
 - **Offline food database** with Indian and international foods, barcode scanning (Open Food Facts), saved meals and quick add.
+- **Recipe ideas (optional):** list the ingredients you have, or photograph them, and get recipes that fit what is left of your day. Uses your own AI key.
 - **AI for unknown foods** using your own free Google Gemini or Groq key. Requests are spread across several models with per-model quota tracking and automatic failover. Answers are cached and learned foods are saved for offline use.
 - **Targets** from Mifflin-St Jeor or Katch-McArdle, with adaptive maintenance estimates and optional training-day carbs. Follow a weekly pace, or set your own daily calories and the macros, goal date and forecast follow them.
 

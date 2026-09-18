@@ -99,6 +99,8 @@ interface SettingsState {
   pregnant: boolean;
   /** The low-calorie notice has been shown once. */
   lowCalorieNoticeShown: boolean;
+  /** Ingredients kept for recipe ideas. */
+  pantry: string[];
   drive: DriveSettings;
   /** Spoken split announcements while recording GPS activities. */
   gpsVoice: boolean;
@@ -133,6 +135,7 @@ export const useSettings = create<SettingsState>()(
       carbCycling: false,
       pregnant: false,
       lowCalorieNoticeShown: false,
+      pantry: [],
       drive: DEFAULT_DRIVE,
       gpsVoice: true,
 

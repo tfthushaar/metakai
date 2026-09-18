@@ -23,6 +23,7 @@ import { haptic } from '../ui/haptics';
 import { Icon } from '../ui/Icon';
 import { layout } from '../ui/motion';
 import { PressableScale } from '../ui/PressableScale';
+import { Stepper } from '../ui/Stepper';
 import { Text } from '../ui/Text';
 import { toast } from '../ui/Toast';
 
@@ -186,13 +187,7 @@ export default function QuickWorkout() {
               {duration == null ? 'Estimated from your sets' : 'Set by you'}
             </Text>
           </View>
-          <PressableScale feedback="selection" onPress={() => setDuration(Math.max(5, minutes - 5))} style={[styles.step, { backgroundColor: colors.fill }]}>
-            <Icon name="minus" size={16} color={colors.text} />
-          </PressableScale>
-          <Text variant="headline" tabular style={{ minWidth: 64, textAlign: 'center' }}>{`${minutes} min`}</Text>
-          <PressableScale feedback="selection" onPress={() => setDuration(minutes + 5)} style={[styles.step, { backgroundColor: colors.fill }]}>
-            <Icon name="plus" size={16} color={colors.text} />
-          </PressableScale>
+          <Stepper value={minutes} onChange={setDuration} step={5} min={1} max={600} unit="min" title="Duration" valueWidth={64} />
         </View>
 
         <TextInput

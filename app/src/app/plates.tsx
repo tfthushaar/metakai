@@ -15,6 +15,7 @@ import { Chip } from '../ui/Chip';
 import { haptic } from '../ui/haptics';
 import { Icon } from '../ui/Icon';
 import { PressableScale } from '../ui/PressableScale';
+import { NumberPrompt } from '../ui/NumberPrompt';
 import { Text } from '../ui/Text';
 
 const BARS = [20, 15, 10];
@@ -35,6 +36,8 @@ export default function Plates() {
   const maxPlate = Math.max(...gym.plates.map((p) => p.weight));
   const display = units === 'metric' ? target : kgToLb(target);
 
+  const [typing, setTyping] = useState(false);
+
   const nudge = (dir: 1 | -1) => {
     haptic.selection();
     setTarget((t) => Math.max(bar, Math.round((t + dir * step) * 100) / 100));
@@ -49,13 +52,26 @@ export default function Plates() {
         </PressableScale>
       </View>
 
+      <NumberPrompt
+        visible={typing}
+        title="Total weight"
+        unit={weightUnit(units)}
+        value={display}
+        decimals={1}
+        min={0}
+        onClose={() => setTyping(false)}
+        onSubmit={(v) => setTarget(units === 'metric' ? v : lbToKg(v))}
+      />
+
       <ScrollView contentContainerStyle={{ padding: SPACE.lg, gap: SPACE.lg, paddingBottom: insets.bottom + SPACE.xl }}>
         <View style={styles.targetRow}>
           <PressableScale onPress={() => nudge(-1)} style={[styles.nudge, { backgroundColor: colors.fill }]}>
             <Icon name="minus" size={22} color={colors.text} />
           </PressableScale>
           <View style={{ alignItems: 'center' }}>
-            <AnimatedNumber value={display} decimals={display % 1 ? 1 : 0} variant="display" style={{ textAlign: 'center', minWidth: 150 }} />
+            <PressableScale scaleTo={0.97} feedback="selection" onPress={() => setTyping(true)}>
+              <AnimatedNumber value={display} decimals={display % 1 ? 1 : 0} variant="display" style={{ textAlign: 'center', minWidth: 150 }} />
+            </PressableScale>
             <Text variant="subhead" tone="secondary">
               {weightUnit(units)} total
             </Text>

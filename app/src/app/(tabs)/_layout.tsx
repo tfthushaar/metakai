@@ -47,6 +47,7 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     logFood: { icon: 'utensils', label: 'Log food', onPress: () => router.push('/log-food') },
     weighIn: { icon: 'scale', label: 'Weigh in', onPress: () => router.push('/log-weight') },
     quickAdd: { icon: 'flame', label: 'Quick add calories', onPress: () => router.push('/quick-add') },
+    recipes: { icon: 'sparkles', label: 'Recipe ideas', onPress: () => router.push('/recipes') },
     water: {
       icon: 'droplet',
       label: 'Add a glass of water',

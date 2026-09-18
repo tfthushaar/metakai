@@ -16,10 +16,13 @@ import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Chip } from '../ui/Chip';
 import { haptic } from '../ui/haptics';
+import { Icon } from '../ui/Icon';
 import { ListGroup, ListRow } from '../ui/List';
 import { RulerPicker } from '../ui/RulerPicker';
 import { Screen } from '../ui/Screen';
 import { SegmentedControl } from '../ui/SegmentedControl';
+import { NumberPrompt } from '../ui/NumberPrompt';
+import { PressableScale } from '../ui/PressableScale';
 import { Text } from '../ui/Text';
 import { toast } from '../ui/Toast';
 
@@ -57,6 +60,7 @@ export default function Goal() {
   const [eventWeeks, setEventWeeks] = useState(12);
   const [reverseStep, setReverseStep] = useState(phase?.overrides.reverseStepKcal ?? 100);
   const [mode, setMode] = useState<Mode>(phase?.overrides.kcal != null ? 'calories' : 'pace');
+  const [typing, setTyping] = useState<'target' | 'calories' | null>(null);
   const [customKcal, setCustomKcal] = useState(phase?.overrides.kcal ?? targets?.kcal ?? 2000);
 
   const choose = (g: GoalType) => {
@@ -156,7 +160,10 @@ export default function Goal() {
           <Text variant="footnote" tone="secondary">
             Target weight
           </Text>
-          <Text variant="largeTitle" tabular>{`${toDisplay(targetKg).toFixed(1)} ${weightUnit(units)}`}</Text>
+          <PressableScale scaleTo={0.99} feedback="selection" onPress={() => setTyping('target')} style={styles.editRow}>
+            <Text variant="largeTitle" tabular>{`${toDisplay(targetKg).toFixed(1)} ${weightUnit(units)}`}</Text>
+            <Icon name="pencil" size={16} color={colors.textTertiary} />
+          </PressableScale>
           <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} style={{ marginTop: SPACE.md }}>
             <RulerPicker
               key={`${goal}-${width}`}
@@ -184,7 +191,10 @@ export default function Goal() {
           />
           {mode === 'calories' ? (
             <>
-              <Text variant="largeTitle" tabular style={{ marginTop: SPACE.md }}>{`${customKcal.toLocaleString('en-US')} kcal`}</Text>
+              <PressableScale scaleTo={0.99} feedback="selection" onPress={() => setTyping('calories')} style={[styles.editRow, { marginTop: SPACE.md }]}>
+                <Text variant="largeTitle" tabular>{`${customKcal.toLocaleString('en-US')} kcal`}</Text>
+                <Icon name="pencil" size={16} color={colors.textTertiary} />
+              </PressableScale>
               <View onLayout={(e) => setKcalWidth(e.nativeEvent.layout.width)} style={{ marginTop: SPACE.sm }}>
                 <RulerPicker key={`kcal-${kcalWidth}`} width={kcalWidth} min={0} max={6000} step={25} majorEvery={20} value={customKcal} onChange={setCustomKcal} />
               </View>
@@ -312,6 +322,18 @@ export default function Goal() {
         </Card>
       )}
 
+      <NumberPrompt
+        visible={typing != null}
+        title={typing === 'calories' ? 'Daily calories' : 'Target weight'}
+        unit={typing === 'calories' ? 'kcal' : weightUnit(units)}
+        value={typing === 'calories' ? customKcal : toDisplay(targetKg)}
+        decimals={typing === 'calories' ? 0 : 1}
+        min={typing === 'calories' ? 0 : units === 'metric' ? 30 : 66}
+        max={typing === 'calories' ? 12000 : units === 'metric' ? 250 : 550}
+        onClose={() => setTyping(null)}
+        onSubmit={(v) => (typing === 'calories' ? setCustomKcal(Math.round(v)) : setTargetKg(units === 'metric' ? v : lbToKg(v)))}
+      />
+
       <View style={{ marginTop: SPACE.xl, gap: SPACE.sm }}>
         <Button title={changedOnlySettings ? 'Save changes' : `Start ${def.title.toLowerCase()}`} onPress={save} disabled={invalid || !profile} />
         <Button title="Plan my physique" variant="plain" icon="target" onPress={() => router.push('/physique')} />
@@ -321,6 +343,7 @@ export default function Goal() {
 }
 
 const styles = StyleSheet.create({
+  editRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.sm, marginVertical: SPACE.md },
   previewRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   macros: { flexDirection: 'row', justifyContent: 'space-between', marginTop: SPACE.lg, paddingTop: SPACE.md, borderTopWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.sm },

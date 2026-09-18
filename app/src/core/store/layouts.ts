@@ -65,6 +65,7 @@ export const LAYOUTS: Record<LayoutScreen, { title: string; description: string;
       { id: 'logFood', name: 'Log food', module: 'food' },
       { id: 'weighIn', name: 'Weigh in' },
       { id: 'quickAdd', name: 'Quick add calories', module: 'food' },
+      { id: 'recipes', name: 'Recipe ideas', module: 'recipes' },
       { id: 'water', name: 'Add a glass of water', module: 'water', hiddenByDefault: true },
       { id: 'workout', name: 'Start workout', module: 'workouts' },
       { id: 'logWorkout', name: 'Log finished workout', module: 'workouts' },

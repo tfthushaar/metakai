@@ -38,6 +38,7 @@ import Target from 'lucide-react-native/icons/target';
 import Trash from 'lucide-react-native/icons/trash';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import User from 'lucide-react-native/icons/user';
+import Camera from 'lucide-react-native/icons/camera';
 import Utensils from 'lucide-react-native/icons/utensils';
 import X from 'lucide-react-native/icons/x';
 import Bike from 'lucide-react-native/icons/bike';
@@ -99,6 +100,7 @@ const ICONS = {
   warning: TriangleAlert,
   user: User,
   utensils: Utensils,
+  camera: Camera,
   close: X,
   bike: Bike,
   footprints: Footprints,

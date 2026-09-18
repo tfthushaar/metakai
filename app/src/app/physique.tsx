@@ -20,28 +20,9 @@ import { haptic } from '../ui/haptics';
 import { Icon } from '../ui/Icon';
 import { PressableScale } from '../ui/PressableScale';
 import { Screen } from '../ui/Screen';
+import { Stepper } from '../ui/Stepper';
 import { Text } from '../ui/Text';
 import { toast } from '../ui/Toast';
-
-function Stepper({ label, value, onChange, step, format }: { label: string; value: number; onChange: (v: number) => void; step: number; format: (v: number) => string }) {
-  const { colors } = useTheme();
-  return (
-    <View style={styles.stepperRow}>
-      <Text variant="body" style={{ flex: 1 }}>
-        {label}
-      </Text>
-      <PressableScale feedback="selection" onPress={() => onChange(value - step)} style={[styles.stepButton, { backgroundColor: colors.fill }]}>
-        <Icon name="minus" size={16} color={colors.text} />
-      </PressableScale>
-      <Text variant="headline" tabular style={{ minWidth: 86, textAlign: 'center' }}>
-        {format(value)}
-      </Text>
-      <PressableScale feedback="selection" onPress={() => onChange(value + step)} style={[styles.stepButton, { backgroundColor: colors.fill }]}>
-        <Icon name="plus" size={16} color={colors.text} />
-      </PressableScale>
-    </View>
-  );
-}
 
 export default function Physique() {
   const router = useRouter();

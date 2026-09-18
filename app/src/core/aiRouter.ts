@@ -71,6 +71,8 @@ export interface ChatRequest {
   shapeHint: string;
   /** Defaults to 0.1 for extraction; slightly higher for written advice. */
   temperature?: number;
+  /** Base64 JPEGs sent with the question. Only Gemini can read them. */
+  images?: string[];
 }
 
 async function withTimeout(url: string, init: RequestInit): Promise<Response> {
@@ -91,7 +93,7 @@ async function callGemini(route: Route, key: string, req: ChatRequest): Promise<
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: req.system }] },
-      contents: [{ role: 'user', parts: [{ text: req.user }] }],
+      contents: [{ role: 'user', parts: [{ text: req.user }, ...(req.images ?? []).map((data) => ({ inlineData: { mimeType: 'image/jpeg', data } }))] }],
       generationConfig: { temperature: req.temperature ?? 0.1, maxOutputTokens: OUTPUT_TOKENS * 2, responseMimeType: 'application/json', responseSchema: req.schema },
     }),
   });
@@ -173,9 +175,13 @@ export class AiUnavailable extends Error {}
 /** Sends the request to the first model with room, falling through on limits and errors. */
 export async function routeChat(req: ChatRequest): Promise<string> {
   const keys = useAiKeys.getState();
-  const routes = ROUTES.filter((r) => keys[r.provider]);
-  if (routes.length === 0) throw new AiUnavailable('Add a free Gemini or Groq key in Settings → AI.');
-  const tokens = estimateTokens(req.system + req.user + req.shapeHint) + OUTPUT_TOKENS;
+  // Photos can only go to Gemini; the Groq models here are text-only.
+  const routes = ROUTES.filter((r) => keys[r.provider] && (!req.images?.length || r.provider === 'gemini'));
+  if (routes.length === 0) {
+    throw new AiUnavailable(req.images?.length ? 'Reading photos needs a free Gemini key. Add one in Settings → AI.' : 'Add a free Gemini or Groq key in Settings → AI.');
+  }
+  // A photo costs roughly 260 tokens at Gemini's default resolution.
+  const tokens = estimateTokens(req.system + req.user + req.shapeHint) + (req.images?.length ?? 0) * 300 + OUTPUT_TOKENS;
   const badKeys = new Set<AiProvider>();
 
   for (let attempt = 0; attempt < 2; attempt++) {

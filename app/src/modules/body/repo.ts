@@ -114,6 +114,12 @@ export function addBodyComp(dateKey: string, method: BodyFatMethod, bfPct: numbe
   notify('body_comp_entries');
 }
 
+export function deleteMeasurement(id: string) {
+  const now = nowIso();
+  getDb().runSync('UPDATE measurements SET deleted_at = ?, updated_at = ? WHERE id = ?', [now, now, id]);
+  notify('measurements');
+}
+
 export function deleteBodyComp(id: string) {
   const now = nowIso();
   getDb().runSync('UPDATE body_comp_entries SET deleted_at = ?, updated_at = ? WHERE id = ?', [now, now, id]);

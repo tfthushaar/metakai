@@ -1,6 +1,7 @@
 export type ModuleId =
   | 'food'
   | 'water'
+  | 'recipes'
   | 'predictions'
   | 'workouts'
   | 'measurements'
@@ -49,6 +50,15 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
     group: 'Nutrition',
     requires: [],
     permissions: [],
+    status: 'available',
+  },
+  recipes: {
+    id: 'recipes',
+    name: 'Recipe ideas',
+    description: 'Recipes from the ingredients you have, matched to your targets. Uses your own AI key.',
+    group: 'Nutrition',
+    requires: ['food'],
+    permissions: ['camera'],
     status: 'available',
   },
   predictions: {

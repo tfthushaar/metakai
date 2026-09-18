@@ -8,6 +8,7 @@ import { useBody } from '../../core/goals/useBody';
 import { deleteLogEntry, listLog, MEAL_SLOTS, restoreLogEntry, type LogEntry, type MealSlot } from '../../core/db/repo';
 import { useQuery } from '../../core/db/useQuery';
 import { useTheme } from '../../core/theme/ThemeProvider';
+import { useFeature, useSettings } from '../../core/store/settings';
 import { RADIUS, SPACE } from '../../core/theme/typography';
 import { addDays, dateKey, relativeDay } from '../../lib/dates';
 import { MacroInline, MacroSummary } from '../../modules/food/components';
@@ -25,6 +26,7 @@ const SOURCE_LABEL: Record<LogEntry['source'], string | null> = { local: null, c
 
 function EntryRow({ entry }: { entry: LogEntry }) {
   const { colors } = useTheme();
+  const router = useRouter();
   const remove = () => {
     haptic.medium();
     deleteLogEntry(entry.id);
@@ -44,7 +46,12 @@ function EntryRow({ entry }: { entry: LogEntry }) {
         </PressableScale>
       )}
     >
-      <View style={[styles.entry, { backgroundColor: colors.surface }]}>
+      <PressableScale
+        scaleTo={0.995}
+        feedback="selection"
+        onPress={() => router.push({ pathname: '/log-entry', params: { id: entry.id } })}
+        style={[styles.entry, { backgroundColor: colors.surface }]}
+      >
         <View style={{ flex: 1, gap: 2 }}>
           <Text variant="body" numberOfLines={1}>
             {entry.name}
@@ -59,7 +66,8 @@ function EntryRow({ entry }: { entry: LogEntry }) {
           </Text>
           <MacroInline macros={entry} showKcal={false} />
         </View>
-      </View>
+        <Icon name="chevronRight" size={16} color={colors.textTertiary} />
+      </PressableScale>
     </ReanimatedSwipeable>
   );
 }
@@ -102,6 +110,8 @@ export default function Food() {
   const today = dateKey();
   const log = useQuery(['log_entries'], () => listLog(day), [day]);
   const { targets } = useBody();
+  const recipesOn = useFeature('recipes');
+  const pantry = useSettings((s) => s.pantry);
   const eaten = useMemo(() => sumMacros(log), [log]);
 
   const shift = (delta: number) => {
@@ -147,6 +157,23 @@ export default function Food() {
         </Card>
       )}
 
+      {recipesOn && (
+        <Card index={1} style={{ marginTop: SPACE.md }} onPress={() => router.push('/recipes')}>
+          <View style={styles.recipeRow}>
+            <View style={[styles.recipeIcon, { backgroundColor: colors.fill }]}>
+              <Icon name="sparkles" size={18} color={colors.text} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="headline">Recipe ideas</Text>
+              <Text variant="footnote" tone="secondary">
+                {pantry.length > 0 ? `${pantry.length} ingredients saved` : 'From the ingredients you have'}
+              </Text>
+            </View>
+            <Icon name="chevronRight" size={18} color={colors.textTertiary} />
+          </View>
+        </Card>
+      )}
+
       {MEAL_SLOTS.map((slot, i) => (
         <MealSection
           key={`${day}-${slot.id}`}
@@ -162,6 +189,8 @@ export default function Food() {
 }
 
 const styles = StyleSheet.create({
+  recipeRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
+  recipeIcon: { width: 38, height: 38, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },
   dayNav: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACE.md, gap: SPACE.md },
   navButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   quickAdd: { paddingHorizontal: 14, height: 34, borderRadius: RADIUS.pill, justifyContent: 'center', marginBottom: 4 },

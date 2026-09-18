@@ -8,7 +8,8 @@ import { useBody } from '../../core/goals/useBody';
 import { useMilestones } from '../../core/goals/useMilestones';
 import { listBodyComp, listPhotos } from '../../modules/body/repo';
 import { ListGroup, ListRow } from '../../ui/List';
-import { dailyTotals, deleteWeight, listWeights, restoreWeight, type WeightEntry } from '../../core/db/repo';
+import { NumberPrompt } from '../../ui/NumberPrompt';
+import { dailyTotals, deleteWeight, listWeights, restoreWeight, updateWeight, type WeightEntry } from '../../core/db/repo';
 import { useQuery } from '../../core/db/useQuery';
 import { useLayout } from '../../core/store/layouts';
 import { RanksSection } from '../../modules/ranks/RanksSummary';
@@ -17,7 +18,7 @@ import { useTheme } from '../../core/theme/ThemeProvider';
 import { SPACE } from '../../core/theme/typography';
 import { addDays, dateKey, formatLong, formatShort, parseDateKey } from '../../lib/dates';
 import { GOALS } from '../../lib/goals';
-import { displayWeight, weightUnit } from '../../lib/units';
+import { displayWeight, lbToKg, weightUnit } from '../../lib/units';
 import { Button } from '../../ui/Button';
 import { Card, SectionHeader } from '../../ui/Card';
 import { haptic } from '../../ui/haptics';
@@ -67,6 +68,7 @@ function IntakeBar({ ratio, over, index }: { ratio: number; over: boolean; index
 
 function WeightRow({ entry, units }: { entry: WeightEntry; units: 'metric' | 'imperial' }) {
   const { colors } = useTheme();
+  const [typing, setTyping] = useState(false);
   const remove = () => {
     haptic.medium();
     deleteWeight(entry.id);
@@ -84,7 +86,7 @@ function WeightRow({ entry, units }: { entry: WeightEntry; units: 'metric' | 'im
         </PressableScale>
       )}
     >
-      <View style={[styles.weightRow, { backgroundColor: colors.surface }]}>
+      <PressableScale scaleTo={0.995} feedback="selection" onPress={() => setTyping(true)} style={[styles.weightRow, { backgroundColor: colors.surface }]}>
         <View style={{ flex: 1 }}>
           <Text variant="body">{formatLong(entry.dateKey)}</Text>
           <Text variant="footnote" tone="secondary">
@@ -92,7 +94,23 @@ function WeightRow({ entry, units }: { entry: WeightEntry; units: 'metric' | 'im
           </Text>
         </View>
         <Text variant="headline" tabular>{`${displayWeight(entry.kg, units)} ${weightUnit(units)}`}</Text>
-      </View>
+        <Icon name="pencil" size={15} color={colors.textTertiary} />
+      </PressableScale>
+      <NumberPrompt
+        visible={typing}
+        title="Weigh-in"
+        unit={weightUnit(units)}
+        value={Number(displayWeight(entry.kg, units))}
+        decimals={1}
+        min={units === 'metric' ? 20 : 44}
+        max={units === 'metric' ? 400 : 880}
+        hint={formatLong(entry.dateKey)}
+        onClose={() => setTyping(false)}
+        onSubmit={(v) => {
+          updateWeight(entry.id, units === 'metric' ? v : lbToKg(v));
+          toast('Weigh-in updated');
+        }}
+      />
     </ReanimatedSwipeable>
   );
 }

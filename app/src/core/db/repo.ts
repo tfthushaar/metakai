@@ -233,6 +233,11 @@ export function addWeight(dateKey: string, kg: number, note: string | null = nul
   return { id, dateKey, measuredAt: now, kg, note };
 }
 
+export function updateWeight(id: string, kg: number) {
+  getDb().runSync('UPDATE weight_entries SET kg = ?, updated_at = ? WHERE id = ?', [kg, nowIso(), id]);
+  notify('weight_entries');
+}
+
 export function deleteWeight(id: string) {
   const now = nowIso();
   getDb().runSync('UPDATE weight_entries SET deleted_at = ?, updated_at = ? WHERE id = ?', [now, now, id]);
@@ -325,6 +330,37 @@ export function addLogEntries(entries: NewLogEntry[]) {
     }
   });
   notify('log_entries');
+}
+
+export type LogEntryPatch = Partial<Pick<LogEntry, 'name' | 'mealSlot' | 'quantity' | 'unit' | 'grams' | 'kcal' | 'protein' | 'carbs' | 'fat' | 'fiber'>>;
+
+const LOG_COLUMNS: Record<keyof LogEntryPatch, string> = {
+  name: 'name',
+  mealSlot: 'meal_slot',
+  quantity: 'quantity',
+  unit: 'unit',
+  grams: 'grams',
+  kcal: 'kcal',
+  protein: 'protein',
+  carbs: 'carbs',
+  fat: 'fat',
+  fiber: 'fiber',
+};
+
+export function updateLogEntry(id: string, patch: LogEntryPatch) {
+  const keys = (Object.keys(patch) as (keyof LogEntryPatch)[]).filter((k) => patch[k] !== undefined);
+  if (keys.length === 0) return;
+  getDb().runSync(`UPDATE log_entries SET ${keys.map((k) => `${LOG_COLUMNS[k]} = ?`).join(', ')}, updated_at = ? WHERE id = ?`, [
+    ...keys.map((k) => patch[k] as string | number | null),
+    nowIso(),
+    id,
+  ]);
+  notify('log_entries');
+}
+
+export function getLogEntry(id: string): LogEntry | null {
+  const row = getDb().getFirstSync<LogRow>('SELECT * FROM log_entries WHERE id = ? AND deleted_at IS NULL', [id]);
+  return row ? toLog(row) : null;
 }
 
 export function deleteLogEntry(id: string) {

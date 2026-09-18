@@ -27,22 +27,11 @@ const EFFORT = [
   { rpe: 9, label: 'All out' },
 ];
 
-function Stepper({ label, value, onChange, step, min, format }: { label: string; value: number; onChange: (v: number) => void; step: number; min: number; format: (v: number) => string }) {
+function StepRow({ label, value, onChange, step, min, format, unit, decimals }: { label: string; value: number; onChange: (v: number) => void; step: number; min: number; format: (v: number) => string; unit?: string; decimals?: number }) {
   const { colors } = useTheme();
   return (
     <View style={[styles.stepRow, { backgroundColor: colors.surface }]}>
-      <Text variant="body" style={{ flex: 1 }}>
-        {label}
-      </Text>
-      <PressableScale feedback="selection" onPress={() => onChange(Math.max(min, value - step))} style={[styles.step, { backgroundColor: colors.fill }]}>
-        <Icon name="minus" size={16} color={colors.text} />
-      </PressableScale>
-      <Text variant="headline" tabular style={{ minWidth: 72, textAlign: 'center' }}>
-        {format(value)}
-      </Text>
-      <PressableScale feedback="selection" onPress={() => onChange(value + step)} style={[styles.step, { backgroundColor: colors.fill }]}>
-        <Icon name="plus" size={16} color={colors.text} />
-      </PressableScale>
+      <StepRow label={label} value={value} onChange={onChange} step={step} min={min} format={format} unit={unit} decimals={decimals} />
     </View>
   );
 }
@@ -92,7 +81,7 @@ export default function LogCardio() {
           ))}
         </View>
 
-        <Stepper label="Duration" value={minutes} onChange={setMinutes} step={5} min={5} format={(v) => `${v} min`} />
+        <StepRow label="Duration" value={minutes} onChange={setMinutes} step={5} min={5} format={(v) => `${v} min`} unit="min" />
 
         {def.distance && (
           <View style={[styles.stepRow, { backgroundColor: colors.surface }]}>

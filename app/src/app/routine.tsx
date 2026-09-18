@@ -29,6 +29,7 @@ import { haptic } from '../ui/haptics';
 import { Icon } from '../ui/Icon';
 import { layout } from '../ui/motion';
 import { PressableScale } from '../ui/PressableScale';
+import { NumberPrompt } from '../ui/NumberPrompt';
 import { Screen } from '../ui/Screen';
 import { Text } from '../ui/Text';
 
@@ -37,6 +38,7 @@ const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 function Stepper({ label, value, onChange, min = 1 }: { label: string; value: number; onChange: (v: number) => void; min?: number }) {
   const { colors } = useTheme();
+  const [typing, setTyping] = useState(false);
   return (
     <View style={{ alignItems: 'center', gap: 4 }}>
       <Text variant="caption" tone="secondary">
@@ -46,13 +48,16 @@ function Stepper({ label, value, onChange, min = 1 }: { label: string; value: nu
         <PressableScale feedback="selection" hitSlop={6} onPress={() => onChange(Math.max(min, value - 1))} style={styles.stepperButton}>
           <Icon name="minus" size={14} color={colors.text} />
         </PressableScale>
-        <Text variant="headline" tabular style={{ minWidth: 24, textAlign: 'center' }}>
-          {value}
-        </Text>
+        <PressableScale feedback="selection" scaleTo={0.96} onPress={() => setTyping(true)} style={{ minWidth: 28 }}>
+          <Text variant="headline" tabular align="center">
+            {value}
+          </Text>
+        </PressableScale>
         <PressableScale feedback="selection" hitSlop={6} onPress={() => onChange(value + 1)} style={styles.stepperButton}>
           <Icon name="plus" size={14} color={colors.text} />
         </PressableScale>
       </View>
+      <NumberPrompt visible={typing} title={label} value={value} min={min} onClose={() => setTyping(false)} onSubmit={onChange} />
     </View>
   );
 }

@@ -19,6 +19,7 @@ import { Chip } from '../ui/Chip';
 import { haptic } from '../ui/haptics';
 import { Icon } from '../ui/Icon';
 import { PressableScale } from '../ui/PressableScale';
+import { Stepper } from '../ui/Stepper';
 import { Text } from '../ui/Text';
 import { toast } from '../ui/Toast';
 
@@ -59,21 +60,10 @@ function CountdownRing({ size, progress, color, track, children }: { size: numbe
 
 function Row({ label, value, onChange, step, min, max, unit = 's' }: { label: string; value: number; onChange: (v: number) => void; step: number; min: number; max: number; unit?: string }) {
   const { colors } = useTheme();
-  const show = unit === 's' ? (value >= 60 && value % 60 === 0 ? `${value / 60} min` : value >= 60 ? formatClock(value) : `${value} s`) : `${value}`;
+  const show = (v: number) => (unit === 's' ? (v >= 60 && v % 60 === 0 ? `${v / 60} min` : v >= 60 ? formatClock(v) : `${v} s`) : `${v}`);
   return (
     <View style={[styles.stepRow, { backgroundColor: colors.surface }]}>
-      <Text variant="body" style={{ flex: 1 }}>
-        {label}
-      </Text>
-      <PressableScale feedback="selection" onPress={() => onChange(Math.max(min, value - step))} style={[styles.step, { backgroundColor: colors.fill }]}>
-        <Icon name="minus" size={16} color={colors.text} />
-      </PressableScale>
-      <Text variant="headline" tabular style={{ minWidth: 72, textAlign: 'center' }}>
-        {show}
-      </Text>
-      <PressableScale feedback="selection" onPress={() => onChange(Math.min(max, value + step))} style={[styles.step, { backgroundColor: colors.fill }]}>
-        <Icon name="plus" size={16} color={colors.text} />
-      </PressableScale>
+      <Stepper label={label} value={value} onChange={onChange} step={step} min={min} max={max} format={show} unit={unit === 's' ? 'seconds' : unit} />
     </View>
   );
 }

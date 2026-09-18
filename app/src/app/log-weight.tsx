@@ -16,6 +16,7 @@ import { haptic } from '../ui/haptics';
 import { Icon } from '../ui/Icon';
 import { PressableScale } from '../ui/PressableScale';
 import { RulerPicker } from '../ui/RulerPicker';
+import { NumberPrompt } from '../ui/NumberPrompt';
 import { Text } from '../ui/Text';
 import { toast } from '../ui/Toast';
 
@@ -29,6 +30,7 @@ export default function LogWeight() {
   const startKg = latestRawKg ?? 75;
   const toDisplay = (kg: number) => Math.round((units === 'metric' ? kg : kgToLb(kg)) * 10) / 10;
   const [value, setValue] = useState(toDisplay(startKg));
+  const [typing, setTyping] = useState(false);
   const lastWeighIn = trend.filter((t) => t.kg != null).pop();
 
   const save = () => {
@@ -59,12 +61,15 @@ export default function LogWeight() {
           <PressableScale onPress={() => nudge(-0.1)} feedback="selection" style={[styles.nudge, { backgroundColor: colors.fill }]}>
             <Icon name="minus" size={22} color={colors.text} />
           </PressableScale>
-          <View style={styles.value}>
+          <PressableScale scaleTo={0.97} feedback="selection" onPress={() => setTyping(true)} style={styles.value}>
             <AnimatedNumber value={value} decimals={1} variant="display" style={{ fontSize: 64, lineHeight: 72, textAlign: 'center', minWidth: 170 }} />
-            <Text variant="title3" tone="secondary">
-              {weightUnit(units)}
-            </Text>
-          </View>
+            <View style={styles.unitRow}>
+              <Text variant="title3" tone="secondary">
+                {weightUnit(units)}
+              </Text>
+              <Icon name="pencil" size={15} color={colors.textTertiary} />
+            </View>
+          </PressableScale>
           <PressableScale onPress={() => nudge(0.1)} feedback="selection" style={[styles.nudge, { backgroundColor: colors.fill }]}>
             <Icon name="plus" size={22} color={colors.text} />
           </PressableScale>
@@ -85,6 +90,18 @@ export default function LogWeight() {
       </View>
 
       <Button title="Save" onPress={save} />
+
+      <NumberPrompt
+        visible={typing}
+        title="Weight"
+        unit={weightUnit(units)}
+        value={value}
+        decimals={1}
+        min={units === 'metric' ? 30 : 66}
+        max={units === 'metric' ? 250 : 550}
+        onClose={() => setTyping(false)}
+        onSubmit={setValue}
+      />
     </View>
   );
 }
@@ -97,5 +114,6 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center' },
   valueRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACE.xxl },
   value: { alignItems: 'center' },
+  unitRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   nudge: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
 });

@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 
 import { useQuery } from '../core/db/useQuery';
 import { useTheme } from '../core/theme/ThemeProvider';
@@ -6,13 +6,17 @@ import { RADIUS, SPACE } from '../core/theme/typography';
 import { dateKey, parseDateKey } from '../lib/dates';
 import { muscleRecovery } from '../lib/muscleRecovery';
 import type { CheckInAnswers } from '../lib/readiness';
-import { EMPTY_ANSWERS, getCheckIn, readinessFor, readinessHistory, recentTraining, saveCheckIn } from '../modules/recovery/repo';
+import { deleteCheckIn, EMPTY_ANSWERS, getCheckIn, readinessFor, readinessHistory, recentTraining, saveCheckIn } from '../modules/recovery/repo';
 import { Card, SectionHeader } from '../ui/Card';
 import { Icon } from '../ui/Icon';
 import { PressableScale } from '../ui/PressableScale';
 import { Ring } from '../ui/Ring';
 import { Screen } from '../ui/Screen';
+import { Stepper } from '../ui/Stepper';
+import { Button } from '../ui/Button';
+import { haptic } from '../ui/haptics';
 import { Text } from '../ui/Text';
+import { toast } from '../ui/Toast';
 
 type ScaleKey = Exclude<keyof CheckInAnswers, 'sleepHours'>;
 
@@ -127,15 +131,18 @@ export default function Recovery() {
           <Text variant="body" style={{ flex: 1 }}>
             Sleep
           </Text>
-          <PressableScale feedback="selection" onPress={() => update({ sleepHours: Math.max(0, (sleep ?? 7.5) - 0.5) })} style={[styles.step, { backgroundColor: colors.fill }]}>
-            <Icon name="minus" size={16} color={colors.text} />
-          </PressableScale>
-          <Text variant="headline" tabular style={{ minWidth: 56, textAlign: 'center' }}>
-            {sleep == null ? '—' : `${sleep} h`}
-          </Text>
-          <PressableScale feedback="selection" onPress={() => update({ sleepHours: Math.min(14, (sleep ?? 7) + 0.5) })} style={[styles.step, { backgroundColor: colors.fill }]}>
-            <Icon name="plus" size={16} color={colors.text} />
-          </PressableScale>
+          <Stepper
+            value={sleep ?? 7.5}
+            onChange={(sleepHours) => update({ sleepHours })}
+            step={0.5}
+            min={0}
+            max={16}
+            decimals={1}
+            unit="h"
+            title="Sleep"
+            format={(v) => (sleep == null ? '—' : `${v} h`)}
+            valueWidth={56}
+          />
         </View>
         {QUESTIONS.map((q) => (
           <View key={q.key} style={{ gap: SPACE.sm }}>
@@ -146,6 +153,27 @@ export default function Recovery() {
         <Text variant="caption" tone="tertiary">
           Saved as you tap. Recent training load is included automatically.
         </Text>
+        {result && (
+          <Button
+            title="Clear today’s check-in"
+            variant="destructive"
+            size="md"
+            onPress={() =>
+              Alert.alert('Clear check-in?', 'Today’s answers are removed. Your readiness score goes back to training load only.', [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Clear',
+                  style: 'destructive',
+                  onPress: () => {
+                    deleteCheckIn(today);
+                    haptic.medium();
+                    toast('Check-in cleared');
+                  },
+                },
+              ])
+            }
+          />
+        )}
       </Card>
 
       <SectionHeader title="Last 14 days" />

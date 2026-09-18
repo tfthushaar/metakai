@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 
 import { useBody } from '../core/goals/useBody';
@@ -17,6 +18,7 @@ import { Icon } from '../ui/Icon';
 import { ListGroup } from '../ui/List';
 import { PressableScale } from '../ui/PressableScale';
 import { Screen } from '../ui/Screen';
+import { NumberPrompt } from '../ui/NumberPrompt';
 import { Text } from '../ui/Text';
 
 const FIELDS: { key: keyof MacroTargets; label: string; unit: string; step: number }[] = [
@@ -33,6 +35,7 @@ export default function Targets() {
   const carbCycling = useSettings((st) => st.carbCycling);
   const setSettings = useSettings((st) => st.set);
   const units = useSettings((st) => st.units);
+  const [typing, setTyping] = useState<keyof MacroTargets | null>(null);
   const { profile, phase, targets, recommended, currentKg, adaptive, dayType, customKcal, plannedWeeklyKg } = useBody();
 
   if (!profile || !phase || !targets || !recommended || currentKg == null) {
@@ -44,6 +47,7 @@ export default function Targets() {
   }
 
   const overrides = phase.overrides;
+  const editing = FIELDS.find((f) => f.key === typing);
   const hasOverrides = MACRO_KEYS.some((k) => overrides[k] != null);
 
   const set = (key: keyof MacroTargets, value: number) => {
@@ -92,9 +96,11 @@ export default function Targets() {
               <PressableScale onPress={() => set(f.key, value - f.step)} style={[styles.step, { backgroundColor: colors.fill }]}>
                 <Icon name="minus" size={16} color={colors.text} />
               </PressableScale>
-              <Text variant="headline" tabular style={styles.value}>
-                {`${value} ${f.unit}`}
-              </Text>
+              <PressableScale scaleTo={0.97} feedback="selection" onPress={() => setTyping(f.key)} style={styles.value}>
+                <Text variant="headline" tabular align="center">
+                  {`${value} ${f.unit}`}
+                </Text>
+              </PressableScale>
               <PressableScale onPress={() => set(f.key, value + f.step)} style={[styles.step, { backgroundColor: colors.fill }]}>
                 <Icon name="plus" size={16} color={colors.text} />
               </PressableScale>
@@ -129,6 +135,20 @@ export default function Targets() {
       <Text variant="footnote" tone="secondary" style={{ marginTop: SPACE.md, paddingHorizontal: SPACE.lg }} tabular>
         {`Macros add up to ${Math.round(targets.protein * 4 + targets.carbs * 4 + targets.fat * 9)} kcal`}
       </Text>
+
+      {editing && (
+        <NumberPrompt
+          visible
+          title={editing.label}
+          unit={editing.unit}
+          value={targets[editing.key]}
+          min={0}
+          max={editing.key === 'kcal' ? 12000 : 2000}
+          hint={`Recommended ${recommended[editing.key]} ${editing.unit}`}
+          onClose={() => setTyping(null)}
+          onSubmit={(v) => set(editing.key, v)}
+        />
+      )}
 
       {hasOverrides && (
         <View style={{ marginTop: SPACE.xl }}>

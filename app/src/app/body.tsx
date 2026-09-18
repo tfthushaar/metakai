@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 
 import { useBody } from '../core/goals/useBody';
 import { useQuery } from '../core/db/useQuery';
@@ -10,12 +10,13 @@ import { RADIUS, SPACE } from '../core/theme/typography';
 import { bodyFatBand, composition, ffmiLabel, waistToHeight } from '../lib/bodycomp';
 import { formatShort, relativeDay } from '../lib/dates';
 import { CM_PER_IN, displayWeight, weightUnit } from '../lib/units';
-import { deleteBodyComp, listBodyComp, listMeasurements, MEASUREMENT_SITES, METHOD_LABEL, type MeasurementSite } from '../modules/body/repo';
+import { deleteBodyComp, deleteMeasurement, listBodyComp, listMeasurements, MEASUREMENT_SITES, METHOD_LABEL, type MeasurementSite } from '../modules/body/repo';
 import { MiniLineChart } from '../modules/workouts/components';
 import { Button } from '../ui/Button';
 import { Card, SectionHeader } from '../ui/Card';
 import { Chip } from '../ui/Chip';
 import { haptic } from '../ui/haptics';
+import { Icon } from '../ui/Icon';
 import { PressableScale } from '../ui/PressableScale';
 import { Screen } from '../ui/Screen';
 import { Text } from '../ui/Text';
@@ -32,10 +33,10 @@ export default function Body() {
   const len = (cm: number) => (units === 'metric' ? `${cm.toFixed(1)} cm` : `${(cm / CM_PER_IN).toFixed(1)} in`);
 
   const bySite = useMemo(() => {
-    const map = new Map<MeasurementSite, { dateKey: string; cm: number }[]>();
+    const map = new Map<MeasurementSite, { id: string; dateKey: string; cm: number }[]>();
     for (const m of measurements) {
       if (!map.has(m.site)) map.set(m.site, []);
-      map.get(m.site)!.push({ dateKey: m.dateKey, cm: m.cm });
+      map.get(m.site)!.push({ id: m.id, dateKey: m.dateKey, cm: m.cm });
     }
     return map;
   }, [measurements]);
@@ -157,9 +158,37 @@ export default function Body() {
                   )}
                 </View>
                 {series.length > 1 && <MiniLineChart values={series.map((p) => p.cm)} height={100} />}
-                <Text variant="caption" tone="tertiary">
-                  {`${series.length} ${series.length === 1 ? 'entry' : 'entries'} · last ${relativeDay(series[series.length - 1].dateKey)}`}
-                </Text>
+                <View style={[styles.entries, { borderTopColor: colors.separator }]}>
+                  {[...series].reverse().slice(0, 8).map((m) => (
+                    <PressableScale
+                      key={m.id}
+                      scaleTo={0.99}
+                      feedback="selection"
+                      onPress={() =>
+                        Alert.alert(`Delete ${len(m.cm)}?`, `Logged ${relativeDay(m.dateKey).toLowerCase()}.`, [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Delete',
+                            style: 'destructive',
+                            onPress: () => {
+                              haptic.medium();
+                              deleteMeasurement(m.id);
+                            },
+                          },
+                        ])
+                      }
+                      style={styles.entryRow}
+                    >
+                      <Text variant="footnote" tone="secondary" style={{ flex: 1 }}>
+                        {relativeDay(m.dateKey)}
+                      </Text>
+                      <Text variant="subhead" tabular>
+                        {len(m.cm)}
+                      </Text>
+                      <Icon name="trash" size={14} color={colors.textTertiary} />
+                    </PressableScale>
+                  ))}
+                </View>
               </>
             ) : (
               <Text tone="secondary">Pick a measurement.</Text>
@@ -176,10 +205,19 @@ export default function Body() {
               <PressableScale
                 key={e.id}
                 scaleTo={0.99}
-                onLongPress={() => {
-                  haptic.medium();
-                  deleteBodyComp(e.id);
-                }}
+                onPress={() =>
+                  Alert.alert(`Delete ${e.bfPct.toFixed(1)}% reading?`, `Logged ${relativeDay(e.dateKey).toLowerCase()}.`, [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Delete',
+                      style: 'destructive',
+                      onPress: () => {
+                        haptic.medium();
+                        deleteBodyComp(e.id);
+                      },
+                    },
+                  ])
+                }
                 style={[styles.historyRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator }]}
               >
                 <View style={{ flex: 1 }}>
@@ -202,6 +240,8 @@ export default function Body() {
 }
 
 const styles = StyleSheet.create({
+  entries: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: SPACE.sm, paddingTop: SPACE.sm, gap: 2 },
+  entryRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, paddingVertical: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md },
   compGrid: { flexDirection: 'row', marginTop: SPACE.lg, paddingTop: SPACE.md, borderTopWidth: StyleSheet.hairlineWidth },
   compCell: { flex: 1, gap: 2 },
