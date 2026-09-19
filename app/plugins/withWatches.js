@@ -1,5 +1,5 @@
-// Android setup for watches: Health Connect permissions and the privacy policy screen
-// Health Connect links to from its permission pages.
+// Android setup for watches: Health Connect permissions, the privacy policy screen Health Connect
+// links to from its permission pages, and Bluetooth as an optional feature.
 const fs = require('fs');
 const path = require('path');
 const { AndroidConfig, withAndroidManifest, withDangerousMod } = require('expo/config-plugins');
@@ -56,8 +56,15 @@ const withWatchManifest = (config) =>
   withAndroidManifest(config, (cfg) => {
     const manifest = cfg.modResults.manifest;
 
-    // Bluetooth permissions come from react-native-ble-plx's own manifest.
+    // Bluetooth permissions come from react-native-ble-plx's own manifest; Bluetooth stays optional
+    // so phones without it can still install the app.
     HEALTH_PERMISSIONS.forEach((p) => addPermission(manifest, p));
+    manifest['uses-feature'] = manifest['uses-feature'] || [];
+    for (const name of ['android.hardware.bluetooth', 'android.hardware.bluetooth_le']) {
+      if (!manifest['uses-feature'].some((f) => f.$['android:name'] === name)) {
+        manifest['uses-feature'].push({ $: { 'android:name': name, 'android:required': 'false' } });
+      }
+    }
 
     const app = AndroidConfig.Manifest.getMainApplicationOrThrow(cfg.modResults);
     app.activity = app.activity || [];
