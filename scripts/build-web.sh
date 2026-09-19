@@ -15,7 +15,9 @@ fi
 
 rm -rf "$OUT"
 npx expo export --platform web --output-dir "$OUT"
-node "$ROOT/scripts/web-sw.mjs" "$OUT" /metakai/app
+# MSYS_NO_PATHCONV stops Git Bash on Windows from rewriting /metakai/app into a Windows path.
+# Relative paths, since that also stops it converting the script path. We are in app/.
+MSYS_NO_PATHCONV=1 node ../scripts/web-sw.mjs ../docs/app /metakai/app
 # GitHub Pages answers unknown paths with the site's 404.html. Make it the app, so reloading on any
 # screen (/metakai/app/you) opens that screen; other missing pages go to the website.
 sed 's#<head>#<head><script>if (!location.pathname.startsWith("/metakai/app/")) location.replace("/metakai/");</script>#'   "$OUT/index.html" > "$ROOT/docs/404.html"

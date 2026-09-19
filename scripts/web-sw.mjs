@@ -8,6 +8,7 @@ import { join, relative } from 'node:path';
 const out = process.argv[2];
 const base = process.argv[3] ?? '/metakai/app';
 if (!out) throw new Error('Usage: node scripts/web-sw.mjs <export dir> [base path]');
+if (!/^\/[\w/-]*$/.test(base)) throw new Error(`Base path must look like /metakai/app, got ${base}`);
 
 const files = [];
 (function walk(dir) {
