@@ -58,6 +58,8 @@ import Mountain from 'lucide-react-native/icons/mountain';
 import Navigation from 'lucide-react-native/icons/navigation';
 import Square from 'lucide-react-native/icons/square';
 import Volume2 from 'lucide-react-native/icons/volume-2';
+import Watch from 'lucide-react-native/icons/watch';
+import Bluetooth from 'lucide-react-native/icons/bluetooth';
 
 const ICONS = {
   activity: Activity,
@@ -119,6 +121,8 @@ const ICONS = {
   navigation: Navigation,
   square: Square,
   volume: Volume2,
+  watch: Watch,
+  bluetooth: Bluetooth,
 } as const;
 
 export type IconName = keyof typeof ICONS;

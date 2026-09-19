@@ -18,6 +18,7 @@ import { AppLockGate } from '../core/AppLock';
 import { syncReminders } from '../core/reminders';
 import { backfillWorkoutCalories } from '../modules/workouts/repo';
 import { flushDrive, syncDrive, watchForChanges } from '../core/drive';
+import { useWatchAutoSync } from '../modules/wearables/sync';
 import { restoreRecording } from '../modules/gps/tracker';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -62,6 +63,7 @@ function RootStack() {
   const { colors, dark } = useTheme();
   useNotificationLinks();
   useDriveBackup();
+  useWatchAutoSync();
   const authMode = useSettings((s) => s.authMode);
   const onboarded = useSettings((s) => s.onboarded);
   const reduceMotion = useSettings((s) => s.reduceMotion);

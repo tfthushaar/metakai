@@ -69,6 +69,28 @@ export interface LeaderboardSettings {
   lastProfileKey: string | null;
 }
 
+export type WatchData = 'activity' | 'heart' | 'sleep' | 'body' | 'workouts';
+
+export interface WatchSettings {
+  /** Connected to Health Connect (Android) or Apple Health (iOS). */
+  health: boolean;
+  /** What to bring in from the health app. */
+  data: Record<WatchData, boolean>;
+  /** Send Metakai workouts and weigh-ins back to the health app. */
+  share: boolean;
+  lastSyncedAt: string | null;
+  /** Bluetooth heart rate device to reconnect to. */
+  hrDevice: { id: string; name: string } | null;
+}
+
+export const DEFAULT_WATCH: WatchSettings = {
+  health: false,
+  data: { activity: true, heart: true, sleep: true, body: true, workouts: true },
+  share: false,
+  lastSyncedAt: null,
+  hrDevice: null,
+};
+
 export const DEFAULT_LEADERBOARD: LeaderboardSettings = { joined: false, displayName: null, country: null, lastUploadAt: null, lastUploadKey: null, lastProfileKey: null };
 
 interface SettingsState {
@@ -106,6 +128,7 @@ interface SettingsState {
   drive: DriveSettings;
   /** Spoken split announcements while recording GPS activities. */
   gpsVoice: boolean;
+  watch: WatchSettings;
 
   set: (patch: Partial<Omit<SettingsState, 'set' | 'toggleModule' | 'applyPreset'>>) => void;
   toggleModule: (id: ModuleId, on: boolean) => void;
@@ -141,6 +164,7 @@ export const useSettings = create<SettingsState>()(
       pantry: [],
       drive: DEFAULT_DRIVE,
       gpsVoice: true,
+      watch: DEFAULT_WATCH,
 
       set: (patch) => set(patch),
       toggleModule: (id, on) => {
@@ -155,7 +179,7 @@ export const useSettings = create<SettingsState>()(
     {
       name: 'metakai.settings',
       storage: createJSONStorage(() => kvStorage),
-      version: 9,
+      version: 10,
       migrate: (state, version) => {
         const s = state as Record<string, unknown>;
         if (version < 2) {
@@ -183,6 +207,11 @@ export const useSettings = create<SettingsState>()(
           s.reduceMotion = false;
         }
         if (version < 9) s.leaderboard = DEFAULT_LEADERBOARD;
+        if (version < 10) {
+          s.watch = DEFAULT_WATCH;
+          const modules = (s.enabledModules as string[]) ?? [];
+          if (s.preset !== 'minimal' && !modules.includes('wearables')) s.enabledModules = [...modules, 'wearables'];
+        }
         return s as never;
       },
     },

@@ -18,6 +18,7 @@ import { sumMacros } from '../../modules/food/parse';
 import { HabitsCard } from '../../modules/habits/HabitsCard';
 import { listSupplements, setTaken, takenOn } from '../../modules/health/repo';
 import { RanksTodayCard } from '../../modules/ranks/RanksSummary';
+import { WatchTodayCard } from '../../modules/wearables/components';
 import { readinessFor } from '../../modules/recovery/repo';
 import { ElapsedText } from '../../modules/workouts/components';
 import { activeWorkout, listWorkouts, routinesForWeekday, startWorkout } from '../../modules/workouts/repo';
@@ -83,7 +84,7 @@ export default function Today() {
   const log = useQuery(['log_entries'], () => listLog(today), [today]);
   const water = useQuery(['water_entries'], () => waterTotal(today), [today]);
   const eaten = useMemo(() => sumMacros(log), [log]);
-  const ready = useQuery(['recovery_checkins', 'workout_sets'], () => readinessFor(today), [today]);
+  const ready = useQuery(['recovery_checkins', 'workout_sets', 'health_markers'], () => readinessFor(today), [today]);
   const supplements = useQuery(['supplements'], listSupplements);
   const taken = useQuery(['supplement_logs'], () => takenOn(today), [today]);
 
@@ -250,6 +251,7 @@ export default function Today() {
         </Card>
     ) : null,
     ranks: <RanksTodayCard index={idx('ranks')} />,
+    watch: <WatchTodayCard index={idx('watch')} />,
     readiness: recoveryOn ? (
         <Card index={idx('readiness')} onPress={() => router.push('/recovery')}>
           <View style={styles.weightHeader}>

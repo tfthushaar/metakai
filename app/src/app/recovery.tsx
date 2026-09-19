@@ -7,6 +7,7 @@ import { dateKey, parseDateKey } from '../lib/dates';
 import { muscleRecovery } from '../lib/muscleRecovery';
 import type { CheckInAnswers } from '../lib/readiness';
 import { deleteCheckIn, EMPTY_ANSWERS, getCheckIn, readinessFor, readinessHistory, recentTraining, saveCheckIn } from '../modules/recovery/repo';
+import { watchSleep } from '../modules/wearables/repo';
 import { Card, SectionHeader } from '../ui/Card';
 import { Icon } from '../ui/Icon';
 import { PressableScale } from '../ui/PressableScale';
@@ -77,7 +78,8 @@ export default function Recovery() {
   const { colors } = useTheme();
   const today = dateKey();
   const answers = useQuery(['recovery_checkins'], () => getCheckIn(today) ?? EMPTY_ANSWERS, [today]);
-  const result = useQuery(['recovery_checkins', 'workout_sets', 'workouts'], () => readinessFor(today), [today]);
+  const result = useQuery(['recovery_checkins', 'workout_sets', 'workouts', 'health_markers'], () => readinessFor(today), [today]);
+  const fromWatch = useQuery(['health_markers'], () => watchSleep(today), [today]);
   const history = useQuery(['recovery_checkins', 'workout_sets', 'workouts'], () => readinessHistory(14, today), [today]);
   const training = useQuery(['workouts', 'workout_exercises', 'workout_sets'], recentTraining);
   const muscles = muscleRecovery(training, Date.now())
@@ -88,7 +90,7 @@ export default function Recovery() {
 
   const bandColor = !result ? colors.textTertiary : result.band === 'high' ? colors.success : result.band === 'moderate' ? colors.warning : colors.danger;
   const bandLabel = !result ? 'Check in below' : result.band === 'high' ? 'Ready to push' : result.band === 'moderate' ? 'Train smart' : 'Take it easy';
-  const sleep = answers.sleepHours;
+  const sleep = answers.sleepHours ?? fromWatch;
 
   return (
     <Screen title="Recovery" back>
@@ -128,9 +130,14 @@ export default function Recovery() {
       <Card index={1} style={{ gap: SPACE.lg }}>
         <View style={styles.sleepRow}>
           <Icon name="moon" size={20} color={colors.textSecondary} />
-          <Text variant="body" style={{ flex: 1 }}>
-            Sleep
-          </Text>
+          <View style={{ flex: 1 }}>
+            <Text variant="body">Sleep</Text>
+            {answers.sleepHours == null && fromWatch != null && (
+              <Text variant="caption" tone="secondary">
+                From your watch
+              </Text>
+            )}
+          </View>
           <Stepper
             value={sleep ?? 7.5}
             onChange={(sleepHours) => update({ sleepHours })}

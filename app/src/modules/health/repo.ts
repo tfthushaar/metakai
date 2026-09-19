@@ -2,7 +2,7 @@ import { getDb, newId, notify, nowIso } from '../../core/db/database';
 
 /* ---------------- health markers ---------------- */
 
-export type MarkerKind = 'bp' | 'rhr' | 'hrv' | 'glucose' | 'steps' | 'custom';
+export type MarkerKind = 'bp' | 'rhr' | 'hrv' | 'glucose' | 'steps' | 'sleep' | 'custom';
 
 export interface MarkerDef {
   kind: Exclude<MarkerKind, 'custom'>;
@@ -29,6 +29,7 @@ export const MARKERS: MarkerDef[] = [
   { kind: 'hrv', name: 'HRV', unit: 'ms', hint: 'From your watch or chest strap' },
   { kind: 'glucose', name: 'Fasting glucose', unit: 'mg/dL', hint: 'After at least 8 hours without food', check: (v) => (v >= 126 ? 'High. Talk to a doctor.' : v >= 100 ? 'Elevated' : v < 70 ? 'Low' : null) },
   { kind: 'steps', name: 'Steps', unit: 'steps', hint: 'Daily total from your phone or watch' },
+  { kind: 'sleep', name: 'Sleep', unit: 'h', hint: 'Hours asleep last night' },
 ];
 
 export const LAB_SUGGESTIONS: { label: string; unit: string }[] = [

@@ -2,6 +2,7 @@ import { getDb, newId, notify, nowIso } from '../../core/db/database';
 import { addDays, dateKey } from '../../lib/dates';
 import type { TrainedExercise } from '../../lib/muscleRecovery';
 import { readiness, type CheckInAnswers, type TrainingLoad } from '../../lib/readiness';
+import { watchSleep } from '../wearables/repo';
 import { getExercise } from '../workouts/repo';
 
 export const EMPTY_ANSWERS: CheckInAnswers = { sleepHours: null, sleepQuality: null, soreness: null, stress: null, energy: null, mood: null };
@@ -77,7 +78,9 @@ export function trainingLoad(today = dateKey()): TrainingLoad | null {
 
 export function readinessFor(day: string) {
   const answers = getCheckIn(day);
-  return answers ? readiness(answers, trainingLoad(day)) : null;
+  const sleepHours = answers?.sleepHours ?? watchSleep(day);
+  if (!answers && sleepHours == null) return null;
+  return readiness({ ...(answers ?? EMPTY_ANSWERS), sleepHours }, trainingLoad(day));
 }
 
 export function readinessHistory(days: number, today = dateKey()): { dateKey: string; score: number | null }[] {

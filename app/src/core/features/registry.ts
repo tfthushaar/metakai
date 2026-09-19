@@ -16,11 +16,12 @@ export type ModuleId =
   | 'rank_physique'
   | 'rank_run'
   | 'achievements'
-  | 'coach';
+  | 'coach'
+  | 'wearables';
 
-export type ModuleGroup = 'Nutrition' | 'Body' | 'Training' | 'Lifestyle' | 'Motivation' | 'Coaching';
+export type ModuleGroup = 'Nutrition' | 'Body' | 'Training' | 'Lifestyle' | 'Motivation' | 'Coaching' | 'Devices';
 
-export type Permission = 'camera' | 'microphone' | 'location' | 'health';
+export type Permission = 'camera' | 'microphone' | 'location' | 'health' | 'bluetooth';
 
 export interface ModuleDef {
   id: ModuleId;
@@ -196,19 +197,28 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
     permissions: [],
     status: 'available',
   },
+  wearables: {
+    id: 'wearables',
+    name: 'Watches & health apps',
+    description: 'Steps, sleep, heart rate, weigh-ins and workouts from your watch, plus live heart rate while you train.',
+    group: 'Devices',
+    requires: [],
+    permissions: ['health', 'bluetooth'],
+    status: 'available',
+  },
 };
 
-export const GROUP_ORDER: ModuleGroup[] = ['Nutrition', 'Body', 'Training', 'Lifestyle', 'Motivation', 'Coaching'];
+export const GROUP_ORDER: ModuleGroup[] = ['Nutrition', 'Body', 'Training', 'Lifestyle', 'Motivation', 'Coaching', 'Devices'];
 
 export const isAvailable = (id: ModuleId) => MODULES[id].status === 'available';
 
 export type PresetId = 'cut' | 'lean_bulk' | 'recomp' | 'maintain' | 'minimal' | 'everything';
 
 export const PRESETS: Record<PresetId, { name: string; modules: ModuleId[] }> = {
-  cut: { name: 'Cut', modules: ['food', 'water', 'predictions', 'measurements', 'body_comp', 'photos', 'milestones', 'workouts', 'cardio', 'habits', 'rank_physique', 'achievements'] },
-  lean_bulk: { name: 'Lean bulk', modules: ['food', 'predictions', 'workouts', 'recovery', 'measurements', 'photos', 'milestones', 'rank_physique', 'achievements'] },
-  recomp: { name: 'Recomp', modules: ['food', 'predictions', 'workouts', 'cardio', 'recovery', 'measurements', 'body_comp', 'photos', 'milestones', 'rank_physique', 'achievements'] },
-  maintain: { name: 'Maintain', modules: ['food', 'workouts', 'habits', 'achievements'] },
+  cut: { name: 'Cut', modules: ['food', 'water', 'predictions', 'measurements', 'body_comp', 'photos', 'milestones', 'workouts', 'cardio', 'habits', 'rank_physique', 'achievements', 'wearables'] },
+  lean_bulk: { name: 'Lean bulk', modules: ['food', 'predictions', 'workouts', 'recovery', 'measurements', 'photos', 'milestones', 'rank_physique', 'achievements', 'wearables'] },
+  recomp: { name: 'Recomp', modules: ['food', 'predictions', 'workouts', 'cardio', 'recovery', 'measurements', 'body_comp', 'photos', 'milestones', 'rank_physique', 'achievements', 'wearables'] },
+  maintain: { name: 'Maintain', modules: ['food', 'workouts', 'habits', 'achievements', 'wearables'] },
   minimal: { name: 'Minimal', modules: ['food'] },
   everything: { name: 'Everything', modules: Object.keys(MODULES) as ModuleId[] },
 };

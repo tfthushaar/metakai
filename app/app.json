@@ -44,6 +44,9 @@
             ]
           }
         ]
+      },
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "Metakai connects to your heart rate strap or watch to show live heart rate during workouts and runs."
       }
     },
     "android": {
@@ -142,7 +145,24 @@
         }
       ],
       "expo-apple-authentication",
-      "expo-web-browser"
+      "expo-web-browser",
+      "./plugins/withWatches",
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "Metakai reads steps, sleep, heart rate, weigh-ins and workouts from Apple Health to show them next to your food and training.",
+          "NSHealthUpdateUsageDescription": "Metakai saves the workouts and weigh-ins you log so they appear in Apple Health.",
+          "background": false
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

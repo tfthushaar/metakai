@@ -83,6 +83,9 @@ export default function You() {
         {settings.enabledModules.includes('workouts') && (
           <ListRow icon="dumbbell" title="Gym" value={`Rest ${settings.gym.restSeconds}s`} onPress={() => router.push('/settings/gym')} />
         )}
+        {settings.enabledModules.includes('wearables') && (
+          <ListRow icon="watch" title="Watches" value={settings.watch.health || settings.watch.hrDevice ? 'On' : undefined} onPress={() => router.push('/settings/devices')} />
+        )}
       </ListGroup>
 
       <ListGroup header="Data" index={3}>

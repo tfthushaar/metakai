@@ -409,4 +409,20 @@ export const MIGRATIONS: string[] = [
     synced_at TEXT
   );
   `,
+  `
+  -- Watches and health apps: where a row came from, its id there, heart rate and share state.
+  ALTER TABLE weight_entries ADD COLUMN external_id TEXT;
+  ALTER TABLE weight_entries ADD COLUMN shared_at TEXT;
+  ALTER TABLE body_comp_entries ADD COLUMN external_id TEXT;
+  ALTER TABLE health_markers ADD COLUMN source TEXT;
+  ALTER TABLE cardio_sessions ADD COLUMN source TEXT;
+  ALTER TABLE cardio_sessions ADD COLUMN external_id TEXT;
+  ALTER TABLE cardio_sessions ADD COLUMN max_hr REAL;
+  ALTER TABLE cardio_sessions ADD COLUMN shared_at TEXT;
+  ALTER TABLE workouts ADD COLUMN avg_hr REAL;
+  ALTER TABLE workouts ADD COLUMN max_hr REAL;
+  ALTER TABLE workouts ADD COLUMN shared_at TEXT;
+  CREATE INDEX weight_entries_external ON weight_entries (external_id);
+  CREATE INDEX cardio_sessions_external ON cardio_sessions (external_id);
+  `,
 ];

@@ -24,6 +24,7 @@ export const LAYOUTS: Record<LayoutScreen, { title: string; description: string;
       { id: 'logPrompt', name: 'Log food & meals', module: 'food', hiddenByDefault: true },
       { id: 'weight', name: 'Weight & goal' },
       { id: 'readiness', name: 'Readiness', module: 'recovery' },
+      { id: 'watch', name: 'Watch', module: 'wearables' },
       { id: 'ranks', name: 'Ranks', anyModule: ['rank_physique', 'rank_run'], hiddenByDefault: true },
       { id: 'habits', name: 'Habits', module: 'habits' },
       { id: 'training', name: 'Training', module: 'workouts' },

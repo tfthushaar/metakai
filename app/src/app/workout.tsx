@@ -12,6 +12,9 @@ import { useTheme } from '../core/theme/ThemeProvider';
 import { RADIUS, SPACE, TYPE } from '../core/theme/typography';
 import { estimate1RM, warmupSets } from '../lib/strength';
 import { lbToKg, weightUnit } from '../lib/units';
+import { HeartRateBadge } from '../modules/wearables/components';
+import { endHeartRateSession, startHeartRateSession } from '../modules/wearables/heartRate';
+import { saveHeartRate } from '../modules/wearables/repo';
 import { ElapsedText, ExerciseThumb, formatWeight, RestTimerBar } from '../modules/workouts/components';
 import { useExercisePicker } from '../modules/workouts/picker';
 import {
@@ -352,6 +355,12 @@ export default function WorkoutScreen() {
     }
   }, [active, router]);
 
+  // Heart rate from a paired sensor for as long as this workout runs.
+  const workoutId = workout?.id;
+  useEffect(() => {
+    if (workoutId) startHeartRateSession(workoutId);
+  }, [workoutId]);
+
   if (!workout) return <View style={{ flex: 1, backgroundColor: colors.background }} />;
 
   const doneSets = workout.exercises.reduce((n, e) => n + e.sets.filter((s) => s.completedAt).length, 0);
@@ -369,9 +378,12 @@ export default function WorkoutScreen() {
       skipRest();
       const id = workout.id;
       if (finishWorkout(id)) {
+        const heart = endHeartRateSession(id);
+        if (heart) saveHeartRate('workouts', id, heart);
         haptic.success();
         router.replace({ pathname: '/workout-summary', params: { id, fresh: '1' } });
       } else {
+        endHeartRateSession(id);
         toast('Nothing logged, so the workout was discarded');
         router.back();
       }
@@ -418,7 +430,10 @@ export default function WorkoutScreen() {
           <ElapsedText since={workout.startedAt} variant="title2" />
           <Text variant="caption" tone="secondary" tabular>{`${doneSets} / ${totalSets} sets`}</Text>
         </View>
-        <Button title="Finish" size="sm" full={false} onPress={finish} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACE.sm }}>
+          <HeartRateBadge />
+          <Button title="Finish" size="sm" full={false} onPress={finish} />
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: SPACE.lg, paddingBottom: insets.bottom + 140, gap: SPACE.md }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>

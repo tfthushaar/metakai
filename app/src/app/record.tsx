@@ -12,6 +12,9 @@ import { durationLabel, simplify, type TrackKind } from '../lib/geo';
 import { bestEfforts } from '../modules/cardio/repo';
 import { BestEffortsList, distanceParts, elevationLabel, paceOrSpeed, RouteArt, SplitsList, StatCell } from '../modules/gps/components';
 import { defaultTitle, hasBestEfforts, saveSummary, summarize, TRACK_KINDS, trackLabel, type Summary } from '../modules/gps/summary';
+import { HeartRateBadge } from '../modules/wearables/components';
+import { endHeartRateSession, startHeartRateSession } from '../modules/wearables/heartRate';
+import { saveHeartRate } from '../modules/wearables/repo';
 import {
   clearRecording,
   currentSecPerM,
@@ -197,12 +200,18 @@ function Live({ onMinimize }: { onMinimize: () => void }) {
     finishRecording();
   };
 
+  useEffect(() => {
+    startHeartRateSession('gps');
+  }, []);
+
   return (
     <View style={[styles.fill, { paddingTop: insets.top + SPACE.sm, paddingBottom: insets.bottom + SPACE.xl }]}>
       <View style={styles.topRow}>
-        <PressableScale onPress={onMinimize} hitSlop={10} style={[styles.round, { backgroundColor: colors.fill }]}>
-          <Icon name="chevronDown" size={22} color={colors.textSecondary} />
-        </PressableScale>
+        <View style={styles.side}>
+          <PressableScale onPress={onMinimize} hitSlop={10} style={[styles.round, { backgroundColor: colors.fill }]}>
+            <Icon name="chevronDown" size={22} color={colors.textSecondary} />
+          </PressableScale>
+        </View>
         {paused ? (
           <View style={[styles.pill, { backgroundColor: colors.warning }]}>
             <Text variant="footnote" weight="bold" color="#000">
@@ -212,7 +221,9 @@ function Live({ onMinimize }: { onMinimize: () => void }) {
         ) : (
           <SignalPill />
         )}
-        <View style={styles.round} />
+        <View style={[styles.side, { alignItems: 'flex-end' }]}>
+          <HeartRateBadge />
+        </View>
       </View>
 
       <View style={{ alignItems: 'center', marginTop: SPACE.xl }}>
@@ -321,6 +332,8 @@ function Review({ onDone }: { onDone: (id: string | null) => void }) {
 
   const save = () => {
     const id = saveSummary(summary, title, live.startedAt);
+    const heart = endHeartRateSession('gps');
+    if (heart) saveHeartRate('cardio_sessions', id, heart);
     clearRecording();
     haptic.success();
     onDone(id);
@@ -334,6 +347,7 @@ function Review({ onDone }: { onDone: (id: string | null) => void }) {
         style: 'destructive',
         onPress: async () => {
           await discardRecording();
+          endHeartRateSession('gps');
           onDone(null);
         },
       },
@@ -422,6 +436,7 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACE.lg },
   round: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  side: { width: 84 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, height: 32, borderRadius: RADIUS.pill },
   dot: { width: 8, height: 8, borderRadius: 4 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },

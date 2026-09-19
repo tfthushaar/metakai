@@ -26,7 +26,7 @@ interface Backup {
 }
 
 /** Settings that belong to this phone rather than to the user's data. */
-const DEVICE_SETTINGS = ['authMode', 'onboarded', 'appLock', 'drive', 'leaderboard'];
+const DEVICE_SETTINGS = ['authMode', 'onboarded', 'appLock', 'drive', 'leaderboard', 'watch'];
 
 const schemaVersion = () => getDb().getFirstSync<{ user_version: number }>('PRAGMA user_version')?.user_version ?? 0;
 
