@@ -425,4 +425,31 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX weight_entries_external ON weight_entries (external_id);
   CREATE INDEX cardio_sessions_external ON cardio_sessions (external_id);
   `,
+  `
+  -- Watch sleep with its stages, which app each watch reading came from, and watch sessions
+  -- matched to workouts logged here.
+  CREATE TABLE sleep_nights (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT,
+    date_key TEXT NOT NULL,
+    asleep_min REAL NOT NULL,
+    deep_min REAL,
+    rem_min REAL,
+    light_min REAL,
+    awake_min REAL,
+    bed_start TEXT,
+    bed_end TEXT,
+    origin TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    synced_at TEXT
+  );
+  CREATE INDEX sleep_nights_date_key ON sleep_nights (date_key);
+  ALTER TABLE health_markers ADD COLUMN origin TEXT;
+  ALTER TABLE cardio_sessions ADD COLUMN origin TEXT;
+  ALTER TABLE cardio_sessions ADD COLUMN started_at TEXT;
+  ALTER TABLE workouts ADD COLUMN external_id TEXT;
+  CREATE INDEX workouts_external ON workouts (external_id);
+  `,
 ];

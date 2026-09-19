@@ -81,5 +81,6 @@ export function saveSummary(s: Summary, title: string, startedAt: number): strin
     elapsedMin: Math.round((s.elapsedSec / 60) * 10) / 10,
     splits: s.splits,
     title: title.trim() || null,
+    startedAt: new Date(startedAt).toISOString(),
   });
 }

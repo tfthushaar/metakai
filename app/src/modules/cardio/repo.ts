@@ -68,14 +68,17 @@ const toSession = (r: Row): CardioSession => ({
 });
 
 export type NewCardio = Omit<CardioSession, 'id' | 'createdAt' | 'route' | 'elevationM' | 'elapsedMin' | 'splits' | 'title'> &
-  Partial<Pick<CardioSession, 'route' | 'elevationM' | 'elapsedMin' | 'splits' | 'title'>>;
+  Partial<Pick<CardioSession, 'route' | 'elevationM' | 'elapsedMin' | 'splits' | 'title'>> & {
+    /** When a recording began, so a watch recording of the same session can be matched to it. */
+    startedAt?: string | null;
+  };
 
 export function addCardio(s: NewCardio): string {
   const id = newId();
   const now = nowIso();
   getDb().runSync(
-    `INSERT INTO cardio_sessions (id, date_key, kind, duration_min, distance_km, avg_hr, rpe, kcal, intervals, note, route, elevation_m, elapsed_min, splits, title, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO cardio_sessions (id, date_key, kind, duration_min, distance_km, avg_hr, rpe, kcal, intervals, note, route, elevation_m, elapsed_min, splits, title, started_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       s.dateKey,
@@ -92,6 +95,7 @@ export function addCardio(s: NewCardio): string {
       s.elapsedMin ?? null,
       s.splits ? JSON.stringify(s.splits) : null,
       s.title ?? null,
+      s.startedAt ?? null,
       now,
       now,
     ],

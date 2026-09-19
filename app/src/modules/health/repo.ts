@@ -2,7 +2,7 @@ import { getDb, newId, notify, nowIso } from '../../core/db/database';
 
 /* ---------------- health markers ---------------- */
 
-export type MarkerKind = 'bp' | 'rhr' | 'hrv' | 'glucose' | 'steps' | 'sleep' | 'custom';
+export type MarkerKind = 'bp' | 'rhr' | 'hrv' | 'glucose' | 'steps' | 'sleep' | 'active_kcal' | 'vo2max' | 'spo2' | 'resp' | 'custom';
 
 export interface MarkerDef {
   kind: Exclude<MarkerKind, 'custom'>;
@@ -13,6 +13,8 @@ export interface MarkerDef {
   hint: string;
   /** Returns a short note when the value is outside the usual range. */
   check?: (v: number, v2: number | null) => string | null;
+  /** Only comes from a watch, so it isn't offered when logging by hand. */
+  watchOnly?: boolean;
 }
 
 export const MARKERS: MarkerDef[] = [
@@ -30,6 +32,16 @@ export const MARKERS: MarkerDef[] = [
   { kind: 'glucose', name: 'Fasting glucose', unit: 'mg/dL', hint: 'After at least 8 hours without food', check: (v) => (v >= 126 ? 'High. Talk to a doctor.' : v >= 100 ? 'Elevated' : v < 70 ? 'Low' : null) },
   { kind: 'steps', name: 'Steps', unit: 'steps', hint: 'Daily total from your phone or watch' },
   { kind: 'sleep', name: 'Sleep', unit: 'h', hint: 'Hours asleep last night' },
+  { kind: 'vo2max', name: 'VO2 max', unit: 'ml/kg/min', hint: 'From your watch or a lab test' },
+  {
+    kind: 'spo2',
+    name: 'Blood oxygen',
+    unit: '%',
+    hint: 'From a pulse oximeter or your watch, at rest',
+    check: (v) => (v < 90 ? 'Low. Talk to a doctor.' : v < 95 ? 'A little low' : null),
+  },
+  { kind: 'resp', name: 'Breathing rate', unit: 'br/min', hint: 'Breaths per minute, usually measured overnight', watchOnly: true, check: (v) => (v > 24 ? 'High' : v < 8 ? 'Low' : null) },
+  { kind: 'active_kcal', name: 'Active calories', unit: 'kcal', hint: 'Calories burned moving, from your watch', watchOnly: true },
 ];
 
 export const LAB_SUGGESTIONS: { label: string; unit: string }[] = [

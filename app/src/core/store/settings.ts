@@ -81,7 +81,13 @@ export interface WatchSettings {
   lastSyncedAt: string | null;
   /** Bluetooth heart rate device to reconnect to. */
   hrDevice: { id: string; name: string } | null;
+  /** App to read sleep and heart readings from when several record them; null picks automatically. */
+  sources: Record<WatchSourceKind, string | null>;
+  /** Apps seen recording sleep and heart readings, to choose between. */
+  seen: Record<WatchSourceKind, string[]>;
 }
+
+export type WatchSourceKind = 'sleep' | 'heart';
 
 export const DEFAULT_WATCH: WatchSettings = {
   health: false,
@@ -89,6 +95,8 @@ export const DEFAULT_WATCH: WatchSettings = {
   share: false,
   lastSyncedAt: null,
   hrDevice: null,
+  sources: { sleep: null, heart: null },
+  seen: { sleep: [], heart: [] },
 };
 
 export const DEFAULT_LEADERBOARD: LeaderboardSettings = { joined: false, displayName: null, country: null, lastUploadAt: null, lastUploadKey: null, lastProfileKey: null };
@@ -181,7 +189,7 @@ export const useSettings = create<SettingsState>()(
     {
       name: 'metakai.settings',
       storage: createJSONStorage(() => kvStorage),
-      version: 10,
+      version: 11,
       // Drop features this platform can't run (the web build has no GPS, watches or photos).
       merge: (persisted, current) => {
         const merged = { ...current, ...(persisted as Partial<SettingsState>) };
@@ -219,6 +227,7 @@ export const useSettings = create<SettingsState>()(
           const modules = (s.enabledModules as string[]) ?? [];
           if (s.preset !== 'minimal' && !modules.includes('wearables')) s.enabledModules = [...modules, 'wearables'];
         }
+        if (version < 11) s.watch = { ...DEFAULT_WATCH, ...(s.watch as Partial<WatchSettings>) };
         return s as never;
       },
     },

@@ -1,6 +1,7 @@
 import { getDb, newId, notify, nowIso } from '../../core/db/database';
 import { cardioCalories } from '../../lib/cardio';
 import { addDays, dateKey } from '../../lib/dates';
+import type { SleepNight } from '../../lib/wearables';
 import type { MarkerKind } from '../health/repo';
 import type { ImportedReading, ImportedWorkout, SharedWorkout } from './types';
 
@@ -11,24 +12,25 @@ export const WATCH = 'watch';
  * Daily watch readings: one row per kind and day, updated as the day's total grows.
  * A row the user deleted stays deleted.
  */
-export function upsertWatchMarker(day: string, kind: MarkerKind, value: number, unit: string): boolean {
+export function upsertWatchMarker(day: string, kind: MarkerKind, value: number, unit: string, origin: string | null = null): boolean {
   const db = getDb();
-  const row = db.getFirstSync<{ id: string; value: number; deleted_at: string | null }>(
-    'SELECT id, value, deleted_at FROM health_markers WHERE kind = ? AND date_key = ? AND source = ? LIMIT 1',
+  const row = db.getFirstSync<{ id: string; value: number; origin: string | null; deleted_at: string | null }>(
+    'SELECT id, value, origin, deleted_at FROM health_markers WHERE kind = ? AND date_key = ? AND source = ? ORDER BY updated_at DESC LIMIT 1',
     [kind, day, WATCH],
   );
   const now = nowIso();
   if (row) {
-    if (row.deleted_at || row.value === value) return false;
-    db.runSync('UPDATE health_markers SET value = ?, updated_at = ? WHERE id = ?', [value, now, row.id]);
+    if (row.deleted_at || (row.value === value && row.origin === origin)) return false;
+    db.runSync('UPDATE health_markers SET value = ?, origin = ?, updated_at = ? WHERE id = ?', [value, origin, now, row.id]);
   } else {
-    db.runSync('INSERT INTO health_markers (id, date_key, kind, value, unit, source, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [
+    db.runSync('INSERT INTO health_markers (id, date_key, kind, value, unit, source, origin, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [
       newId(),
       day,
       kind,
       value,
       unit,
       WATCH,
+      origin,
       now,
       now,
     ]);
@@ -36,7 +38,86 @@ export function upsertWatchMarker(day: string, kind: MarkerKind, value: number, 
   return true;
 }
 
-const seen = (table: 'weight_entries' | 'body_comp_entries' | 'cardio_sessions', externalId: string) =>
+/* ---------------- sleep ---------------- */
+
+export interface StoredNight {
+  dateKey: string;
+  asleepMin: number;
+  deepMin: number | null;
+  remMin: number | null;
+  lightMin: number | null;
+  awakeMin: number | null;
+  bedStart: string | null;
+  bedEnd: string | null;
+  origin: string | null;
+}
+
+interface NightRow {
+  id: string;
+  date_key: string;
+  asleep_min: number;
+  deep_min: number | null;
+  rem_min: number | null;
+  light_min: number | null;
+  awake_min: number | null;
+  bed_start: string | null;
+  bed_end: string | null;
+  origin: string | null;
+  deleted_at: string | null;
+}
+
+const toNight = (r: NightRow): StoredNight => ({
+  dateKey: r.date_key,
+  asleepMin: r.asleep_min,
+  deepMin: r.deep_min,
+  remMin: r.rem_min,
+  lightMin: r.light_min,
+  awakeMin: r.awake_min,
+  bedStart: r.bed_start,
+  bedEnd: r.bed_end,
+  origin: r.origin,
+});
+
+/** Saves the night's sleep and stages; a night the user deleted stays deleted. */
+export function upsertSleepNight(n: SleepNight): boolean {
+  const db = getDb();
+  const row = db.getFirstSync<NightRow>('SELECT * FROM sleep_nights WHERE date_key = ? ORDER BY updated_at DESC LIMIT 1', [n.dateKey]);
+  const values = [n.asleepMin, n.deepMin, n.remMin, n.lightMin, n.awakeMin, new Date(n.start).toISOString(), new Date(n.end).toISOString(), n.origin];
+  const now = nowIso();
+  if (row) {
+    if (row.deleted_at) return false;
+    const same = [row.asleep_min, row.deep_min, row.rem_min, row.light_min, row.awake_min, row.bed_start, row.bed_end, row.origin].every((v, i) => v === values[i]);
+    if (same) return false;
+    db.runSync(
+      'UPDATE sleep_nights SET asleep_min = ?, deep_min = ?, rem_min = ?, light_min = ?, awake_min = ?, bed_start = ?, bed_end = ?, origin = ?, updated_at = ? WHERE id = ?',
+      [...values, now, row.id],
+    );
+  } else {
+    db.runSync(
+      `INSERT INTO sleep_nights (id, date_key, asleep_min, deep_min, rem_min, light_min, awake_min, bed_start, bed_end, origin, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [newId(), n.dateKey, ...values, now, now],
+    );
+  }
+  return true;
+}
+
+/** Nights from the watch between two mornings, oldest first. */
+export function sleepNightsBetween(from: string, to: string): StoredNight[] {
+  const rows = getDb().getAllSync<NightRow>('SELECT * FROM sleep_nights WHERE deleted_at IS NULL AND date_key >= ? AND date_key <= ? ORDER BY date_key, updated_at DESC', [
+    from,
+    to,
+  ]);
+  // Two phones syncing the same watch can each save a night; keep the newest.
+  const kept = new Set<string>();
+  return rows.filter((r) => !kept.has(r.date_key) && kept.add(r.date_key)).map(toNight);
+}
+
+export const sleepNight = (day: string): StoredNight | null => sleepNightsBetween(day, day)[0] ?? null;
+
+/* ---------------- weigh-ins ---------------- */
+
+const seen = (table: 'weight_entries' | 'body_comp_entries' | 'cardio_sessions' | 'workouts', externalId: string) =>
   getDb().getFirstSync<{ id: string }>(`SELECT id FROM ${table} WHERE external_id = ? LIMIT 1`, [externalId]) != null;
 
 /** Weigh-ins from a smart scale or another app. Each one arrives once, even if deleted here later. */
@@ -64,15 +145,79 @@ function latestKg(): number {
   return getDb().getFirstSync<{ kg: number }>('SELECT kg FROM weight_entries WHERE deleted_at IS NULL ORDER BY measured_at DESC LIMIT 1')?.kg ?? 75;
 }
 
-/** Runs, rides, walks and other cardio recorded on a watch. */
-export function importWorkout(w: ImportedWorkout): boolean {
+/* ---------------- workouts ---------------- */
+
+/** True when two stretches of time share at least half of the shorter one. */
+function sameSession(a: [number, number], b: [number, number]): boolean {
+  const shared = Math.min(a[1], b[1]) - Math.max(a[0], b[0]);
+  return shared > 0 && shared >= 0.5 * Math.min(a[1] - a[0], b[1] - b[0]);
+}
+
+/** The Metakai gym session a watch strength workout was recorded during, including one still going. */
+function matchingLift(w: ImportedWorkout): string | null {
+  const rows = getDb().getAllSync<{ id: string; started_at: string; ended_at: string | null }>(
+    'SELECT id, started_at, ended_at FROM workouts WHERE deleted_at IS NULL AND external_id IS NULL AND started_at < ? AND (ended_at IS NULL OR ended_at > ?)',
+    [new Date(w.end).toISOString(), new Date(w.start).toISOString()],
+  );
+  return rows.find((r) => sameSession([Date.parse(r.started_at), r.ended_at ? Date.parse(r.ended_at) : Date.now()], [w.start, w.end]))?.id ?? null;
+}
+
+/**
+ * Metakai cardio the watch also recorded: a GPS recording at the same time, or a session logged
+ * by hand on the same day with the same activity and about the same length.
+ */
+function matchingCardio(w: ImportedWorkout): string | null {
+  const rows = getDb().getAllSync<{ id: string; created_at: string; started_at: string | null; duration_min: number; elapsed_min: number | null }>(
+    'SELECT id, created_at, started_at, duration_min, elapsed_min FROM cardio_sessions WHERE deleted_at IS NULL AND source IS NULL AND external_id IS NULL AND date_key = ? AND kind = ?',
+    [dateKey(new Date(w.start)), w.kind],
+  );
+  const minutes = (w.end - w.start) / 60000;
+  const match = rows.find((r) => {
+    const length = (r.elapsed_min ?? r.duration_min) * 60000;
+    const start = r.started_at ? Date.parse(r.started_at) : r.elapsed_min != null ? Date.parse(r.created_at) - length : null;
+    if (start != null) return sameSession([start, start + length], [w.start, w.end]);
+    return Math.abs(r.duration_min - minutes) <= 0.25 * minutes;
+  });
+  return match?.id ?? null;
+}
+
+export type ImportResult = 'added' | 'linked' | null;
+
+/**
+ * A workout recorded on a watch. When Metakai already has it (a gym session logged here, or a run
+ * recorded or logged here) the watch's heart rate and calories are added to that one instead of
+ * saving it twice. Anything else is saved as a session: runs, rides, swims, strength, yoga.
+ */
+export function importWorkout(w: ImportedWorkout): ImportResult {
   const durationMin = Math.round(((w.end - w.start) / 60000) * 10) / 10;
-  if (durationMin < 1 || seen('cardio_sessions', w.externalId)) return false;
-  const kcal = w.kcal ?? Math.round(cardioCalories({ kind: w.kind, durationMin, distanceKm: w.distanceKm, bodyweightKg: latestKg() }));
+  if (durationMin < 1 || seen('cardio_sessions', w.externalId) || seen('workouts', w.externalId)) return null;
+  const db = getDb();
   const now = nowIso();
-  getDb().runSync(
-    `INSERT INTO cardio_sessions (id, date_key, kind, duration_min, distance_km, avg_hr, max_hr, kcal, note, title, source, external_id, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+
+  const lift = w.strength ? matchingLift(w) : null;
+  if (lift) {
+    db.runSync('UPDATE workouts SET external_id = ?, avg_hr = COALESCE(avg_hr, ?), max_hr = COALESCE(max_hr, ?), updated_at = ? WHERE id = ?', [
+      w.externalId,
+      w.avgHr,
+      w.maxHr,
+      now,
+      lift,
+    ]);
+    return 'linked';
+  }
+  const cardio = w.strength ? null : matchingCardio(w);
+  if (cardio) {
+    db.runSync(
+      'UPDATE cardio_sessions SET external_id = ?, avg_hr = COALESCE(avg_hr, ?), max_hr = COALESCE(max_hr, ?), kcal = COALESCE(kcal, ?), updated_at = ? WHERE id = ?',
+      [w.externalId, w.avgHr, w.maxHr, w.kcal, now, cardio],
+    );
+    return 'linked';
+  }
+
+  const kcal = w.kcal ?? Math.round(cardioCalories({ kind: w.kind, durationMin, distanceKm: w.distanceKm, bodyweightKg: latestKg() }));
+  db.runSync(
+    `INSERT INTO cardio_sessions (id, date_key, kind, duration_min, distance_km, avg_hr, max_hr, kcal, note, title, source, external_id, origin, started_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       newId(),
       dateKey(new Date(w.start)),
@@ -86,16 +231,42 @@ export function importWorkout(w: ImportedWorkout): boolean {
       w.title,
       WATCH,
       w.externalId,
+      w.origin,
+      new Date(w.start).toISOString(),
       now,
       now,
     ],
   );
-  return true;
+  return 'added';
+}
+
+/** Gym sessions and recordings since a day that have no heart rate yet, with when they ran. */
+export function sessionsWithoutHeartRate(since: string): { table: 'workouts' | 'cardio_sessions'; id: string; start: number; end: number }[] {
+  const db = getDb();
+  const lifts = db
+    .getAllSync<{ id: string; started_at: string; ended_at: string }>(
+      'SELECT id, started_at, ended_at FROM workouts WHERE deleted_at IS NULL AND ended_at IS NOT NULL AND avg_hr IS NULL AND date_key >= ?',
+      [since],
+    )
+    .map((r) => ({ table: 'workouts' as const, id: r.id, start: Date.parse(r.started_at), end: Date.parse(r.ended_at) }));
+  const cardio = db
+    .getAllSync<{ id: string; created_at: string; started_at: string | null; elapsed_min: number | null; duration_min: number }>(
+      'SELECT id, created_at, started_at, elapsed_min, duration_min FROM cardio_sessions WHERE deleted_at IS NULL AND source IS NULL AND avg_hr IS NULL AND (started_at IS NOT NULL OR elapsed_min IS NOT NULL) AND date_key >= ?',
+      [since],
+    )
+    .map((r) => {
+      const length = (r.elapsed_min ?? r.duration_min) * 60000;
+      const start = r.started_at ? Date.parse(r.started_at) : Date.parse(r.created_at) - length;
+      return { table: 'cardio_sessions' as const, id: r.id, start, end: start + length };
+    });
+  return [...lifts, ...cardio].filter((s) => s.end - s.start >= 60000);
 }
 
 export function notifyImported() {
-  notify('health_markers', 'weight_entries', 'body_comp_entries', 'cardio_sessions');
+  notify('health_markers', 'weight_entries', 'body_comp_entries', 'cardio_sessions', 'workouts', 'sleep_nights');
 }
+
+/* ---------------- sending to the health app ---------------- */
 
 /** Metakai's own weigh-ins from the last month that haven't been sent to the health app yet. */
 export function unsharedWeights(): { id: string; kg: number; at: number }[] {
@@ -107,25 +278,36 @@ export function unsharedWeights(): { id: string; kg: number; at: number }[] {
     .map((r) => ({ id: r.id, kg: r.kg, at: Date.parse(r.measured_at) }));
 }
 
-/** Finished gym sessions and Metakai cardio from the last month, not yet sent. */
+/** Finished gym sessions and Metakai cardio from the last month, not yet sent. Ones a watch also recorded stay out. */
 export function unsharedWorkouts(): SharedWorkout[] {
   const db = getDb();
   const since = addDays(dateKey(), -30);
   const lifts = db
     .getAllSync<{ id: string; name: string; started_at: string; ended_at: string; kcal: number | null }>(
-      'SELECT id, name, started_at, ended_at, kcal FROM workouts WHERE deleted_at IS NULL AND ended_at IS NOT NULL AND shared_at IS NULL AND date_key >= ?',
+      'SELECT id, name, started_at, ended_at, kcal FROM workouts WHERE deleted_at IS NULL AND ended_at IS NOT NULL AND shared_at IS NULL AND external_id IS NULL AND date_key >= ?',
       [since],
     )
     .map((r): SharedWorkout => ({ id: r.id, kind: 'strength', title: r.name, start: Date.parse(r.started_at), end: Date.parse(r.ended_at), kcal: r.kcal, distanceKm: null }));
   const cardio = db
-    .getAllSync<{ id: string; kind: SharedWorkout['kind']; title: string | null; created_at: string; duration_min: number; elapsed_min: number | null; kcal: number | null; distance_km: number | null }>(
-      'SELECT id, kind, title, created_at, duration_min, elapsed_min, kcal, distance_km FROM cardio_sessions WHERE deleted_at IS NULL AND shared_at IS NULL AND source IS NULL AND date_key >= ?',
+    .getAllSync<{
+      id: string;
+      kind: SharedWorkout['kind'];
+      title: string | null;
+      created_at: string;
+      started_at: string | null;
+      duration_min: number;
+      elapsed_min: number | null;
+      kcal: number | null;
+      distance_km: number | null;
+    }>(
+      'SELECT id, kind, title, created_at, started_at, duration_min, elapsed_min, kcal, distance_km FROM cardio_sessions WHERE deleted_at IS NULL AND shared_at IS NULL AND source IS NULL AND external_id IS NULL AND date_key >= ?',
       [since],
     )
     .map((r): SharedWorkout => {
-      // Logged when it ended; recordings also know their paused time.
-      const end = Date.parse(r.created_at);
-      return { id: r.id, kind: r.kind, title: r.title ?? 'Cardio', start: end - (r.elapsed_min ?? r.duration_min) * 60000, end, kcal: r.kcal, distanceKm: r.distance_km };
+      // Logged when it ended unless the start is known; recordings also know their paused time.
+      const length = (r.elapsed_min ?? r.duration_min) * 60000;
+      const start = r.started_at ? Date.parse(r.started_at) : Date.parse(r.created_at) - length;
+      return { id: r.id, kind: r.kind, title: r.title ?? 'Cardio', start, end: start + length, kcal: r.kcal, distanceKm: r.distance_km };
     });
   return [...lifts, ...cardio];
 }
@@ -135,11 +317,13 @@ export function markShared(table: 'weight_entries' | 'workouts' | 'cardio_sessio
   getDb().runSync(`UPDATE ${table} SET shared_at = ? WHERE id = ?`, [nowIso(), id]);
 }
 
-/** Heart rate from a Bluetooth sensor, saved with the workout or recording it was worn for. */
-export function saveHeartRate(table: 'workouts' | 'cardio_sessions', id: string, stats: { avg: number; max: number }) {
+/** Heart rate from a Bluetooth sensor or the watch, saved with the workout or recording it was worn for. */
+export function saveHeartRate(table: 'workouts' | 'cardio_sessions', id: string, stats: { avg: number; max: number }, silent = false) {
   getDb().runSync(`UPDATE ${table} SET avg_hr = ?, max_hr = ?, updated_at = ? WHERE id = ?`, [stats.avg, stats.max, nowIso(), id]);
-  notify(table);
+  if (!silent) notify(table);
 }
+
+/* ---------------- reading back ---------------- */
 
 /** Today's watch numbers for the Today card. */
 export function todayActivity(day = dateKey()): { steps: number | null; sleep: number | null; rhr: number | null } {

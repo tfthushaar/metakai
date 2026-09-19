@@ -18,8 +18,8 @@ import {
   type RecordType,
 } from 'react-native-health-connect';
 
-import { cardioKindFor, dailyAverage, healthConnectTypeFor, type SleepInterval } from '../../lib/wearables';
-import type { HealthSource, ImportedWorkout } from './types';
+import { healthConnectTypeFor, watchSessionFor, type OriginSample, type SleepInterval, type SleepStage } from '../../lib/wearables';
+import type { HealthSource, ImportedWorkout, WatchMetric } from './types';
 
 const OWN_PACKAGE = 'com.tfthushaar.metakai';
 const PLAY_LISTING = 'market://details?id=com.google.android.apps.healthdata';
@@ -28,6 +28,7 @@ const PLAY_LISTING = 'market://details?id=com.google.android.apps.healthdata';
 const ORIGINS: Record<string, string> = {
   'com.sec.android.app.shealth': 'Samsung Health',
   'com.google.android.apps.fitness': 'Google Fit',
+  'com.google.android.apps.healthdata': 'Health Connect',
   'com.fitbit.FitbitMobile': 'Fitbit',
   'com.google.android.apps.fitbit': 'Fitbit',
   'com.garmin.android.apps.connectmobile': 'Garmin Connect',
@@ -42,6 +43,15 @@ const ORIGINS: Record<string, string> = {
   'com.suunto.android': 'Suunto',
   'com.strava': 'Strava',
   'com.oneplus.health.international': 'OHealth',
+  'com.whoop.android': 'WHOOP',
+  'com.ultrahuman.android': 'Ultrahuman',
+  'com.amazfit.healthapp': 'Amazfit',
+};
+
+/** The app a record came from, by name when it's a known one. */
+const originOf = (r: { metadata?: { dataOrigin?: string } }): string | null => {
+  const pkg = r.metadata?.dataOrigin;
+  return pkg ? (ORIGINS[pkg] ?? pkg) : null;
 };
 
 const READ: RecordType[] = [
@@ -55,6 +65,9 @@ const READ: RecordType[] = [
   'ExerciseSession',
   'Distance',
   'ActiveCaloriesBurned',
+  'Vo2Max',
+  'OxygenSaturation',
+  'RespiratoryRate',
 ];
 const WRITE: RecordType[] = ['Weight', 'ExerciseSession', 'ActiveCaloriesBurned', 'Distance'];
 
@@ -83,6 +96,32 @@ async function orEmpty<T>(work: () => Promise<T>, empty: T): Promise<T> {
 
 async function ready(): Promise<boolean> {
   return (await getSdkStatus()) === SdkAvailabilityStatus.SDK_AVAILABLE && (await initialize());
+}
+
+const STAGES: Record<number, SleepStage> = {
+  [SleepStageType.AWAKE]: 'awake',
+  [SleepStageType.OUT_OF_BED]: 'awake',
+  [SleepStageType.LIGHT]: 'light',
+  [SleepStageType.DEEP]: 'deep',
+  [SleepStageType.REM]: 'rem',
+  // SLEEPING, UNKNOWN and anything newer count as plain sleep.
+};
+
+/** One value per record, with where it came from. */
+async function samples(metric: WatchMetric, from: Date, to: Date): Promise<OriginSample[]> {
+  const at = (r: { time: string }) => Date.parse(r.time);
+  switch (metric) {
+    case 'rhr':
+      return (await readAll('RestingHeartRate', from, to)).map((r) => ({ at: at(r), value: r.beatsPerMinute, origin: originOf(r) }));
+    case 'hrv':
+      return (await readAll('HeartRateVariabilityRmssd', from, to)).map((r) => ({ at: at(r), value: r.heartRateVariabilityMillis, origin: originOf(r) }));
+    case 'vo2max':
+      return (await readAll('Vo2Max', from, to)).map((r) => ({ at: at(r), value: r.vo2MillilitersPerMinuteKilogram, origin: originOf(r) }));
+    case 'spo2':
+      return (await readAll('OxygenSaturation', from, to)).map((r) => ({ at: at(r), value: r.percentage, origin: originOf(r) }));
+    case 'resp':
+      return (await readAll('RespiratoryRate', from, to)).map((r) => ({ at: at(r), value: r.rate, origin: originOf(r) }));
+  }
 }
 
 export const healthConnect: HealthSource = {
@@ -117,40 +156,46 @@ export const healthConnect: HealthSource = {
   async steps(from, to) {
     if (!(await ready())) return {};
     return orEmpty(async () => {
+      // Health Connect merges steps from several apps using the app priority set in its settings.
       const days = await aggregateGroupByPeriod({ recordType: 'Steps', timeRangeFilter: between(from, to), timeRangeSlicer: { period: 'DAYS', length: 1 } });
       // Period groups start at local midnight, e.g. 2026-09-19T00:00.
       return Object.fromEntries(days.filter((d) => d.result.COUNT_TOTAL > 0).map((d) => [d.startTime.slice(0, 10), d.result.COUNT_TOTAL]));
     }, {});
   },
 
-  async restingHeartRate(from, to) {
+  async activeCalories(from, to) {
     if (!(await ready())) return {};
     return orEmpty(async () => {
-      const records = await readAll('RestingHeartRate', from, to);
-      return dailyAverage(records.map((r) => ({ at: Date.parse(r.time), value: r.beatsPerMinute })));
+      const days = await aggregateGroupByPeriod({
+        recordType: 'ActiveCaloriesBurned',
+        timeRangeFilter: between(from, to),
+        timeRangeSlicer: { period: 'DAYS', length: 1 },
+      });
+      return Object.fromEntries(
+        days.filter((d) => d.result.ACTIVE_CALORIES_TOTAL?.inKilocalories > 0).map((d) => [d.startTime.slice(0, 10), Math.round(d.result.ACTIVE_CALORIES_TOTAL.inKilocalories)]),
+      );
     }, {});
   },
 
-  async hrv(from, to) {
-    if (!(await ready())) return {};
-    return orEmpty(async () => {
-      const records = await readAll('HeartRateVariabilityRmssd', from, to);
-      return dailyAverage(records.map((r) => ({ at: Date.parse(r.time), value: r.heartRateVariabilityMillis })));
-    }, {});
+  async readings(metric, from, to) {
+    if (!(await ready())) return [];
+    return orEmpty(() => samples(metric, from, to), []);
   },
 
   async sleep(from, to) {
     if (!(await ready())) return [];
     return orEmpty(async () => {
-      const awake: number[] = [SleepStageType.AWAKE, SleepStageType.OUT_OF_BED];
       const records = await readAll('SleepSession', from, to);
-      return records.map(
-        (r): SleepInterval => ({
-          start: Date.parse(r.startTime),
-          end: Date.parse(r.endTime),
-          stages: r.stages?.map((st) => ({ start: Date.parse(st.startTime), end: Date.parse(st.endTime), asleep: !awake.includes(st.stage) })),
-        }),
-      );
+      return records
+        .filter((r) => r.metadata?.dataOrigin !== OWN_PACKAGE)
+        .map(
+          (r): SleepInterval => ({
+            start: Date.parse(r.startTime),
+            end: Date.parse(r.endTime),
+            origin: originOf(r),
+            stages: r.stages?.map((st) => ({ start: Date.parse(st.startTime), end: Date.parse(st.endTime), stage: STAGES[st.stage] ?? 'asleep' })),
+          }),
+        );
     }, []);
   },
 
@@ -179,28 +224,35 @@ export const healthConnect: HealthSource = {
     const sessions = await orEmpty(() => readAll('ExerciseSession', from, to), []);
     const out: ImportedWorkout[] = [];
     for (const s of sessions) {
-      const kind = cardioKindFor('health_connect', s.exerciseType);
-      if (!kind || !s.metadata?.id || s.metadata.dataOrigin === OWN_PACKAGE) continue;
+      const type = watchSessionFor('health_connect', s.exerciseType);
+      if (!type || !s.metadata?.id || s.metadata.dataOrigin === OWN_PACKAGE) continue;
       const window = { operator: 'between' as const, startTime: s.startTime, endTime: s.endTime };
-      const distance = await orEmpty(() => aggregateRecord({ recordType: 'Distance', timeRangeFilter: window }), null);
+      const distance = type.strength ? null : await orEmpty(() => aggregateRecord({ recordType: 'Distance', timeRangeFilter: window }), null);
       const energy = await orEmpty(() => aggregateRecord({ recordType: 'ActiveCaloriesBurned', timeRangeFilter: window }), null);
       const heart = await orEmpty(() => aggregateRecord({ recordType: 'HeartRate', timeRangeFilter: window }), null);
       const km = distance?.DISTANCE?.inKilometers ?? 0;
       const kcal = energy?.ACTIVE_CALORIES_TOTAL?.inKilocalories ?? 0;
       out.push({
         externalId: s.metadata.id,
-        kind,
+        kind: type.kind,
+        strength: type.strength,
         start: Date.parse(s.startTime),
         end: Date.parse(s.endTime),
-        title: s.title?.trim() || null,
+        title: s.title?.trim() || type.label,
         distanceKm: km > 0.01 ? Math.round(km * 100) / 100 : null,
         kcal: kcal > 0 ? Math.round(kcal) : null,
         avgHr: heart?.BPM_AVG ? Math.round(heart.BPM_AVG) : null,
         maxHr: heart?.BPM_MAX ? Math.round(heart.BPM_MAX) : null,
-        origin: s.metadata.dataOrigin ? (ORIGINS[s.metadata.dataOrigin] ?? null) : null,
+        origin: originOf(s),
       });
     }
     return out;
+  },
+
+  async heartRate(start, end) {
+    if (!(await ready())) return null;
+    const heart = await orEmpty(() => aggregateRecord({ recordType: 'HeartRate', timeRangeFilter: between(new Date(start), new Date(end)) }), null);
+    return heart?.BPM_AVG ? { avg: Math.round(heart.BPM_AVG), max: Math.round(heart.BPM_MAX) } : null;
   },
 
   async shareWeight(id, kg, at) {

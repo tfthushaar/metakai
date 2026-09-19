@@ -30,7 +30,8 @@ export type TableName =
   | 'health_markers'
   | 'supplements'
   | 'supplement_logs'
-  | 'achievements';
+  | 'achievements'
+  | 'sleep_nights';
 
 export const SYNCED_TABLES: TableName[] = [
   'profile',
@@ -58,6 +59,7 @@ export const SYNCED_TABLES: TableName[] = [
   'supplements',
   'supplement_logs',
   'achievements',
+  'sleep_nights',
 ];
 
 let db: Db | null = null;

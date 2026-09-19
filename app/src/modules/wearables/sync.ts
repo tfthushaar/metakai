@@ -3,10 +3,23 @@ import { AppState, Platform } from 'react-native';
 import { create } from 'zustand';
 
 import { subscribe } from '../../core/db/database';
-import { useSettings } from '../../core/store/settings';
-import { sleepHoursByDay } from '../../lib/wearables';
-import { importBodyFat, importWeight, importWorkout, markShared, notifyImported, unsharedWeights, unsharedWorkouts, upsertWatchMarker } from './repo';
-import type { HealthSource } from './types';
+import { useSettings, type WatchSourceKind } from '../../core/store/settings';
+import { dateKey } from '../../lib/dates';
+import { dailyAverageFrom, sleepNights } from '../../lib/wearables';
+import {
+  importBodyFat,
+  importWeight,
+  importWorkout,
+  markShared,
+  notifyImported,
+  saveHeartRate,
+  sessionsWithoutHeartRate,
+  unsharedWeights,
+  unsharedWorkouts,
+  upsertSleepNight,
+  upsertWatchMarker,
+} from './repo';
+import type { HealthSource, WatchMetric } from './types';
 
 /** Health Connect on Android, Apple Health on iOS; each loads only on its own platform. */
 export function healthSource(): HealthSource | null {
@@ -18,6 +31,8 @@ export function healthSource(): HealthSource | null {
 export interface SyncResult {
   days: number;
   workouts: number;
+  /** Watch workouts matched to sessions already logged in Metakai. */
+  linked: number;
   weighIns: number;
   shared: number;
 }
@@ -28,6 +43,14 @@ const DAY = 86400_000;
 const FIRST_SYNC_DAYS = 30;
 /** Re-read a little before the last sync so late-arriving watch data is caught. */
 const OVERLAP_DAYS = 2;
+
+const HEART: { metric: WatchMetric; unit: string }[] = [
+  { metric: 'rhr', unit: 'bpm' },
+  { metric: 'hrv', unit: 'ms' },
+  { metric: 'vo2max', unit: 'ml/kg/min' },
+  { metric: 'spo2', unit: '%' },
+  { metric: 'resp', unit: 'br/min' },
+];
 
 function syncWindow(lastSyncedAt: string | null): { from: Date; to: Date } {
   const to = new Date();
@@ -60,42 +83,68 @@ async function share(source: HealthSource): Promise<number> {
   return sent;
 }
 
-/** Brings in watch data since the last sync and, if chosen, sends Metakai's workouts and weigh-ins back. */
-export async function syncWatch(): Promise<SyncResult | null> {
+/**
+ * Brings in watch data since the last sync (or the last month with `full`) and, if chosen, sends
+ * Metakai's workouts and weigh-ins back.
+ */
+export async function syncWatch({ full = false } = {}): Promise<SyncResult | null> {
   const { watch, enabledModules, set } = useSettings.getState();
   const source = healthSource();
   if (!source || !watch.health || !enabledModules.includes('wearables') || useWatchSync.getState().syncing) return null;
   useWatchSync.setState({ syncing: true, error: null });
   try {
-    const { from, to } = syncWindow(watch.lastSyncedAt);
-    const result: SyncResult = { days: 0, workouts: 0, weighIns: 0, shared: 0 };
+    const { from, to } = syncWindow(full ? null : watch.lastSyncedAt);
+    const result: SyncResult = { days: 0, workouts: 0, linked: 0, weighIns: 0, shared: 0 };
     const touched = new Set<string>();
     const mark = (day: string, changed: boolean) => changed && touched.add(day);
+    const seen: Record<WatchSourceKind, Set<string>> = { sleep: new Set(watch.seen.sleep), heart: new Set(watch.seen.heart) };
 
     if (watch.data.activity) {
       for (const [day, n] of Object.entries(await source.steps(from, to))) mark(day, upsertWatchMarker(day, 'steps', Math.round(n), 'steps'));
+      for (const [day, kcal] of Object.entries(await source.activeCalories(from, to))) mark(day, upsertWatchMarker(day, 'active_kcal', kcal, 'kcal'));
     }
     if (watch.data.heart) {
-      for (const [day, bpm] of Object.entries(await source.restingHeartRate(from, to))) mark(day, upsertWatchMarker(day, 'rhr', bpm, 'bpm'));
-      for (const [day, ms] of Object.entries(await source.hrv(from, to))) mark(day, upsertWatchMarker(day, 'hrv', ms, 'ms'));
+      for (const { metric, unit } of HEART) {
+        const samples = await source.readings(metric, from, to);
+        for (const s of samples) if (s.origin) seen.heart.add(s.origin);
+        for (const [day, d] of Object.entries(dailyAverageFrom(samples, watch.sources.heart))) mark(day, upsertWatchMarker(day, metric, d.value, unit, d.origin));
+      }
     }
     if (watch.data.sleep) {
       // Start the evening before so the first night in the window is whole.
-      const nights = sleepHoursByDay(await source.sleep(new Date(from.getTime() - DAY / 2), to));
-      for (const [day, hours] of Object.entries(nights)) if (hours >= 1) mark(day, upsertWatchMarker(day, 'sleep', hours, 'h'));
+      const sessions = await source.sleep(new Date(from.getTime() - DAY / 2), to);
+      for (const s of sessions) if (s.origin) seen.sleep.add(s.origin);
+      const first = dateKey(from);
+      for (const night of sleepNights(sessions, watch.sources.sleep)) {
+        if (night.dateKey < first || night.asleepMin < 60) continue;
+        upsertSleepNight(night);
+        mark(night.dateKey, upsertWatchMarker(night.dateKey, 'sleep', Math.round(night.asleepMin / 6) / 10, 'h', night.origin));
+      }
     }
     if (watch.data.body) {
       for (const w of await source.weights(from, to)) if (importWeight(w)) result.weighIns++;
       for (const b of await source.bodyFat(from, to)) importBodyFat(b);
     }
     if (watch.data.workouts) {
-      for (const w of await source.workouts(from, to)) if (importWorkout(w)) result.workouts++;
+      for (const w of await source.workouts(from, to)) {
+        const r = importWorkout(w);
+        if (r === 'added') result.workouts++;
+        if (r === 'linked') result.linked++;
+      }
+    }
+    if (watch.data.heart) {
+      // Heart rate for gym sessions and recordings done here while wearing the watch.
+      for (const s of sessionsWithoutHeartRate(dateKey(from))) {
+        const hr = await source.heartRate(s.start, s.end);
+        if (hr && hr.avg > 30) saveHeartRate(s.table, s.id, hr, true);
+      }
     }
     result.days = touched.size;
     notifyImported();
     if (watch.share) result.shared = await share(source);
 
-    set({ watch: { ...useSettings.getState().watch, lastSyncedAt: new Date().toISOString() } });
+    const latest = useSettings.getState().watch;
+    set({ watch: { ...latest, lastSyncedAt: new Date().toISOString(), seen: { sleep: [...seen.sleep].slice(0, 12), heart: [...seen.heart].slice(0, 12) } } });
     useWatchSync.setState({ last: result });
     return result;
   } catch (e) {
@@ -104,6 +153,13 @@ export async function syncWatch(): Promise<SyncResult | null> {
   } finally {
     useWatchSync.setState({ syncing: false });
   }
+}
+
+/** Chooses which app sleep or heart readings come from, and re-reads the last month with it. */
+export function setWatchSource(kind: WatchSourceKind, origin: string | null) {
+  const { watch, set } = useSettings.getState();
+  set({ watch: { ...watch, sources: { ...watch.sources, [kind]: origin } } });
+  return syncWatch({ full: true });
 }
 
 let shareTimer: ReturnType<typeof setTimeout> | null = null;

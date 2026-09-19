@@ -84,7 +84,7 @@ export default function LogMarker() {
         </View>
 
         <View style={styles.chips}>
-          {MARKERS.map((m) => (
+          {MARKERS.filter((m) => !m.watchOnly).map((m) => (
             <Chip key={m.kind} label={m.name} selected={kind === m.kind} onPress={() => setKind(m.kind)} />
           ))}
           <Chip label="Lab result" selected={kind === 'custom'} onPress={() => setKind('custom')} />

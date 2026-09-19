@@ -1,11 +1,16 @@
 import type { CardioKind } from '../../lib/cardio';
-import type { SleepInterval } from '../../lib/wearables';
+import type { OriginSample, SleepInterval } from '../../lib/wearables';
 
 export type HealthStatus = 'available' | 'needs_install' | 'needs_update' | 'unsupported';
+
+/** Readings a watch takes through the day, each kept with the app that recorded it. */
+export type WatchMetric = 'rhr' | 'hrv' | 'vo2max' | 'spo2' | 'resp';
 
 export interface ImportedWorkout {
   externalId: string;
   kind: CardioKind;
+  /** Gym sessions (strength training, weightlifting) rather than cardio. */
+  strength: boolean;
   start: number;
   end: number;
   title: string | null;
@@ -42,12 +47,14 @@ export interface HealthSource {
   /** Where the user manages what Metakai can read and write. */
   openSettings(): void;
   steps(from: Date, to: Date): Promise<Record<string, number>>;
-  restingHeartRate(from: Date, to: Date): Promise<Record<string, number>>;
-  hrv(from: Date, to: Date): Promise<Record<string, number>>;
+  activeCalories(from: Date, to: Date): Promise<Record<string, number>>;
+  readings(metric: WatchMetric, from: Date, to: Date): Promise<OriginSample[]>;
   sleep(from: Date, to: Date): Promise<SleepInterval[]>;
   weights(from: Date, to: Date): Promise<ImportedReading[]>;
   bodyFat(from: Date, to: Date): Promise<ImportedReading[]>;
   workouts(from: Date, to: Date): Promise<ImportedWorkout[]>;
+  /** Average and peak heart rate over a stretch of time, from whatever the watch recorded. */
+  heartRate(start: number, end: number): Promise<{ avg: number; max: number } | null>;
   shareWeight(id: string, kg: number, at: number): Promise<void>;
   shareWorkout(w: SharedWorkout): Promise<void>;
 }
