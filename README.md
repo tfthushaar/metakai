@@ -6,7 +6,7 @@
 
 **Build the body you want.**
 
-Food, training, runs, recovery and progress in one private app.<br>
+Food, training, runs, recovery and progress in one private app that works with your watch.<br>
 No ads. No account. Your data stays on your phone.
 
 [**Download for Android**](https://github.com/tfthushaar/metakai/releases/latest) · [Privacy](https://tfthushaar.github.io/metakai/privacy.html) · [Terms](https://tfthushaar.github.io/metakai/terms.html)
@@ -57,6 +57,13 @@ Cutting, bulking, recomposing or maintaining: set a goal and get calorie and mac
 - **Best efforts** from 1 km to marathon, elevation gain and per-km or per-mile splits.
 - **Any other cardio** in a tap, plus a Tabata, HIIT and EMOM interval timer.
 
+## Watches
+
+- **Bring your watch data in:** steps, sleep, resting heart rate, HRV, smart-scale weigh-ins and workouts from Samsung Galaxy Watch, Pixel Watch, Fitbit, Garmin, Withings, Oura, Polar, Amazfit and Xiaomi through Health Connect, or from Apple Watch and others through Apple Health.
+- **Live heart rate** on screen while you lift or run, from chest straps and watches that broadcast it, with your average and peak saved to the session.
+- **Sleep fills in your readiness check-in,** and watch runs and rides land in your cardio log.
+- **Send it back:** your Metakai workouts and weigh-ins can show up in Health Connect or Apple Health too.
+
 ## Recovery and health
 
 - **A readiness score** from a 30-second morning check-in and your recent training load.
@@ -92,7 +99,7 @@ Read the full [privacy policy](https://tfthushaar.github.io/metakai/privacy.html
 1. Download the latest APK from [Releases](https://github.com/tfthushaar/metakai/releases/latest), open it and allow installs from that source. Updates install over the previous version and keep your data.
 2. Tap **Get started** and answer a few questions about your body, activity and goal.
 3. Tap **+** to log food, weigh in, start a workout or record a run.
-4. Head to **You** to switch features off, arrange screens, change the theme, back up, or add a free AI key.
+4. Head to **You** to connect your watch, switch features off, arrange screens, change the theme, back up, or add a free AI key.
 
 ---
 

@@ -10,6 +10,7 @@ What leaves the phone, for reference:
 | All logs, settings and progress photos | The user's own Google Drive app folder | Only if Drive backup is connected |
 | Meal text; for the coach, goal, sex, age, experience, weight, targets and weekly totals | Google Gemini or Groq, with the user's own key | Only when the user runs AI analysis or asks the coach |
 | Barcode number | Open Food Facts | When scanning a product |
+| Nothing (watch data stays on the phone) | Health Connect or Apple Health is read and written on the device itself | Only if the user connects Watches |
 
 Nothing is used for advertising or tracking. There are no analytics SDKs.
 
@@ -44,6 +45,27 @@ Nothing is used for advertising or tracking. There are no analytics SDKs.
 
 Metakai is not a medical device and makes no medical claims.
 
+**Health Connect permissions:** declare these in Play Console → App content → Health Connect. For each, the use is shown to the user in You → Watches, and nothing read leaves the device.
+
+| Permission | Justification |
+|---|---|
+| READ_STEPS | Shows the user's daily steps from their watch on the Today screen and in Health. |
+| READ_RESTING_HEART_RATE | Shows resting heart rate next to the user's recovery and readiness. |
+| READ_HEART_RATE_VARIABILITY | Shows HRV next to the user's recovery and readiness. |
+| READ_HEART_RATE | Adds average and peak heart rate to runs, rides and other workouts imported from the user's watch. |
+| READ_SLEEP | Fills in hours slept for the daily readiness check-in. |
+| READ_WEIGHT | Adds smart-scale weigh-ins to the user's weight trend, which drives their calorie targets and goal forecast. |
+| READ_BODY_FAT | Adds smart-scale body fat readings to the user's body composition history. |
+| READ_EXERCISE | Adds runs, rides, walks, swims and other cardio recorded on the user's watch to their training log. |
+| READ_DISTANCE | Adds distance to imported cardio sessions. |
+| READ_ACTIVE_CALORIES_BURNED | Adds calories burned to imported cardio sessions for the training summary. |
+| WRITE_WEIGHT | When the user turns on "Send to Health Connect", saves weigh-ins they log in Metakai. |
+| WRITE_EXERCISE | When the user turns on "Send to Health Connect", saves gym workouts and cardio they log in Metakai. |
+| WRITE_DISTANCE | Saves the distance of runs and rides the user records in Metakai, with the session above. |
+| WRITE_ACTIVE_CALORIES_BURNED | Saves estimated calories burned for workouts the user logs in Metakai, with the session above. |
+
+The privacy policy has a "Watches and health apps" section with the Limited Use statement. Health Connect's permission screen opens it through the rationale activity.
+
 **Foreground service permissions:** type `location`
 - Use case: *Background Location Updates: User-initiated location sharing*.
 - Description: "When the user taps Record to track a run, walk, hike or ride, Metakai keeps a location foreground service with an ongoing notification so the route, distance and pace keep recording while the screen is off. It stops when the user finishes or discards the activity. Location is only used while this recording is active, and the app never requests background location permission."
@@ -68,6 +90,8 @@ Declare these data types. For every one: **Collected** yes, **Shared** no (trans
 | Health and fitness | Fitness info | Pass scores and run times on leaderboards; workouts in Drive backup; weekly totals for the AI coach |
 | Photos and videos | Photos | Progress photos in the user's own Drive backup |
 | App activity | Other user-generated content | Meal descriptions sent for AI analysis |
+
+Watch data read from Health Connect is processed only on the device, so it is **not collected** in Data safety terms (it only leaves the phone inside the user's own Drive backup, like the rest of their logs).
 
 Location: **not collected**. GPS routes stay on the phone (and in the user's own Drive backup if they turn it on; declare Precise location as well if you prefer to include backup contents).
 
@@ -113,4 +137,8 @@ Metakai stores all data on the device and needs no account.
 - GPS recording: Train > Record > Start. Location is used only while recording, with while-in-use permission.
 - AI food analysis and the AI coach are optional and need the user's own free Gemini or Groq API key (You > AI). All other features work without it.
 - Google Drive backup is optional (You > Backup & sync) and stores data in the user's own Drive app folder.
+- Apple Health is optional (You > Watches > Connect Apple Health). Metakai reads steps, sleep, heart rate, weight, body fat and workouts to show them in the app, and, only if the user turns on "Send to Apple Health", writes the workouts and weigh-ins they log. Health data stays on the device and is never sent to our server or used for advertising.
+- Live heart rate uses Bluetooth only to connect to a heart rate strap or watch the user pairs in You > Watches.
 ```
+
+HealthKit data is not collected (it never leaves the device except in the user's own Google Drive backup), so App Privacy needs no new data types. The listing text mentions Apple Health, as App Review expects for HealthKit apps.

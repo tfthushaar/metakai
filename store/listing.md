@@ -45,6 +45,11 @@ SEE YOUR PROGRESS
 • Achievements you can share as cards
 • Optional leaderboards by sex, age, weight class, height, country or friends
 
+CONNECT YOUR WATCH
+• Steps, sleep, resting heart rate, HRV, weigh-ins and workouts from Samsung Galaxy Watch, Pixel Watch, Fitbit, Garmin, Withings, Oura, Polar, Amazfit and more through Health Connect (Apple Watch and others through Apple Health on iPhone)
+• Live heart rate during workouts and runs from chest straps and watches that broadcast it
+• Optionally send your Metakai workouts and weigh-ins back to Health Connect or Apple Health
+
 RECOVER AND STAY CONSISTENT
 • Readiness check-in from sleep, soreness and stress
 • Habits, supplements and health markers
@@ -71,7 +76,7 @@ Metakai gives estimates for general fitness, not medical advice.
 
 **Promotional text** (170 max)
 
-> Track food, training, runs and body progress in one private app. Rank your strength and running, and keep every log on your phone.
+> Track food, training, runs and body progress in one private app. Works with Apple Health and Apple Watch, and keeps every log on your phone.
 
 **Keywords** (100 max, comma-separated)
 
