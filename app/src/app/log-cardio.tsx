@@ -15,6 +15,7 @@ import { Chip } from '../ui/Chip';
 import { haptic } from '../ui/haptics';
 import { Icon } from '../ui/Icon';
 import { PressableScale } from '../ui/PressableScale';
+import { Stepper } from '../ui/Stepper';
 import { Text } from '../ui/Text';
 import { toast } from '../ui/Toast';
 
@@ -31,7 +32,9 @@ function StepRow({ label, value, onChange, step, min, format, unit, decimals }: 
   const { colors } = useTheme();
   return (
     <View style={[styles.stepRow, { backgroundColor: colors.surface }]}>
-      <StepRow label={label} value={value} onChange={onChange} step={step} min={min} format={format} unit={unit} decimals={decimals} />
+      <View style={{ flex: 1 }}>
+        <Stepper label={label} value={value} onChange={onChange} step={step} min={min} format={format} unit={unit} decimals={decimals} />
+      </View>
     </View>
   );
 }
