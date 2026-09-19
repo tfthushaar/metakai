@@ -67,6 +67,7 @@
     "lint": "expo lint"
   },
   "private": true,
+  "license": "MIT",
   "jest": {
     "preset": "jest-expo",
     "testMatch": [

@@ -1,6 +1,7 @@
 {
   "name": "metakai-ranks",
   "private": true,
+  "license": "MIT",
   "version": "1.0.0",
   "description": "Opt-in leaderboards for Metakai on Cloudflare Workers and D1.",
   "type": "module",

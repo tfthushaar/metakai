@@ -105,4 +105,4 @@ Read the full [privacy policy](https://tfthushaar.github.io/metakai/privacy.html
 
 <sub>Calorie, macro, body composition, readiness, rank and calorie-burn figures are estimates for general fitness, not medical advice. Talk to a doctor or qualified professional before starting a diet or training program.</sub>
 
-<sub>Free and open source. Building from source, architecture and release setup: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).</sub>
+<sub>Free and open source under the [MIT License](LICENSE). Building from source, architecture and release setup: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).</sub>
