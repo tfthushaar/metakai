@@ -1,4 +1,6 @@
 node_modules/
+# The built web app keeps bundled fonts and images under assets/node_modules; publish them.
+!docs/app/assets/node_modules/
 .DS_Store
 *.log
 .env
