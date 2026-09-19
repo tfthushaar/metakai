@@ -1,3 +1,4 @@
+import { readiness, type CheckInAnswers } from '../readiness';
 import { baseline, recoveryScore, sessionLoad, trainingLoad, type LoadSession } from '../recoveryScore';
 
 const none = { sleepHours: null, sleepQuality: null, soreness: null, stress: null, energy: null, mood: null };
@@ -40,6 +41,22 @@ describe('recoveryScore', () => {
     const r = recoveryScore({ checkIn: null, sleep: { hours: 8 }, hrv: null, rhr: null, load: { acute: 30, chronic: 10 } })!;
     expect(r.flags).toContain('Training load spiked');
     expect(r.loadNote).toBe('Much more training than usual');
+  });
+
+  it('gives the same score as before for a check-in without a watch', () => {
+    const cases: CheckInAnswers[] = [
+      { sleepHours: 7, sleepQuality: 4, soreness: 2, stress: 2, energy: 4, mood: 4 },
+      { sleepHours: 5, sleepQuality: 2, soreness: 4, stress: 5, energy: 2, mood: 3 },
+      { ...none, sleepHours: 6.5, soreness: 3 },
+      { ...none, energy: 1, mood: 2 },
+    ];
+    for (const load of [null, { acute: 30, chronic: 10 }]) {
+      for (const c of cases) {
+        const before = readiness(c, load)!;
+        const after = recoveryScore({ checkIn: c, sleep: null, hrv: null, rhr: null, load })!;
+        expect({ score: after.score, flags: after.flags, band: after.band }).toEqual({ score: before.score, flags: before.flags, band: before.band });
+      }
+    }
   });
 
   it('returns null with nothing to go on', () => {

@@ -154,7 +154,7 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Metakai reads steps, sleep, heart rate, weigh-ins and workouts from Apple Health to show them next to your food and training.",
+          "NSHealthShareUsageDescription": "Metakai reads steps, sleep, heart rate, HRV, VO2 max, blood oxygen, breathing rate, weigh-ins and workouts from Apple Health to show them next to your food and training and to work out your readiness.",
           "NSHealthUpdateUsageDescription": "Metakai saves the workouts and weigh-ins you log so they appear in Apple Health.",
           "background": false
         }

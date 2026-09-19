@@ -1,8 +1,10 @@
 import { getDb, newId, notify, nowIso } from '../../core/db/database';
+import { getProfile } from '../../core/db/repo';
 import { addDays, dateKey } from '../../lib/dates';
 import type { TrainedExercise } from '../../lib/muscleRecovery';
-import { readiness, type CheckInAnswers, type TrainingLoad } from '../../lib/readiness';
-import { watchSleep } from '../wearables/repo';
+import type { CheckInAnswers } from '../../lib/readiness';
+import { baseline, recoveryScore, trainingLoad, type LoadSession, type Recovery, type Trend } from '../../lib/recoveryScore';
+import { sleepNightsBetween, WATCH, type StoredNight } from '../wearables/repo';
 import { getExercise } from '../workouts/repo';
 
 export const EMPTY_ANSWERS: CheckInAnswers = { sleepHours: null, sleepQuality: null, soreness: null, stress: null, energy: null, mood: null };
@@ -53,43 +55,140 @@ export function saveCheckIn(day: string, a: CheckInAnswers) {
   notify('recovery_checkins');
 }
 
-function workingSetsSince(fromDay: string, toDay: string): number {
-  const r = getDb().getFirstSync<{ n: number }>(
-    `SELECT COUNT(*) AS n FROM workout_sets s JOIN workouts w ON w.id = s.workout_id
-     WHERE s.deleted_at IS NULL AND w.deleted_at IS NULL AND s.completed_at IS NOT NULL AND s.kind != 'warmup'
-       AND w.date_key >= ? AND w.date_key <= ?`,
-    [fromDay, toDay],
-  );
-  return r?.n ?? 0;
-}
-
-/** Hard sets per day: last 3 days vs last 28 days. Null until there are three weeks of history to compare against. */
 export function deleteCheckIn(day: string) {
   const now = nowIso();
   getDb().runSync('UPDATE recovery_checkins SET deleted_at = ?, updated_at = ? WHERE date_key = ? AND deleted_at IS NULL', [now, now, day]);
   notify('recovery_checkins');
 }
 
-export function trainingLoad(today = dateKey()): TrainingLoad | null {
-  const first = getDb().getFirstSync<{ d: string | null }>('SELECT MIN(date_key) AS d FROM workouts WHERE deleted_at IS NULL AND ended_at IS NOT NULL');
-  if (!first?.d || first.d > addDays(today, -21)) return null;
-  return { acute: workingSetsSince(addDays(today, -2), today) / 3, chronic: workingSetsSince(addDays(today, -27), today) / 28 };
+/** Tables recovery reads, for live queries. */
+export const RECOVERY_TABLES = ['recovery_checkins', 'health_markers', 'sleep_nights', 'workouts', 'workout_sets', 'cardio_sessions'] as const;
+
+/** Days of HRV and resting heart rate that make up "your normal". */
+const BASELINE_DAYS = 30;
+
+interface Point {
+  date_key: string;
+  value: number;
+  origin: string | null;
 }
 
-export function readinessFor(day: string) {
-  const answers = getCheckIn(day);
-  const sleepHours = answers?.sleepHours ?? watchSleep(day);
-  if (!answers && sleepHours == null) return null;
-  return readiness({ ...(answers ?? EMPTY_ANSWERS), sleepHours }, trainingLoad(day));
+/** One reading per day (the newest), oldest first. */
+function markerSeries(kind: 'hrv' | 'rhr', from: string, to: string): Point[] {
+  const rows = getDb().getAllSync<Point>(
+    'SELECT date_key, value, origin FROM health_markers WHERE deleted_at IS NULL AND kind = ? AND date_key >= ? AND date_key <= ? ORDER BY date_key, updated_at DESC',
+    [kind, from, to],
+  );
+  const kept = new Set<string>();
+  return rows.filter((r) => !kept.has(r.date_key) && kept.add(r.date_key));
+}
+
+/** Today's reading against earlier ones from the same app, so two devices never blend into one normal. */
+function trendFor(series: Point[], day: string): Trend | null {
+  const today = series.find((p) => p.date_key === day);
+  if (!today) return null;
+  const since = addDays(day, -BASELINE_DAYS);
+  const history = series.filter((p) => p.date_key < day && p.date_key >= since && p.origin === today.origin).map((p) => p.value);
+  return { today: today.value, history };
+}
+
+/** Every finished gym session and cardio session, for training load. */
+function loadSessions(from: string, to: string): LoadSession[] {
+  const db = getDb();
+  const lifts = db
+    .getAllSync<{ date_key: string; started_at: string; ended_at: string; avg_hr: number | null; sets: number }>(
+      `SELECT w.date_key, w.started_at, w.ended_at, w.avg_hr,
+         (SELECT COUNT(*) FROM workout_sets s WHERE s.workout_id = w.id AND s.deleted_at IS NULL AND s.completed_at IS NOT NULL AND s.kind != 'warmup') AS sets
+       FROM workouts w WHERE w.deleted_at IS NULL AND w.ended_at IS NOT NULL AND w.date_key >= ? AND w.date_key <= ?`,
+      [from, to],
+    )
+    .map(
+      (r): LoadSession => ({
+        dateKey: r.date_key,
+        // A workout left running overnight shouldn't count as a day of training.
+        minutes: Math.min(180, Math.max(0, (Date.parse(r.ended_at) - Date.parse(r.started_at)) / 60000)),
+        avgHr: r.avg_hr,
+        sets: r.sets,
+        strength: true,
+      }),
+    );
+  const cardio = db
+    .getAllSync<{ date_key: string; duration_min: number; avg_hr: number | null; rpe: number | null }>(
+      'SELECT date_key, duration_min, avg_hr, rpe FROM cardio_sessions WHERE deleted_at IS NULL AND date_key >= ? AND date_key <= ?',
+      [from, to],
+    )
+    .map((r): LoadSession => ({ dateKey: r.date_key, minutes: r.duration_min, avgHr: r.avg_hr, rpe: r.rpe, strength: false }));
+  return [...lifts, ...cardio];
+}
+
+function ageYears(): number {
+  const birth = getProfile()?.birthDate;
+  const years = birth ? (Date.now() - Date.parse(birth)) / (365.25 * 86400_000) : NaN;
+  return Number.isFinite(years) && years > 10 && years < 100 ? years : 30;
+}
+
+interface Context {
+  checkIns: Map<string, CheckInAnswers>;
+  nights: Map<string, StoredNight>;
+  watchSleep: Map<string, number>;
+  hrv: Point[];
+  rhr: Point[];
+  sessions: LoadSession[];
+  heart: { rest: number; max: number };
+}
+
+/** Everything recovery needs for the days from `from` to `to`, read once. */
+function context(from: string, to: string): Context {
+  const db = getDb();
+  const checkIns = new Map(
+    db
+      .getAllSync<Row>('SELECT * FROM recovery_checkins WHERE deleted_at IS NULL AND date_key >= ? AND date_key <= ? ORDER BY updated_at', [from, to])
+      .map((r) => [r.date_key, toAnswers(r)]),
+  );
+  const watchSleep = new Map(
+    db
+      .getAllSync<{ date_key: string; value: number }>(
+        "SELECT date_key, value FROM health_markers WHERE deleted_at IS NULL AND kind = 'sleep' AND source = ? AND date_key >= ? AND date_key <= ? ORDER BY updated_at",
+        [WATCH, from, to],
+      )
+      .map((r) => [r.date_key, r.value]),
+  );
+  const rhr = markerSeries('rhr', addDays(from, -BASELINE_DAYS), to);
+  const restBase = baseline(rhr.slice(-BASELINE_DAYS).map((p) => p.value));
+  return {
+    checkIns,
+    nights: new Map(sleepNightsBetween(from, to).map((n) => [n.dateKey, n])),
+    watchSleep,
+    hrv: markerSeries('hrv', addDays(from, -BASELINE_DAYS), to),
+    rhr,
+    sessions: loadSessions(addDays(from, -28), to),
+    // Heart rate reserve for training load: resting from the watch, maximum estimated from age.
+    heart: { rest: restBase?.mean ?? 60, max: 208 - 0.7 * ageYears() },
+  };
+}
+
+function recoveryOn(day: string, ctx: Context): Recovery | null {
+  const night = ctx.nights.get(day);
+  const hours = ctx.watchSleep.get(day);
+  return recoveryScore({
+    checkIn: ctx.checkIns.get(day) ?? null,
+    sleep: night ? { hours: night.asleepMin / 60, deepMin: night.deepMin, remMin: night.remMin } : hours != null ? { hours } : null,
+    hrv: trendFor(ctx.hrv, day),
+    rhr: trendFor(ctx.rhr, day),
+    load: trainingLoad(ctx.sessions, day, ctx.heart),
+  });
+}
+
+/** Readiness from the check-in, watch sleep, HRV, resting heart rate and training load. */
+export function readinessFor(day: string): Recovery | null {
+  return recoveryOn(day, context(day, day));
 }
 
 export function readinessHistory(days: number, today = dateKey()): { dateKey: string; score: number | null }[] {
-  const rows = getDb().getAllSync<Row>('SELECT * FROM recovery_checkins WHERE date_key >= ? AND deleted_at IS NULL', [addDays(today, -(days - 1))]);
-  const byDay = new Map(rows.map((r) => [r.date_key, r]));
+  const ctx = context(addDays(today, -(days - 1)), today);
   return Array.from({ length: days }, (_, i) => {
     const day = addDays(today, i - days + 1);
-    const r = byDay.get(day);
-    return { dateKey: day, score: r ? (readiness(toAnswers(r), trainingLoad(day))?.score ?? null) : null };
+    return { dateKey: day, score: recoveryOn(day, ctx)?.score ?? null };
   });
 }
 

@@ -82,7 +82,7 @@ export function WatchTodayCard({ index }: { index: number }) {
   }
 
   return (
-    <Card index={index} onPress={open}>
+    <Card index={index} onPress={() => router.push('/overview')}>
       <View style={styles.stats}>
         <Stat value={today.steps != null ? Math.round(today.steps).toLocaleString('en-US') : '–'} label="steps" />
         <View style={[styles.divider, { backgroundColor: colors.separator }]} />

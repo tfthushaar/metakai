@@ -1,10 +1,11 @@
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
 
-import { useSettings, type WatchData } from '../../core/store/settings';
+import { useSettings, type WatchData, type WatchSourceKind } from '../../core/store/settings';
 import { SPACE } from '../../core/theme/typography';
 import { connectSensor, disconnectSensor, scanForSensors, stopScan, useHeartRate } from '../../modules/wearables/heartRate';
-import { healthSource, syncWatch, useWatchSync } from '../../modules/wearables/sync';
+import { healthSource, setWatchSource, syncWatch, useWatchSync } from '../../modules/wearables/sync';
 import type { HealthStatus } from '../../modules/wearables/types';
 import { Button } from '../../ui/Button';
 import { ListGroup, ListRow } from '../../ui/List';
@@ -19,11 +20,16 @@ const WORKS_WITH =
     : 'Samsung Galaxy Watch, Pixel Watch, Fitbit, Garmin, Withings, Oura, Polar, Amazfit (Zepp) and Xiaomi, through their apps.';
 
 const DATA: { id: WatchData; title: string; subtitle: string }[] = [
-  { id: 'activity', title: 'Steps', subtitle: 'Daily total' },
-  { id: 'heart', title: 'Heart', subtitle: 'Resting heart rate and HRV' },
-  { id: 'sleep', title: 'Sleep', subtitle: 'Fills in your readiness check-in' },
+  { id: 'activity', title: 'Activity', subtitle: 'Steps and active calories' },
+  { id: 'heart', title: 'Heart and breathing', subtitle: 'Resting heart rate, HRV, VO2 max, blood oxygen and breathing rate' },
+  { id: 'sleep', title: 'Sleep', subtitle: 'Time asleep and sleep stages, for your readiness score' },
   { id: 'body', title: 'Weigh-ins', subtitle: 'Weight and body fat from a smart scale' },
-  { id: 'workouts', title: 'Workouts', subtitle: 'Runs, rides, walks, swims and other cardio' },
+  { id: 'workouts', title: 'Workouts', subtitle: 'Runs, rides, gym sessions, yoga and more. Ones you also logged here are matched, not doubled.' },
+];
+
+const SOURCE_GROUPS: { kind: WatchSourceKind; header: string; auto: string }[] = [
+  { kind: 'sleep', header: 'Sleep from', auto: 'The app with sleep stages and the most sleep each night' },
+  { kind: 'heart', header: 'Heart readings from', auto: 'The app with the most readings' },
 ];
 
 const when = (iso: string) => new Date(iso).toLocaleString([], { hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'short' });
@@ -31,6 +37,7 @@ const when = (iso: string) => new Date(iso).toLocaleString([], { hour: 'numeric'
 export default function Devices() {
   const watch = useSettings((s) => s.watch);
   const set = useSettings((s) => s.set);
+  const router = useRouter();
   const sync = useWatchSync();
   const hr = useHeartRate();
   const source = healthSource();
@@ -71,6 +78,12 @@ export default function Devices() {
     if (on) syncWatch();
   };
 
+  const chooseSource = async (kind: WatchSourceKind, origin: string | null) => {
+    if (watch.sources[kind] === origin) return;
+    toast(origin ? `Reading the last month from ${origin}` : 'Choosing automatically');
+    await setWatchSource(kind, origin);
+  };
+
   const stop = () =>
     Alert.alert(`Stop syncing with ${source?.name}?`, 'Everything already brought in stays in Metakai.', [
       { text: 'Cancel', style: 'cancel' },
@@ -99,13 +112,14 @@ export default function Devices() {
   return (
     <Screen title="Watches" back>
       <Text variant="subhead" tone="secondary">
-        Bring in steps, sleep, heart rate, weigh-ins and workouts from your watch or scale, and see live heart rate while you train.
+        Bring in sleep, heart, activity, weigh-ins and workouts from every watch, ring and scale you use, and see live heart rate while you train.
       </Text>
 
       {source && status !== 'unsupported' && (
         <>
           {watch.health ? (
             <ListGroup header={source.name} footer={`Works with ${WORKS_WITH}`}>
+              <ListRow icon="activity" title="Overview" subtitle="Sleep, heart and activity at a glance" onPress={() => router.push('/overview')} />
               <ListRow icon="refresh" title="Sync now" subtitle={syncText ?? undefined} onPress={sync.syncing ? undefined : () => syncWatch()} chevron={false} />
               <ListRow icon="settings" title="Manage access" subtitle={`Choose what Metakai can read in ${source.name}`} onPress={() => source.openSettings()} />
             </ListGroup>
@@ -135,6 +149,22 @@ export default function Devices() {
                   />
                 ))}
               </ListGroup>
+              {SOURCE_GROUPS.map((g) => {
+                const apps = [...new Set([...watch.seen[g.kind], ...(watch.sources[g.kind] ? [watch.sources[g.kind]!] : [])])];
+                if (apps.length < 2) return null;
+                return (
+                  <ListGroup
+                    key={g.kind}
+                    header={g.header}
+                    footer={g.kind === 'heart' ? 'Your normal HRV and resting heart rate are worked out from one app at a time, so switching starts a fresh baseline.' : undefined}
+                  >
+                    <ListRow title="Automatic" subtitle={g.auto} selected={watch.sources[g.kind] == null} onPress={() => chooseSource(g.kind, null)} chevron={false} />
+                    {apps.map((app) => (
+                      <ListRow key={app} title={app} selected={watch.sources[g.kind] === app} onPress={() => chooseSource(g.kind, app)} chevron={false} />
+                    ))}
+                  </ListGroup>
+                );
+              })}
               <ListGroup footer={`Workouts, runs and weigh-ins you log in Metakai show up in ${source.name} and the apps that read from it.`}>
                 <ListRow title={`Send to ${source.name}`} accessory={<Toggle value={watch.share} onChange={setShare} />} />
               </ListGroup>

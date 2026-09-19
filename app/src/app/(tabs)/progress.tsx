@@ -128,6 +128,7 @@ export default function Progress() {
   const photosOn = useFeature('photos');
   const recoveryOn = useFeature('recovery');
   const healthOn = useFeature('health');
+  const watchOn = useFeature('wearables');
   const milestones = useMilestones();
   const nextMilestone = milestones?.find((m) => !m.reachedDate);
   const bodyComp = useQuery(['body_comp_entries'], listBodyComp);
@@ -292,8 +293,9 @@ export default function Progress() {
         </ListGroup>
       ) : null,
     health:
-      recoveryOn || healthOn ? (
+      recoveryOn || healthOn || watchOn ? (
         <ListGroup header="Health & recovery" index={3}>
+          {watchOn && <ListRow icon="watch" title="Overview" subtitle="Sleep, heart and activity from your watch" onPress={() => router.push('/overview')} />}
           {recoveryOn && (
             <ListRow icon="heartPulse" title="Recovery" subtitle="Readiness, sleep and muscle recovery" onPress={() => router.push('/recovery')} />
           )}

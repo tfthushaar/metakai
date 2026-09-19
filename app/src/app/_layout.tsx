@@ -140,6 +140,7 @@ function RootStack() {
           <Stack.Screen name="interval-timer" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
           <Stack.Screen name="recovery" />
           <Stack.Screen name="health" />
+          <Stack.Screen name="overview" />
           <Stack.Screen name="marker" />
           <Stack.Screen name="log-marker" options={modal} />
           <Stack.Screen name="physique" />

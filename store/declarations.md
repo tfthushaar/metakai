@@ -50,15 +50,18 @@ Metakai is not a medical device and makes no medical claims.
 | Permission | Justification |
 |---|---|
 | READ_STEPS | Shows the user's daily steps from their watch on the Today screen and in Health. |
-| READ_RESTING_HEART_RATE | Shows resting heart rate next to the user's recovery and readiness. |
-| READ_HEART_RATE_VARIABILITY | Shows HRV next to the user's recovery and readiness. |
-| READ_HEART_RATE | Adds average and peak heart rate to runs, rides and other workouts imported from the user's watch. |
-| READ_SLEEP | Fills in hours slept for the daily readiness check-in. |
+| READ_RESTING_HEART_RATE | Compares resting heart rate with the user's own recent normal for their readiness score, and shows it in the watch overview. |
+| READ_HEART_RATE_VARIABILITY | Compares HRV with the user's own recent normal for their readiness score, and shows it in the watch overview. |
+| READ_HEART_RATE | Adds average and peak heart rate to workouts imported from the user's watch and to gym sessions and runs logged in Metakai while wearing it, for training load. |
+| READ_SLEEP | Shows last night's sleep and its stages, and uses time asleep and deep and REM sleep in the readiness score. |
 | READ_WEIGHT | Adds smart-scale weigh-ins to the user's weight trend, which drives their calorie targets and goal forecast. |
 | READ_BODY_FAT | Adds smart-scale body fat readings to the user's body composition history. |
-| READ_EXERCISE | Adds runs, rides, walks, swims and other cardio recorded on the user's watch to their training log. |
+| READ_EXERCISE | Adds runs, rides, gym sessions, yoga and other workouts recorded on the user's watch to their activity log, or matches them to a workout they logged in Metakai so it isn't counted twice. |
 | READ_DISTANCE | Adds distance to imported cardio sessions. |
-| READ_ACTIVE_CALORIES_BURNED | Adds calories burned to imported cardio sessions for the training summary. |
+| READ_ACTIVE_CALORIES_BURNED | Adds calories burned to imported sessions and shows the user's daily active calories in the watch overview. |
+| READ_VO2_MAX | Shows the user's VO2 max (cardio fitness) from their watch in the watch overview and health markers. |
+| READ_OXYGEN_SATURATION | Shows blood oxygen readings from the user's watch in the watch overview and health markers. |
+| READ_RESPIRATORY_RATE | Shows breathing rate, usually measured overnight, in the watch overview and health markers. |
 | WRITE_WEIGHT | When the user turns on "Send to Health Connect", saves weigh-ins they log in Metakai. |
 | WRITE_EXERCISE | When the user turns on "Send to Health Connect", saves gym workouts and cardio they log in Metakai. |
 | WRITE_DISTANCE | Saves the distance of runs and rides the user records in Metakai, with the session above. |

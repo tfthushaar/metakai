@@ -6,10 +6,11 @@ import { RADIUS, SPACE } from '../core/theme/typography';
 import { dateKey, parseDateKey } from '../lib/dates';
 import { muscleRecovery } from '../lib/muscleRecovery';
 import type { CheckInAnswers } from '../lib/readiness';
-import { deleteCheckIn, EMPTY_ANSWERS, getCheckIn, readinessFor, readinessHistory, recentTraining, saveCheckIn } from '../modules/recovery/repo';
-import { watchSleep } from '../modules/wearables/repo';
+import type { FactorKey } from '../lib/recoveryScore';
+import { deleteCheckIn, EMPTY_ANSWERS, getCheckIn, readinessFor, readinessHistory, recentTraining, RECOVERY_TABLES, saveCheckIn } from '../modules/recovery/repo';
+import { sleepNight, watchSleep } from '../modules/wearables/repo';
 import { Card, SectionHeader } from '../ui/Card';
-import { Icon } from '../ui/Icon';
+import { Icon, type IconName } from '../ui/Icon';
 import { PressableScale } from '../ui/PressableScale';
 import { Ring } from '../ui/Ring';
 import { Screen } from '../ui/Screen';
@@ -30,6 +31,8 @@ const QUESTIONS: { key: ScaleKey; label: string; low: string; high: string }[] =
 ];
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+const FACTOR_ICON: Record<FactorKey, IconName> = { sleep: 'moon', hrv: 'activity', rhr: 'heart', feel: 'user' };
 
 function ago(ms: number): string {
   const hours = Math.floor(ms / 3600_000);
@@ -77,10 +80,12 @@ function Scale({ value, onChange, low, high }: { value: number | null; onChange:
 export default function Recovery() {
   const { colors } = useTheme();
   const today = dateKey();
-  const answers = useQuery(['recovery_checkins'], () => getCheckIn(today) ?? EMPTY_ANSWERS, [today]);
-  const result = useQuery(['recovery_checkins', 'workout_sets', 'workouts', 'health_markers'], () => readinessFor(today), [today]);
+  const checkIn = useQuery(['recovery_checkins'], () => getCheckIn(today), [today]);
+  const answers = checkIn ?? EMPTY_ANSWERS;
+  const result = useQuery([...RECOVERY_TABLES], () => readinessFor(today), [today]);
   const fromWatch = useQuery(['health_markers'], () => watchSleep(today), [today]);
-  const history = useQuery(['recovery_checkins', 'workout_sets', 'workouts'], () => readinessHistory(14, today), [today]);
+  const night = useQuery(['sleep_nights'], () => sleepNight(today), [today]);
+  const history = useQuery([...RECOVERY_TABLES], () => readinessHistory(14, today), [today]);
   const training = useQuery(['workouts', 'workout_exercises', 'workout_sets'], recentTraining);
   const muscles = muscleRecovery(training, Date.now())
     .filter((m) => m.lastTrainedAt != null || m.recovered < 100)
@@ -109,7 +114,7 @@ export default function Recovery() {
               {bandLabel}
             </Text>
             <Text variant="subhead" tone="secondary">
-              {result ? result.advice : 'Answer a few quick questions each morning to see how ready you are to train.'}
+              {result ? result.advice : 'Answer a few quick questions each morning, or connect a watch, to see how ready you are to train.'}
             </Text>
           </View>
         </View>
@@ -126,15 +131,54 @@ export default function Recovery() {
         )}
       </Card>
 
+      {result && (result.factors.length > 1 || result.loadNote) && (
+        <>
+          <SectionHeader title="What’s behind it" />
+          <Card index={1} padded={false}>
+            {result.factors.map((f, i) => {
+              const c = f.value >= 0.75 ? colors.success : f.value >= 0.5 ? colors.warning : colors.danger;
+              return (
+                <View key={f.key} style={[styles.factor, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator }]}>
+                  <Icon name={FACTOR_ICON[f.key]} size={18} color={colors.textSecondary} />
+                  <View style={{ flex: 1 }}>
+                    <Text variant="body">{f.label}</Text>
+                    <Text variant="caption" tone="secondary">
+                      {f.detail}
+                    </Text>
+                  </View>
+                  <View style={[styles.factorTrack, { backgroundColor: colors.fill }]}>
+                    <View style={{ width: `${Math.max(6, Math.round(f.value * 100))}%`, height: '100%', backgroundColor: c, borderRadius: RADIUS.pill }} />
+                  </View>
+                </View>
+              );
+            })}
+            {result.loadNote && (
+              <View style={[styles.factor, result.factors.length > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator }]}>
+                <Icon name="dumbbell" size={18} color={colors.textSecondary} />
+                <View style={{ flex: 1 }}>
+                  <Text variant="body">Training load</Text>
+                  <Text variant="caption" tone="secondary">
+                    {`${result.loadNote}, from your last 4 weeks`}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </Card>
+          <Text variant="caption" tone="tertiary" style={{ marginTop: SPACE.sm, paddingHorizontal: SPACE.lg }}>
+            HRV and resting heart rate are compared with your own last 30 days from the same watch, once there’s about a week of readings.
+          </Text>
+        </>
+      )}
+
       <SectionHeader title="Today’s check-in" />
-      <Card index={1} style={{ gap: SPACE.lg }}>
+      <Card index={2} style={{ gap: SPACE.lg }}>
         <View style={styles.sleepRow}>
           <Icon name="moon" size={20} color={colors.textSecondary} />
           <View style={{ flex: 1 }}>
             <Text variant="body">Sleep</Text>
             {answers.sleepHours == null && fromWatch != null && (
               <Text variant="caption" tone="secondary">
-                From your watch
+                {night?.origin ? `From ${night.origin}` : 'From your watch'}
               </Text>
             )}
           </View>
@@ -158,15 +202,15 @@ export default function Recovery() {
           </View>
         ))}
         <Text variant="caption" tone="tertiary">
-          Saved as you tap. Recent training load is included automatically.
+          Saved as you tap. Training load and watch readings are included automatically.
         </Text>
-        {result && (
+        {checkIn && (
           <Button
             title="Clear today’s check-in"
             variant="destructive"
             size="md"
             onPress={() =>
-              Alert.alert('Clear check-in?', 'Today’s answers are removed. Your readiness score goes back to training load only.', [
+              Alert.alert('Clear check-in?', 'Today’s answers are removed. Your readiness goes back to your watch readings, if you have any.', [
                 { text: 'Cancel', style: 'cancel' },
                 {
                   text: 'Clear',
@@ -184,7 +228,7 @@ export default function Recovery() {
       </Card>
 
       <SectionHeader title="Last 14 days" />
-      <Card index={2}>
+      <Card index={3}>
         <View style={styles.chart}>
           {history.map((h) => {
             const c = h.score == null ? colors.fill : h.score >= 75 ? colors.success : h.score >= 50 ? colors.warning : colors.danger;
@@ -203,7 +247,7 @@ export default function Recovery() {
       </Card>
 
       <SectionHeader title="Muscle recovery" />
-      <Card index={3} padded={false}>
+      <Card index={4} padded={false}>
         {muscles.length === 0 ? (
           <View style={{ padding: SPACE.lg }}>
             <Text variant="subhead" tone="secondary">
@@ -244,6 +288,8 @@ const styles = StyleSheet.create({
   flags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACE.md },
   flag: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: RADIUS.pill },
   sleepRow: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm },
+  factor: { flexDirection: 'row', alignItems: 'center', gap: SPACE.md, paddingHorizontal: SPACE.lg, paddingVertical: 12 },
+  factorTrack: { width: 64, height: 6, borderRadius: RADIUS.pill, overflow: 'hidden' },
   step: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   scale: { flexDirection: 'row', gap: SPACE.sm },
   dot: { flex: 1, height: 38, borderRadius: RADIUS.md, alignItems: 'center', justifyContent: 'center' },

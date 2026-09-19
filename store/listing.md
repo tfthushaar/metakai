@@ -46,12 +46,14 @@ SEE YOUR PROGRESS
 • Optional leaderboards by sex, age, weight class, height, country or friends
 
 CONNECT YOUR WATCH
-• Steps, sleep, resting heart rate, HRV, weigh-ins and workouts from Samsung Galaxy Watch, Pixel Watch, Fitbit, Garmin, Withings, Oura, Polar, Amazfit and more through Health Connect (Apple Watch and others through Apple Health on iPhone)
+• Steps, active calories, sleep stages, resting heart rate, HRV, VO2 max, blood oxygen, breathing rate, weigh-ins and workouts from Samsung Galaxy Watch, Pixel Watch, Fitbit, Garmin, Withings, Oura, Polar, Amazfit and more through Health Connect (Apple Watch and others through Apple Health on iPhone)
+• One overview for every device: wear a ring to bed and a watch to the gym, and pick which app each reading comes from
+• Workouts your watch also recorded are matched to the ones you log, never counted twice
 • Live heart rate during workouts and runs from chest straps and watches that broadcast it
 • Optionally send your Metakai workouts and weigh-ins back to Health Connect or Apple Health
 
 RECOVER AND STAY CONSISTENT
-• Readiness check-in from sleep, soreness and stress
+• Readiness from sleep stages, HRV and resting heart rate against your own normal, a quick check-in and your training load
 • Habits, supplements and health markers
 • Reminders that fit your routine
 

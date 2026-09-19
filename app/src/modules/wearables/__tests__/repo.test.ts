@@ -2,52 +2,17 @@
  * Runs every migration on a real SQLite (the sql.js build the web app ships) and checks watch
  * imports against it: sessions matched to ones logged here, sleep nights and readings by app.
  */
-import { MIGRATIONS } from '../../../core/db/migrations';
 import { sleepNights } from '../../../lib/wearables';
+import { openTestDb, testDb as mockDb } from '../../../testing/sqliteDb';
 
-type Row = Record<string, unknown>;
-interface SqlDb {
-  exec(sql: string): void;
-  run(sql: string, params?: unknown[]): void;
-  prepare(sql: string): { bind(v: unknown[]): void; step(): boolean; getAsObject(): Row; free(): void };
-}
-
-let mockSql: SqlDb;
-const all = (q: string, params: unknown[] = []) => {
-  const st = mockSql.prepare(q);
-  st.bind(params);
-  const out: Row[] = [];
-  while (st.step()) out.push(st.getAsObject());
-  st.free();
-  return out;
-};
-const mockDb = {
-  execSync: (q: string) => mockSql.exec(q),
-  runSync: (q: string, params: unknown[] = []) => mockSql.run(q, params),
-  getAllSync: (q: string, params: unknown[] = []) => all(q, params),
-  getFirstSync: (q: string, params: unknown[] = []) => all(q, params)[0] ?? null,
-  withTransactionSync: (fn: () => void) => fn(),
-};
-
-let mockN = 0;
-jest.mock('../../../core/db/database', () => ({
-  getDb: () => mockDb,
-  newId: () => `id-${++mockN}`,
-  notify: () => {},
-  nowIso: () => new Date().toISOString(),
-}));
+jest.mock('../../../core/db/database', () => require('../../../testing/sqliteDb').database);
 
 import { importWorkout, sessionsWithoutHeartRate, sleepNightsBetween, unsharedWorkouts, upsertSleepNight, upsertWatchMarker } from '../repo';
 
 const at = (h: number, m = 0) => new Date(2026, 8, 19, h, m).getTime();
 const iso = (t: number) => new Date(t).toISOString();
 
-beforeAll(async () => {
-  // In Node, sql.js finds its .wasm next to the script.
-  const SQL = await require('../../../../public/sqljs/sql-wasm.js')();
-  mockSql = new SQL.Database();
-  for (const m of MIGRATIONS) mockSql.exec(m);
-});
+beforeAll(openTestDb);
 
 const workout = { kind: 'other' as const, title: 'Strength training', distanceKm: null, kcal: 310, avgHr: 118, maxHr: 161, origin: 'Garmin Connect' };
 

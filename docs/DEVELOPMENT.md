@@ -15,6 +15,8 @@ How Metakai is built, and how to build, sign and publish it yourself.
 - **Feature registry:** each module declares its dependencies and permissions. Screens, tabs, Today cards and shortcuts check it before rendering, and a tab with nothing left to show leaves the tab bar.
 - **Pure logic:** calculations live in `src/lib` as dependency-free, unit-tested functions, including energy and macros, predictions, 1RM and progression, body composition, GPS track maths, population strength norms and age grading, readiness, achievements and AI rate budgets.
 - **Watches:** `src/modules/wearables` reads and writes Health Connect on Android (`react-native-health-connect`) and Apple Health on iOS (`@kingstinct/react-native-healthkit`) behind one interface, and pairs Bluetooth heart rate sensors with `react-native-ble-plx`. Imports are de-duplicated by the health platform's record ID, and records Metakai wrote itself are skipped. Parsing and mapping live in `src/lib/wearables.ts`.
+- **Several devices:** every sleep night and daily reading keeps the app it came from (`origin`). A night comes from one app (the user's choice, else the one with stages and the most sleep) and each day's reading from one app, so two devices never add up or blend. Watch workouts that overlap a gym session or run logged in Metakai are linked to it (`external_id`) instead of imported again, and aren't sent back to the health app.
+- **Readiness:** `src/lib/recoveryScore.ts` combines sleep (with deep and REM share), HRV (log scale) and resting heart rate against a 30-day baseline from the same app, the check-in, and training load (TRIMP from heart rate, else sets or effort; 7 days against 28). With only a check-in it gives exactly the old `readiness()` score.
 - **Minimal backend:** the optional leaderboard is a small Cloudflare Worker with a D1 (SQLite) database in `cloud/`. It verifies Google or Apple sign-in, stores only derived scores, and precomputes score distributions every six hours to stay within the free tier. Every other network call goes directly from the phone to the service shown.
 
 ## Building from source
@@ -25,7 +27,7 @@ How Metakai is built, and how to build, sign and publish it yourself.
 git clone https://github.com/tfthushaar/metakai.git
 cd metakai/app
 npm install
-npm test              # unit tests
+npm test              # unit tests, plus database tests that run every migration on sql.js
 npm run typecheck     # TypeScript
 npx expo run:android  # build and run a development build
 ```
@@ -48,6 +50,7 @@ The signing config reads these environment variables:
 - `plugins/withWatches.js` adds the Health Connect permissions and a small activity that opens the privacy policy when Health Connect asks why the app wants access. Google Play requires the permissions to be declared in Play Console before release; the justification for each is in [store/declarations.md](../store/declarations.md).
 - Health Connect is built into Android 14 and newer. On older phones the app sends users to the Health Connect app on Google Play.
 - The HealthKit config plugin adds the HealthKit entitlement and the usage strings in `app.json`. Background delivery is off; the app syncs when it opens.
+- To try sync on an emulator without a watch, install Google's Health Connect Toolbox and write test records (sleep with stages, HRV, resting heart rate, exercise sessions) under different apps.
 
 ### Web app
 

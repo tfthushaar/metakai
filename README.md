@@ -59,14 +59,16 @@ Cutting, bulking, recomposing or maintaining: set a goal and get calorie and mac
 
 ## Watches
 
-- **Bring your watch data in:** steps, sleep, resting heart rate, HRV, smart-scale weigh-ins and workouts from Samsung Galaxy Watch, Pixel Watch, Fitbit, Garmin, Withings, Oura, Polar, Amazfit and Xiaomi through Health Connect, or from Apple Watch and others through Apple Health.
+- **Bring your watch data in:** steps, active calories, sleep with its stages, resting heart rate, HRV, VO2 max, blood oxygen, breathing rate, smart-scale weigh-ins and workouts from Samsung Galaxy Watch, Pixel Watch, Fitbit, Garmin, Withings, Oura, Polar, Amazfit and Xiaomi through Health Connect, or from Apple Watch and others through Apple Health.
+- **One overview for every device:** last night's sleep stages, readiness and each day's readings side by side, even when they come from different watches. Wear a ring to bed and a watch to the gym, and pick which app each kind of reading comes from.
+- **No doubled workouts:** a gym session or run you log here that your watch also recorded gets the watch's heart rate and calories instead of showing up twice. Everything else, from runs to yoga, lands in your activity log.
 - **Live heart rate** on screen while you lift or run, from chest straps and watches that broadcast it, with your average and peak saved to the session.
-- **Sleep fills in your readiness check-in,** and watch runs and rides land in your cardio log.
 - **Send it back:** your Metakai workouts and weigh-ins can show up in Health Connect or Apple Health too.
+- **Stays on your phone.** Watch data is read straight from Health Connect or Apple Health, never through anyone's server.
 
 ## Recovery and health
 
-- **A readiness score** from a 30-second morning check-in and your recent training load.
+- **A readiness score** from your sleep and its stages, HRV and resting heart rate against your own normal, a 30-second morning check-in and your training load from every session. A watch alone, a check-in alone or both all work, and you can see what moved the score.
 - **Muscle recovery** for each muscle group.
 - **Supplements and health markers:** blood pressure, resting heart rate, HRV, glucose, steps and lab results.
 - **Habits** that tick themselves off from what you log.

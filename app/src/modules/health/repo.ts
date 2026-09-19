@@ -65,6 +65,8 @@ export interface Marker {
   value: number;
   value2: number | null;
   unit: string | null;
+  /** App a watch reading came from. */
+  origin?: string | null;
 }
 
 interface MarkerRow {
@@ -75,9 +77,19 @@ interface MarkerRow {
   value: number;
   value2: number | null;
   unit: string | null;
+  origin?: string | null;
 }
 
-const toMarker = (r: MarkerRow): Marker => ({ id: r.id, dateKey: r.date_key, kind: r.kind, label: r.label, value: r.value, value2: r.value2, unit: r.unit });
+const toMarker = (r: MarkerRow): Marker => ({
+  id: r.id,
+  dateKey: r.date_key,
+  kind: r.kind,
+  label: r.label,
+  value: r.value,
+  value2: r.value2,
+  unit: r.unit,
+  origin: r.origin ?? null,
+});
 
 export const markerName = (m: Pick<Marker, 'kind' | 'label'>) => (m.kind === 'custom' ? (m.label ?? 'Lab result') : (MARKERS.find((d) => d.kind === m.kind)?.name ?? m.kind));
 

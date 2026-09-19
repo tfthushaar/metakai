@@ -1,15 +1,15 @@
 import type { CheckInAnswers, Readiness, ReadinessBand, TrainingLoad } from './readiness';
 
 /**
- * Recovery from whatever is available: watch sleep (duration and stages), HRV and resting heart
- * rate against the person's own normal, how they feel (the check-in) and training load from every
- * session. Missing parts drop out and the rest are re-weighted, so a watch alone, a check-in alone
- * or both all give a score.
+ * Recovery from whatever is available: sleep (from the watch with its stages, or typed in), HRV and
+ * resting heart rate against the person's own normal, how they feel (the check-in) and training load
+ * from every session. Missing parts drop out and the rest are re-weighted, so a watch alone, a
+ * check-in alone or both all give a score. With only a check-in it matches `readiness()`.
  */
 
 export interface Trend {
   today: number;
-  /** Earlier daily values, most recent last, excluding today. */
+  /** Earlier daily values from the same app, excluding today. */
   history: number[];
 }
 
@@ -17,8 +17,6 @@ export interface SleepInput {
   hours: number;
   deepMin?: number | null;
   remMin?: number | null;
-  /** App the sleep came from, for display. */
-  source?: string | null;
 }
 
 export interface RecoveryInputs {
@@ -47,9 +45,26 @@ export interface Recovery extends Readiness {
   loadNote: string | null;
 }
 
-const WEIGHTS: Record<FactorKey, number> = { sleep: 35, hrv: 25, rhr: 15, feel: 25 };
+type Part = keyof Omit<CheckInAnswers, 'sleepHours'> | 'sleep' | 'hrv' | 'rhr';
+
+/** Check-in weights match `readiness()`; HRV and resting heart rate add to them. */
+const WEIGHTS: Record<Part, number> = { sleep: 25, sleepQuality: 15, soreness: 20, stress: 15, energy: 15, mood: 10, hrv: 30, rhr: 15 };
+const FLAGS: Record<Part, string> = {
+  sleep: 'Short sleep',
+  sleepQuality: 'Poor sleep quality',
+  soreness: 'Sore',
+  stress: 'High stress',
+  energy: 'Low energy',
+  mood: 'Low mood',
+  hrv: 'HRV below your normal',
+  rhr: 'Resting heart rate up',
+};
+const FEEL: (keyof CheckInAnswers)[] = ['sleepQuality', 'soreness', 'stress', 'energy', 'mood'];
+const INVERTED = new Set<keyof CheckInAnswers>(['soreness', 'stress']);
+
 /** Baselines need about a week of readings before they mean anything. */
 const MIN_HISTORY = 5;
+/** Load ratio above which injury risk and fatigue climb. */
 const SPIKE_RATIO = 1.5;
 
 const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
@@ -68,101 +83,92 @@ export function baseline(values: number[]): Baseline | null {
   return { mean, sd, n: v.length };
 }
 
-function sleepFactor(s: SleepInput, need: number): RecoveryFactor {
+export function hoursLabel(h: number): string {
+  const total = Math.round(h * 60);
+  return total < 60 ? `${total}m` : `${Math.floor(total / 60)}h ${String(total % 60).padStart(2, '0')}m`;
+}
+
+function sleepPart(s: SleepInput, need: number): { value: number; detail: string } {
   const duration = clamp((s.hours - (need - 4)) / 4);
-  let value = duration;
-  let detail = `${Math.floor(s.hours)}h ${String(Math.round((s.hours % 1) * 60)).padStart(2, '0')}m`;
   const asleepMin = s.hours * 60;
   if (s.deepMin != null && s.remMin != null && asleepMin > 0) {
     // Deep and REM usually make up about a third of a night; less than that is lighter recovery.
     const restorative = (s.deepMin + s.remMin) / asleepMin;
-    value = duration * (0.85 + 0.15 * clamp(restorative / 0.33));
-    detail += ` · ${Math.round(restorative * 100)}% deep and REM`;
+    return { value: duration * (0.85 + 0.15 * clamp(restorative / 0.33)), detail: `${hoursLabel(s.hours)} · ${Math.round(restorative * 100)}% deep and REM` };
   }
-  return { key: 'sleep', label: 'Sleep', detail, value };
+  return { value: duration, detail: hoursLabel(s.hours) };
 }
 
-function hrvFactor(t: Trend): RecoveryFactor | null {
+function hrvPart(t: Trend): { value: number; detail: string } | null {
   // HRV is skewed, so compare on a log scale.
   const b = baseline(t.history.filter((x) => x > 0).map(Math.log));
   if (!b || t.today <= 0) return null;
   const z = (Math.log(t.today) - b.mean) / Math.max(b.sd, 0.05);
   const pct = Math.round((t.today / Math.exp(b.mean) - 1) * 100);
   const detail = `${Math.round(t.today)} ms · ${Math.abs(pct) < 5 ? 'around your normal' : `${Math.abs(pct)}% ${pct < 0 ? 'below' : 'above'} your normal`}`;
-  return { key: 'hrv', label: 'HRV', detail, value: clamp((z + 1.5) / 2) };
+  // Your normal scores 0.75; each standard deviation below takes a quarter off, so one below is "moderate".
+  return { value: clamp(0.75 + 0.25 * z), detail };
 }
 
-function rhrFactor(t: Trend): RecoveryFactor | null {
+function rhrPart(t: Trend): { value: number; detail: string } | null {
   const b = baseline(t.history);
   if (!b || t.today <= 0) return null;
   const diff = Math.round(t.today - b.mean);
   const detail = `${Math.round(t.today)} bpm · ${Math.abs(diff) < 2 ? 'around your normal' : `${Math.abs(diff)} ${diff > 0 ? 'above' : 'below'} your normal`}`;
   // A resting heart rate 8 or more beats above normal usually means fatigue, illness or stress.
-  return { key: 'rhr', label: 'Resting heart rate', detail, value: clamp(1 - Math.max(0, t.today - b.mean - 1) / 7) };
+  return { value: clamp(1 - Math.max(0, t.today - b.mean - 1) / 7), detail };
 }
 
-const FEEL_WEIGHTS: [keyof CheckInAnswers, number, boolean][] = [
-  ['sleepQuality', 15, false],
-  ['soreness', 20, true],
-  ['stress', 15, true],
-  ['energy', 15, false],
-  ['mood', 10, false],
-];
-const FEEL_FLAGS: Partial<Record<keyof CheckInAnswers, string>> = {
-  sleepQuality: 'Poor sleep quality',
-  soreness: 'Sore',
-  stress: 'High stress',
-  energy: 'Low energy',
-  mood: 'Low mood',
+const feelValue = (key: keyof CheckInAnswers, v: number) => {
+  const scaled = (clamp(v, 1, 5) - 1) / 4;
+  return INVERTED.has(key) ? 1 - scaled : scaled;
 };
-
-function feelFactor(c: CheckInAnswers): { factor: RecoveryFactor; worst: string | null } | null {
-  let total = 0;
-  let weight = 0;
-  let worst: { name: string; value: number } | null = null;
-  for (const [key, w, inverted] of FEEL_WEIGHTS) {
-    const v = c[key];
-    if (v == null) continue;
-    const scaled = (clamp(v, 1, 5) - 1) / 4;
-    const value = inverted ? 1 - scaled : scaled;
-    total += w * value;
-    weight += w;
-    if (!worst || value < worst.value) worst = { name: FEEL_FLAGS[key]!, value };
-  }
-  if (weight === 0) return null;
-  const value = total / weight;
-  return {
-    factor: { key: 'feel', label: 'How you feel', detail: value >= 0.75 ? 'Feeling good' : value >= 0.5 ? 'Feeling okay' : 'Feeling rough', value },
-    worst: worst && worst.value < 0.5 ? worst.name : null,
-  };
-}
 
 export function recoveryScore(inputs: RecoveryInputs): Recovery | null {
   const need = inputs.sleepNeed ?? 8;
+  const parts: { key: Part; value: number }[] = [];
   const factors: RecoveryFactor[] = [];
-  const flags: string[] = [];
 
   // A sleep time typed into the check-in overrides the watch.
   const sleep = inputs.checkIn?.sleepHours != null ? { hours: inputs.checkIn.sleepHours } : inputs.sleep;
-  if (sleep) factors.push(sleepFactor(sleep, need));
-  const hrv = inputs.hrv ? hrvFactor(inputs.hrv) : null;
-  if (hrv) factors.push(hrv);
-  const rhr = inputs.rhr ? rhrFactor(inputs.rhr) : null;
-  if (rhr) factors.push(rhr);
-  const feel = inputs.checkIn ? feelFactor(inputs.checkIn) : null;
-  if (feel) factors.push(feel.factor);
-  if (factors.length === 0) return null;
-
-  const weight = factors.reduce((a, f) => a + WEIGHTS[f.key], 0);
-  let score = (factors.reduce((a, f) => a + WEIGHTS[f.key] * f.value, 0) / weight) * 100;
-
-  for (const f of [...factors].sort((a, b) => a.value - b.value)) {
-    if (f.value >= 0.5) continue;
-    if (f.key === 'sleep') flags.push(sleep && sleep.hours < need - 1 ? 'Short sleep' : 'Light sleep');
-    if (f.key === 'hrv') flags.push('HRV below your normal');
-    if (f.key === 'rhr') flags.push('Resting heart rate up');
-    if (f.key === 'feel' && feel?.worst) flags.push(feel.worst);
+  if (sleep) {
+    const p = sleepPart(sleep, need);
+    parts.push({ key: 'sleep', value: p.value });
+    factors.push({ key: 'sleep', label: 'Sleep', detail: p.detail, value: p.value });
   }
+  const hrv = inputs.hrv ? hrvPart(inputs.hrv) : null;
+  if (hrv) {
+    parts.push({ key: 'hrv', value: hrv.value });
+    factors.push({ key: 'hrv', label: 'HRV', ...hrv });
+  }
+  const rhr = inputs.rhr ? rhrPart(inputs.rhr) : null;
+  if (rhr) {
+    parts.push({ key: 'rhr', value: rhr.value });
+    factors.push({ key: 'rhr', label: 'Resting heart rate', ...rhr });
+  }
+  let feelTotal = 0;
+  let feelWeight = 0;
+  for (const key of FEEL) {
+    const v = inputs.checkIn?.[key];
+    if (v == null) continue;
+    const value = feelValue(key, v);
+    parts.push({ key: key as Part, value });
+    feelTotal += WEIGHTS[key as Part] * value;
+    feelWeight += WEIGHTS[key as Part];
+  }
+  if (feelWeight > 0) {
+    const value = feelTotal / feelWeight;
+    factors.push({ key: 'feel', label: 'How you feel', detail: value >= 0.75 ? 'Feeling good' : value >= 0.5 ? 'Feeling okay' : 'Feeling rough', value });
+  }
+  if (parts.length === 0) return null;
+
+  const weight = parts.reduce((a, p) => a + WEIGHTS[p.key], 0);
+  let score = (parts.reduce((a, p) => a + WEIGHTS[p.key] * p.value, 0) / weight) * 100;
+  const flags = parts
+    .map((p) => ({ key: p.key, loss: WEIGHTS[p.key] * (1 - p.value) }))
+    .filter((l) => l.loss >= WEIGHTS[l.key] * 0.5)
+    .sort((a, b) => b.loss - a.loss)
+    .map((l) => FLAGS[l.key]);
 
   let loadNote: string | null = null;
   const load = inputs.load;
@@ -170,7 +176,7 @@ export function recoveryScore(inputs: RecoveryInputs): Recovery | null {
     const ratio = load.acute / load.chronic;
     loadNote = ratio > SPIKE_RATIO ? 'Much more training than usual' : ratio > 1.15 ? 'A bit more training than usual' : ratio < 0.7 ? 'Lighter week than usual' : 'Training load steady';
     if (ratio > SPIKE_RATIO) {
-      score -= Math.min(12, (ratio - SPIKE_RATIO) * 25);
+      score -= Math.min(10, (ratio - SPIKE_RATIO) * 20);
       flags.push('Training load spiked');
     }
   }

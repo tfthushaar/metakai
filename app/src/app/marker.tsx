@@ -58,7 +58,11 @@ export default function MarkerDetail() {
     <Screen
       title={title}
       back
-      accessory={<Button title="Log" icon="plus" size="sm" variant="tinted" full={false} onPress={() => router.push({ pathname: '/log-marker', params: { kind, label: label ?? '' } })} />}
+      accessory={
+        def?.watchOnly ? undefined : (
+          <Button title="Log" icon="plus" size="sm" variant="tinted" full={false} onPress={() => router.push({ pathname: '/log-marker', params: { kind, label: label ?? '' } })} />
+        )
+      }
     >
       {rows.length >= 2 && (
         <Card index={0}>
@@ -90,11 +94,15 @@ export default function MarkerDetail() {
               <View key={m.id} style={[styles.row, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.separator }]}>
                 <View style={{ flex: 1 }}>
                   <Text variant="body">{relativeDay(m.dateKey)}</Text>
-                  {note && (
+                  {note ? (
                     <Text variant="caption" tone="warning">
                       {note}
                     </Text>
-                  )}
+                  ) : m.origin ? (
+                    <Text variant="caption" tone="tertiary">
+                      {m.origin}
+                    </Text>
+                  ) : null}
                 </View>
                 <Text variant="headline" tabular>
                   {formatMarker(m)}

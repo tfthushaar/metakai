@@ -344,3 +344,38 @@ export function watchSleep(day: string): number | null {
     ])?.value ?? null
   );
 }
+
+/* ---------------- overview ---------------- */
+
+export interface MetricSummary {
+  latest: { dateKey: string; value: number; origin: string | null } | null;
+  /** The last 7 days, oldest first; null where there's no reading. */
+  week: (number | null)[];
+  /** Average of the 30 days before the latest reading, from the same app. */
+  normal: number | null;
+}
+
+/** Latest reading, last week and usual level for each kind, for the overview. */
+export function metricSummaries<K extends MarkerKind>(kinds: K[], today = dateKey()): Record<K, MetricSummary> {
+  const since = addDays(today, -37);
+  const rows = getDb().getAllSync<{ date_key: string; kind: K; value: number; origin: string | null }>(
+    `SELECT date_key, kind, value, origin FROM health_markers
+     WHERE deleted_at IS NULL AND kind IN (${kinds.map(() => '?').join(', ')}) AND date_key >= ? AND date_key <= ?
+     ORDER BY date_key, updated_at DESC`,
+    [...kinds, since, today],
+  );
+  const days = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6));
+  const out = {} as Record<K, MetricSummary>;
+  for (const kind of kinds) {
+    const kept = new Set<string>();
+    const series = rows.filter((r) => r.kind === kind && !kept.has(r.date_key) && kept.add(r.date_key));
+    const last = series[series.length - 1];
+    const before = last ? series.filter((r) => r.date_key < last.date_key && r.date_key >= addDays(last.date_key, -30) && r.origin === last.origin) : [];
+    out[kind] = {
+      latest: last ? { dateKey: last.date_key, value: last.value, origin: last.origin } : null,
+      week: days.map((d) => series.find((r) => r.date_key === d)?.value ?? null),
+      normal: before.length >= 5 ? before.reduce((a, r) => a + r.value, 0) / before.length : null,
+    };
+  }
+  return out;
+}
