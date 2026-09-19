@@ -122,3 +122,21 @@ export function useLayout(screen: LayoutScreen): string[] {
     .filter((s) => featureOn(s, modules) && isShown(s, prefs))
     .map((s) => s.id);
 }
+
+/** True while any feature that fills this screen is on, whatever the user has hidden. */
+export function useScreenAvailable(screen: LayoutScreen): boolean {
+  const modules = useSettings((s) => s.enabledModules);
+  return LAYOUTS[screen].sections.some((s) => featureOn(s, modules));
+}
+
+export type TabName = 'index' | 'food' | 'train' | 'progress' | 'you';
+
+/** Tabs with nothing to show leave the tab bar. */
+export function useHiddenTabs(): TabName[] {
+  const foodOn = useSettings((s) => s.enabledModules.includes('food'));
+  const trainOn = useLayout('train').length > 0;
+  const hidden: TabName[] = [];
+  if (!foodOn) hidden.push('food');
+  if (!trainOn) hidden.push('train');
+  return hidden;
+}

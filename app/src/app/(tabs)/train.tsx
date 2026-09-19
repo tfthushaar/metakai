@@ -287,7 +287,8 @@ export default function Train() {
         <SectionHeader
           title="Cardio"
           action={
-            liftOn ? (
+            // Cardio-only mode keeps these buttons on the week card, unless that card is hidden.
+            liftOn || !sections.includes('week') ? (
               <View style={{ flexDirection: 'row' }}>
                 <Button title="Intervals" size="sm" variant="plain" full={false} onPress={() => router.push('/interval-timer')} />
                 <Button title="Log" size="sm" variant="plain" full={false} onPress={() => router.push('/log-cardio')} />

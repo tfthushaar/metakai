@@ -51,7 +51,7 @@ export function RanksSection() {
 
   return (
     <>
-      <SectionHeader title="Ranks" />
+      <SectionHeader title={physiqueOn || runOn ? 'Ranks' : 'Achievements'} />
       <View style={{ gap: SPACE.md }}>
         {(physiqueOn || runOn) && (
           <View style={styles.passes}>

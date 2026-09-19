@@ -1,11 +1,11 @@
 import { Tabs, useRouter } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
-import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Animated as RNAnimated, Easing, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { addWater } from '../../core/db/repo';
-import { useLayout } from '../../core/store/layouts';
+import { useHiddenTabs, useLayout } from '../../core/store/layouts';
 import { useSettings } from '../../core/store/settings';
 import { dateKey } from '../../lib/dates';
 import { activeWorkout, startWorkout } from '../../modules/workouts/repo';
@@ -20,6 +20,22 @@ import { Text } from '../../ui/Text';
 import { toast } from '../../ui/Toast';
 
 type BottomTabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
+
+/**
+ * Tab switch without the dip: the new tab (drawn on top) fades in over the old one, which stays
+ * solid underneath until it is covered, while both glide a little in the direction of travel.
+ * Progress runs from ±1 to 0 for the tab coming in and from 0 to ±1 for the one leaving.
+ */
+const TAB_TRANSITION = {
+  animation: 'shift',
+  transitionSpec: { animation: 'timing', config: { duration: 400, easing: Easing.bezier(0.4, 0, 0.2, 1) } },
+  sceneStyleInterpolator: ({ current }: { current: { progress: RNAnimated.AnimatedInterpolation<number> } }) => ({
+    sceneStyle: {
+      opacity: current.progress.interpolate({ inputRange: [-1, -0.5, 0, 0.5, 1], outputRange: [0, 1, 1, 1, 0] }),
+      transform: [{ translateX: current.progress.interpolate({ inputRange: [-1, 0, 1], outputRange: [-28, 0, 28] }) }],
+    },
+  }),
+} as const;
 
 const TAB_ICONS: Record<string, IconName> = {
   index: 'home',
@@ -89,8 +105,21 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   };
   const actions = quick.map((id) => ACTIONS[id]).filter(Boolean);
 
-  const routes = state.routes.filter((r) => (descriptors[r.key].options as { href?: string | null }).href !== null);
+  // expo-router turns `href: null` into a hidden item style, so filter by name.
+  const hidden = useHiddenTabs();
+  const routes = state.routes.filter((r) => !hidden.includes(r.name as never));
   const middle = Math.ceil(routes.length / 2);
+  const focusedName = state.routes[state.index]?.name;
+  // Mount the other tabs once the first screen has settled, so the first visit slides in without a stall.
+  useEffect(() => {
+    const id = setTimeout(() => routes.forEach((r) => r.key !== state.routes[state.index]?.key && navigation.preload(r.name)), 1200);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // A tab switched off while open hands over to Today.
+  useEffect(() => {
+    if (focusedName && hidden.includes(focusedName as never)) navigation.navigate('index');
+  }, [focusedName, hidden, navigation]);
 
   const renderTab = (route: (typeof routes)[number]) => {
     const index = state.routes.indexOf(route);
@@ -160,17 +189,19 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         <View style={[styles.bar, { borderColor: colors.separator }]}>
           <BarBackground />
           {routes.slice(0, middle).map(renderTab)}
-          <PressableScale
-            feedback="medium"
-            scaleTo={0.88}
-            accessibilityLabel="Quick actions"
-            onPress={() => setMenuOpen((o) => !o)}
-            style={[styles.plus, { backgroundColor: colors.accent }]}
-          >
-            <Animated.View style={plusStyle}>
-              <Icon name="plus" size={26} color={colors.onAccent} strokeWidth={2.6} />
-            </Animated.View>
-          </PressableScale>
+          {actions.length > 0 && (
+            <PressableScale
+              feedback="medium"
+              scaleTo={0.88}
+              accessibilityLabel="Quick actions"
+              onPress={() => setMenuOpen((o) => !o)}
+              style={[styles.plus, { backgroundColor: colors.accent }]}
+            >
+              <Animated.View style={plusStyle}>
+                <Icon name="plus" size={26} color={colors.onAccent} strokeWidth={2.6} />
+              </Animated.View>
+            </PressableScale>
+          )}
           {routes.slice(middle).map(renderTab)}
         </View>
       </View>
@@ -183,18 +214,20 @@ let startApplied = false;
 export default function TabsLayout() {
   const router = useRouter();
   const startTab = useSettings((s) => s.startTab);
+  const hidden = useHiddenTabs();
+  const reduceMotion = useSettings((s) => s.reduceMotion);
   useEffect(() => {
     if (startApplied) return;
     startApplied = true;
-    if (startTab !== 'index') router.navigate(`/(tabs)/${startTab}` as never);
-  }, [router, startTab]);
-  const foodEnabled = useSettings((s) => s.enabledModules.includes('food'));
-  const trainEnabled = useSettings((s) => s.enabledModules.some((m) => m === 'workouts' || m === 'cardio' || m === 'gps'));
+    if (startTab !== 'index' && !hidden.includes(startTab)) router.navigate(`/(tabs)/${startTab}` as never);
+  }, [router, startTab, hidden]);
+  const foodEnabled = !hidden.includes('food');
+  const trainEnabled = !hidden.includes('train');
   return (
     <>
       <AchievementWatcher />
       <LeaderboardSync />
-      <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, animation: 'shift' }}>
+      <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, ...(reduceMotion ? { animation: 'none' } : TAB_TRANSITION) }}>
         <Tabs.Screen name="index" options={{ title: 'Today' }} />
         <Tabs.Screen name="food" options={{ title: 'Food', href: foodEnabled ? undefined : null }} />
         <Tabs.Screen name="train" options={{ title: 'Train', href: trainEnabled ? undefined : null }} />

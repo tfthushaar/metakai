@@ -7,7 +7,7 @@ import { useSettings } from '../core/store/settings';
 import { useTheme } from '../core/theme/ThemeProvider';
 import { SPACE } from '../core/theme/typography';
 import { dateKey } from '../lib/dates';
-import { addHabit, AUTO_HABITS, listHabits, removeHabit, streak, SUGGESTED_MANUAL } from '../modules/habits/repo';
+import { addHabit, AUTO_HABITS, habitAvailable, listHabits, removeHabit, streak, SUGGESTED_MANUAL } from '../modules/habits/repo';
 import { Button } from '../ui/Button';
 import { Chip } from '../ui/Chip';
 import { haptic } from '../ui/haptics';
@@ -24,13 +24,16 @@ export default function Habits() {
   const { colors } = useTheme();
   const waterGoal = useSettings((s) => s.waterGoalMl);
   const { targets } = useBody();
-  const habits = useQuery([...HABIT_TABLES], listHabits);
+  const modules = useSettings((s) => s.enabledModules);
+  const all = useQuery([...HABIT_TABLES], listHabits);
+  const habits = all.filter((h) => habitAvailable(h.kind, modules));
   const [name, setName] = useState('');
   const today = dateKey();
   const t = targets ? { protein: targets.protein, kcal: targets.kcal, waterMl: waterGoal } : null;
 
-  const autoKinds = new Set(habits.map((h) => h.kind));
-  const names = new Set(habits.map((h) => h.name.toLowerCase()));
+  const autoKinds = new Set(all.map((h) => h.kind));
+  const names = new Set(all.map((h) => h.name.toLowerCase()));
+  const autoOptions = AUTO_HABITS.filter((a) => !autoKinds.has(a.kind) && habitAvailable(a.kind, modules));
 
   const add = (label: string, kind: Parameters<typeof addHabit>[1] = 'manual') => {
     if (!label.trim()) return;
@@ -62,16 +65,18 @@ export default function Habits() {
         </ListGroup>
       )}
 
-      <ListGroup header="Automatic">
-        {AUTO_HABITS.filter((a) => !autoKinds.has(a.kind)).map((a) => (
-          <ListRow
-            key={a.kind}
-            title={a.name}
-            subtitle={a.description}
-            accessory={<Button title="Add" size="sm" variant="tinted" full={false} onPress={() => add(a.name, a.kind)} />}
-          />
-        ))}
-      </ListGroup>
+      {autoOptions.length > 0 && (
+        <ListGroup header="Automatic">
+          {autoOptions.map((a) => (
+            <ListRow
+              key={a.kind}
+              title={a.name}
+              subtitle={a.description}
+              accessory={<Button title="Add" size="sm" variant="tinted" full={false} onPress={() => add(a.name, a.kind)} />}
+            />
+          ))}
+        </ListGroup>
+      )}
 
       <Text variant="footnote" tone="secondary" style={{ marginTop: SPACE.xl, marginBottom: SPACE.sm, paddingHorizontal: SPACE.lg }}>
         CUSTOM

@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { LAYOUTS, type LayoutScreen } from '../../core/store/layouts';
+import { LAYOUTS, useHiddenTabs, useScreenAvailable, type LayoutScreen } from '../../core/store/layouts';
 import { useSettings, type StartTab } from '../../core/store/settings';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { SPACE } from '../../core/theme/typography';
@@ -16,15 +16,20 @@ export default function Customize() {
   const router = useRouter();
   const { colors } = useTheme();
   const startTab = useSettings((s) => s.startTab);
-  const modules = useSettings((s) => s.enabledModules);
   const set = useSettings((s) => s.set);
+  const hidden = useHiddenTabs();
+  const trainAvailable = useScreenAvailable('train');
+  const quickAvailable = useScreenAvailable('quick');
+  const screens = SCREENS.filter((s) => (s === 'train' ? trainAvailable : s === 'quick' ? quickAvailable : true));
 
-  const tabs: { value: StartTab; label: string }[] = [
-    { value: 'index', label: 'Today' },
-    ...(modules.includes('food') ? [{ value: 'food' as StartTab, label: 'Food' }] : []),
-    ...(modules.some((m) => m === 'workouts' || m === 'cardio' || m === 'gps') ? [{ value: 'train' as StartTab, label: 'Train' }] : []),
-    { value: 'progress', label: 'Progress' },
-  ];
+  const tabs = (
+    [
+      { value: 'index', label: 'Today' },
+      { value: 'food', label: 'Food' },
+      { value: 'train', label: 'Train' },
+      { value: 'progress', label: 'Progress' },
+    ] as { value: StartTab; label: string }[]
+  ).filter((t) => !hidden.includes(t.value));
 
   return (
     <Screen title="Layout" back>
@@ -37,7 +42,7 @@ export default function Customize() {
       </ListGroup>
 
       <ListGroup header="Screens">
-        {SCREENS.map((s) => (
+        {screens.map((s) => (
           <ListRow key={s} title={LAYOUTS[s].title} subtitle={LAYOUTS[s].description} onPress={() => router.push({ pathname: '/settings/layout', params: { screen: s } })} />
         ))}
       </ListGroup>

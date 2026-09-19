@@ -17,7 +17,7 @@ import { SPRING } from '../../ui/motion';
 import { PressableScale } from '../../ui/PressableScale';
 import { Text } from '../../ui/Text';
 import { toast } from '../../ui/Toast';
-import { dayFacts, isDone, listHabits, manualDone, seedHabits, setManualDone, type Habit } from './repo';
+import { dayFacts, habitAvailable, isDone, listHabits, manualDone, seedHabits, setManualDone, type Habit } from './repo';
 
 const TABLES = ['habits', 'habit_logs', 'log_entries', 'water_entries', 'workouts', 'cardio_sessions', 'weight_entries'] as const;
 
@@ -60,7 +60,8 @@ export function HabitsCard({ index }: { index: number }) {
     seedHabits(phase ? GOALS[phase.goalType].direction !== 0 : true);
   }, [phase]);
 
-  const habits = useQuery([...TABLES], listHabits);
+  const modules = useSettings((s) => s.enabledModules);
+  const habits = useQuery([...TABLES], listHabits).filter((h) => habitAvailable(h.kind, modules));
   const facts = useQuery([...TABLES], () => dayFacts(today), [today]);
   const manual = useQuery([...TABLES], () => manualDone(today), [today]);
   const t = targets ? { protein: targets.protein, kcal: targets.kcal, waterMl: waterGoal } : null;

@@ -1,4 +1,5 @@
 import { getDb, newId, notify, nowIso } from '../../core/db/database';
+import type { ModuleId } from '../../core/features/registry';
 import { addDays } from '../../lib/dates';
 
 /** Automatic habits check themselves off from data the app already has. */
@@ -18,6 +19,17 @@ export const AUTO_HABITS: { kind: Exclude<HabitKind, 'manual'>; name: string; de
   { kind: 'workout', name: 'Train', description: 'Finish a workout or log cardio' },
   { kind: 'weigh_in', name: 'Weigh in', description: 'Log your weight' },
 ];
+
+/** Automatic habits read data from these features; any one being on is enough. */
+const HABIT_MODULES: Partial<Record<HabitKind, ModuleId[]>> = {
+  protein: ['food'],
+  calories: ['food'],
+  water: ['water'],
+  workout: ['workouts', 'cardio'],
+};
+
+/** Automatic habits hide while the feature they read from is off; manual ones always show. */
+export const habitAvailable = (kind: HabitKind, modules: ModuleId[]) => HABIT_MODULES[kind]?.some((m) => modules.includes(m)) ?? true;
 
 export const SUGGESTED_MANUAL = ['Sleep 7+ hours', '8,000+ steps', 'Take creatine', 'No late snacking', 'Stretch 10 minutes'];
 
