@@ -3,7 +3,7 @@
     "name": "Metakai",
     "slug": "metakai",
     "scheme": "metakai",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.tfthushaar.metakai",
-      "buildNumber": "6",
+      "buildNumber": "7",
       "usesAppleSignIn": true,
       "config": {
         "usesNonExemptEncryption": false
@@ -51,7 +51,7 @@
     },
     "android": {
       "package": "com.tfthushaar.metakai",
-      "versionCode": 16,
+      "versionCode": 17,
       "adaptiveIcon": {
         "backgroundColor": "#000000",
         "foregroundImage": "./assets/android-icon-foreground.png",
