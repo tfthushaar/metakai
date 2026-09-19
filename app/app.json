@@ -89,7 +89,11 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "name": "Metakai",
+      "shortName": "Metakai",
+      "backgroundColor": "#000000"
     },
     "plugins": [
       "expo-router",
@@ -165,7 +169,8 @@
       ]
     ],
     "experiments": {
-      "typedRoutes": false
+      "typedRoutes": false,
+      "baseUrl": "/metakai/app"
     }
   }
 }

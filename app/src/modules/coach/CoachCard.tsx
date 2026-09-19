@@ -1,4 +1,4 @@
-import Storage from 'expo-sqlite/kv-store';
+import Storage from '../../core/store/kv';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';

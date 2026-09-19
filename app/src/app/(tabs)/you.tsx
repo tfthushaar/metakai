@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { hasAiKey, useAiKeys } from '../../core/aiKey';
 import { useBody } from '../../core/goals/useBody';
@@ -78,7 +78,9 @@ export default function You() {
         {settings.enabledModules.includes('habits') && (
           <ListRow icon="check" title="Habits" onPress={() => router.push('/habits')} />
         )}
-        <ListRow icon="timer" title="Reminders" value={Object.values(settings.reminders).filter((r) => r.on).length ? 'On' : 'Off'} onPress={() => router.push('/settings/reminders')} />
+        {Platform.OS !== 'web' && (
+          <ListRow icon="timer" title="Reminders" value={Object.values(settings.reminders).filter((r) => r.on).length ? 'On' : 'Off'} onPress={() => router.push('/settings/reminders')} />
+        )}
         <ListRow icon="user" title="Privacy" value={settings.appLock ? 'Locked' : undefined} onPress={() => router.push('/settings/privacy')} />
         {settings.enabledModules.includes('workouts') && (
           <ListRow icon="dumbbell" title="Gym" value={`Rest ${settings.gym.restSeconds}s`} onPress={() => router.push('/settings/gym')} />

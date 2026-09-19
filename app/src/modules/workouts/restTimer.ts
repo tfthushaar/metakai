@@ -1,4 +1,5 @@
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 import { create } from 'zustand';
 
 import { haptic } from '../../ui/haptics';
@@ -47,6 +48,8 @@ interface RestState {
 }
 
 async function schedule(endsAt: number, label: string | null): Promise<string | null> {
+  // The web build can't notify from the background, so the in-app timer is all it gets.
+  if (Platform.OS === 'web') return null;
   try {
     await ensureChannel();
     if (!(await canNotify())) return null;

@@ -1,5 +1,6 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 
 import { dateKey } from '../lib/dates';
 import { getDb, notify, SYNCED_TABLES, type TableName } from './db/database';
@@ -69,8 +70,41 @@ export interface BackupSummary {
   photos: number;
 }
 
+/** Web: hands a file to the browser as a download. */
+function download(name: string, text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+/** Web: lets the user choose a file and returns its text, or null if they didn't pick one. */
+function pickTextFile(): Promise<string | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json,text/plain';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      resolve(file ? await file.text() : null);
+    };
+    input.addEventListener('cancel', () => resolve(null));
+    input.click();
+  });
+}
+
 /** Writes a backup file to the cache and opens the share sheet so the user can save it anywhere. */
 export async function exportBackup(includePhotos: boolean): Promise<BackupSummary> {
+  if (Platform.OS === 'web') {
+    const { tables, records } = snapshotTables();
+    const data: Backup = { app: APP, format: FORMAT, schema: schemaVersion(), exportedAt: new Date().toISOString(), settings: settingsSnapshot(), tables };
+    download(`metakai-backup-${dateKey()}.json`, JSON.stringify(data));
+    return { records, photos: 0 };
+  }
   const dir = new Directory(Paths.cache, 'backups');
   if (!dir.exists) dir.create({ intermediates: true });
   const file = new File(dir, `metakai-backup-${dateKey()}.json`);
@@ -116,6 +150,10 @@ function parse(text: string): Backup {
 
 /** Opens the file picker and restores the chosen backup. Returns null if the user cancelled. */
 export async function pickAndRestoreBackup(): Promise<BackupSummary | null> {
+  if (Platform.OS === 'web') {
+    const text = await pickTextFile();
+    return text == null ? null : restoreBackup(text);
+  }
   const picked = await File.pickFileAsync({ mimeTypes: ['application/json', 'application/octet-stream', 'text/plain', '*/*'] });
   if (picked.canceled) return null;
   return restoreBackup(await picked.result.text());
@@ -128,13 +166,14 @@ export async function pickAndRestoreBackup(): Promise<BackupSummary | null> {
 export async function restoreBackup(text: string, { applySettings = true } = {}): Promise<BackupSummary> {
   const data = parse(text);
   const db = getDb();
-  const photoDir = photoDirectory();
+  // The web build keeps no photo files; backups restored there skip them.
+  const photoDir = Platform.OS === 'web' ? null : photoDirectory();
 
   // Write photo files first so rows can point at them.
   const photoPaths = new Map<string, string>();
-  for (const [id, b64] of Object.entries(data.photos ?? {})) {
+  for (const [id, b64] of photoDir ? Object.entries(data.photos ?? {}) : []) {
     if (!/^[\w-]+$/.test(id)) continue;
-    const dest = new File(photoDir, `${id}.jpg`);
+    const dest = new File(photoDir!, `${id}.jpg`);
     if (!dest.exists) {
       dest.create();
       dest.write(b64, { encoding: 'base64' });

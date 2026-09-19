@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, Platform, View } from 'react-native';
 
 import { exportBackup, pickAndRestoreBackup } from '../../core/backup';
 import { connectDrive, deleteDriveBackup, disconnectDrive, syncDrive, useDrive } from '../../core/drive';
+import { currentGoogleUser } from '../../core/google';
 import { useSettings } from '../../core/store/settings';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { SPACE } from '../../core/theme/typography';
@@ -54,6 +55,16 @@ export default function BackupSettings() {
       },
     ]);
 
+  const backUpNow = async () => {
+    // Web sign-ins last an hour; after that, backing up starts with signing in again.
+    if (Platform.OS === 'web' && !(await currentGoogleUser())) {
+      await connectDrive().catch((e) => toast(e instanceof Error ? e.message : 'Could not reach Google.'));
+      return;
+    }
+    await syncDrive();
+    toast(useDrive.getState().error ?? 'Backed up');
+  };
+
   const doExport = async () => {
     setBusy('export');
     try {
@@ -102,9 +113,16 @@ export default function BackupSettings() {
 
       {drive.enabled ? (
         <>
-          <ListGroup header="Google Drive" footer="Backs up a few seconds after you make changes and when you leave the app. Photos upload once.">
+          <ListGroup
+            header="Google Drive"
+            footer={
+              Platform.OS === 'web'
+                ? 'Backs up a few seconds after you make changes while you’re signed in. Google sign-ins on the web last an hour; after that, Back up now signs you in again.'
+                : 'Backs up a few seconds after you make changes and when you leave the app. Photos upload once.'
+            }
+          >
             <ListRow icon="cloud" title={drive.email ?? 'Google account'} subtitle={statusText ?? undefined} />
-            <ListRow icon="refresh" title="Back up now" onPress={() => syncDrive().then(() => toast(useDrive.getState().error ?? 'Backed up'))} chevron={false} />
+            <ListRow icon="refresh" title="Back up now" onPress={backUpNow} chevron={false} />
           </ListGroup>
           <ListGroup>
             <ListRow title="Disconnect Google Drive" destructive onPress={disconnect} chevron={false} />
@@ -120,7 +138,7 @@ export default function BackupSettings() {
       )}
 
       <ListGroup header="Backup file" footer="Save the file anywhere, such as Files, email or another cloud. Restoring merges it into this phone.">
-        <ListRow title="Include progress photos" accessory={<Toggle value={withPhotos} onChange={setWithPhotos} />} />
+        {Platform.OS !== 'web' && <ListRow title="Include progress photos" accessory={<Toggle value={withPhotos} onChange={setWithPhotos} />} />}
         <ListRow icon="arrowUp" title={busy === 'export' ? 'Preparing…' : 'Export backup file'} onPress={busy ? undefined : doExport} chevron={false} />
         <ListRow icon="arrowDown" title={busy === 'import' ? 'Restoring…' : 'Restore from file'} onPress={busy ? undefined : doImport} chevron={false} />
       </ListGroup>

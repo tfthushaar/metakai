@@ -63,6 +63,16 @@ export async function appleUserId(env: AuthEnv, identityToken: string): Promise<
   }
 }
 
+/** The Metakai user ID behind a Google ID token issued to the Metakai web client. */
+export async function googleUserId(env: AuthEnv, idToken: string): Promise<string> {
+  const { payload } = await jwtVerify(idToken, GOOGLE_JWKS, {
+    issuer: ['https://accounts.google.com', 'accounts.google.com'],
+    audience: env.GOOGLE_CLIENT_ID,
+  });
+  if (!payload.sub) throw new Error('no subject');
+  return sha256(`${payload.sub}:${env.ID_PEPPER}`);
+}
+
 /** The Metakai user ID for a request's bearer token. */
 export async function userId(req: Request, env: AuthEnv): Promise<string> {
   const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
@@ -81,12 +91,7 @@ export async function userId(req: Request, env: AuthEnv): Promise<string> {
       if (!payload.sub) throw new Error('no subject');
       return payload.sub;
     }
-    const { payload } = await jwtVerify(token, GOOGLE_JWKS, {
-      issuer: ['https://accounts.google.com', 'accounts.google.com'],
-      audience: env.GOOGLE_CLIENT_ID,
-    });
-    if (!payload.sub) throw new Error('no subject');
-    return sha256(`${payload.sub}:${env.ID_PEPPER}`);
+    return await googleUserId(env, token);
   } catch (e) {
     if (e instanceof HttpError) throw e;
     throw new HttpError(401, 'Your sign-in expired. Try again.');
@@ -128,14 +133,14 @@ export async function revokeApple(env: AuthEnv, authorizationCode: string | unde
   }
 }
 
-/** Origins allowed to call the API from a browser (the account deletion page). */
+/** Origins allowed to call the API from a browser: the web app and the account deletion page. */
 export const WEB_ORIGINS = ['https://tfthushaar.github.io'];
 
 export function corsHeaders(origin: string | null): Record<string, string> {
   if (!origin || !WEB_ORIGINS.includes(origin)) return {};
   return {
     'access-control-allow-origin': origin,
-    'access-control-allow-methods': 'GET, DELETE, OPTIONS',
+    'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'access-control-allow-headers': 'authorization, content-type',
     'access-control-max-age': '86400',
     vary: 'Origin',

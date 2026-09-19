@@ -1,4 +1,4 @@
-import { appleUserId, corsHeaders, HttpError, issueSession, revokeApple, userId, type AuthEnv } from './auth';
+import { appleUserId, corsHeaders, googleUserId, HttpError, issueSession, revokeApple, userId, type AuthEnv } from './auth';
 import {
   ageGroup,
   BOARDS,
@@ -312,6 +312,19 @@ async function route(req: Request, env: Env): Promise<Response> {
     const { identityToken } = await body<{ identityToken?: string }>(req);
     if (!identityToken) throw new HttpError(400, 'Missing Apple identity token.');
     return json({ session: await issueSession(env, await appleUserId(env, identityToken)) });
+  }
+  // The web app signs in with Google once and keeps a session, since browsers can't refresh ID tokens silently.
+  if (path === '/v1/auth/google' && req.method === 'POST') {
+    const { idToken } = await body<{ idToken?: string }>(req);
+    if (!idToken) throw new HttpError(400, 'Missing Google ID token.');
+    if (!env.ID_PEPPER) throw new HttpError(503, 'Leaderboards are being set up. Try again soon.');
+    let user: string;
+    try {
+      user = await googleUserId(env, idToken);
+    } catch {
+      throw new HttpError(401, 'Google sign-in failed. Try again.');
+    }
+    return json({ session: await issueSession(env, user) });
   }
 
   const id = await userId(req, env);

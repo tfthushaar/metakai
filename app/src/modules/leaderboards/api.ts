@@ -1,7 +1,8 @@
-import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 import { signInWithApple, usesAppleSignIn } from '../../core/apple';
 import { googleTokens, signInWithGoogle } from '../../core/google';
+import * as SecureStore from '../../core/secureStore';
 import { DEFAULT_LEADERBOARD, useSettings } from '../../core/store/settings';
 import type { Person, PhysiqueRank, RunRank } from '../../lib/ranks';
 
@@ -65,18 +66,46 @@ class ApiError extends Error {
   }
 }
 
-/** iOS keeps a Metakai session from Sign in with Apple, since Apple can't refresh tokens silently. */
+/**
+ * iOS and the web keep a Metakai session, since neither Sign in with Apple nor a browser can refresh
+ * a Google ID token silently. Android sends a fresh Google ID token with each request.
+ */
 const SESSION_KEY = 'metakai.leaderboardSession';
+const usesSession = usesAppleSignIn || Platform.OS === 'web';
+/** What the web build's sign-in redirect was for, so the app can finish when it comes back. */
+export const LEADERBOARD_SIGN_IN = 'leaderboards';
 
-async function appleSession(interactive: boolean): Promise<string> {
+async function session(interactive: boolean): Promise<string> {
   const saved = await SecureStore.getItemAsync(SESSION_KEY);
   if (saved) return saved;
-  if (!interactive) throw new Error('Sign in with Apple to see leaderboards.');
+  if (!interactive) throw new Error(`Sign in with ${usesAppleSignIn ? 'Apple' : 'Google'} to see leaderboards.`);
+  if (!usesAppleSignIn) {
+    // Web: reuse a recent Google sign-in, or go to Google and back; finishGoogleLeaderboardSignIn() completes it.
+    const recent = await googleTokens().catch(() => null);
+    if (recent?.idToken) {
+      await finishGoogleLeaderboardSignIn();
+      return (await SecureStore.getItemAsync(SESSION_KEY))!;
+    }
+    await signInWithGoogle(LEADERBOARD_SIGN_IN);
+    throw new Error('Sign-in cancelled.');
+  }
   const apple = await signInWithApple();
   if (!apple) throw new Error('Sign-in cancelled.');
-  const { session } = await request<{ session: string }>('/v1/auth/apple', { method: 'POST', body: JSON.stringify({ identityToken: apple.identityToken }) }, null);
-  await SecureStore.setItemAsync(SESSION_KEY, session);
-  return session;
+  const { session: created } = await request<{ session: string }>('/v1/auth/apple', { method: 'POST', body: JSON.stringify({ identityToken: apple.identityToken }) }, null);
+  await SecureStore.setItemAsync(SESSION_KEY, created);
+  return created;
+}
+
+/** Web: swaps the Google ID token from a sign-in redirect for a Metakai session. */
+export async function finishGoogleLeaderboardSignIn(): Promise<void> {
+  const { idToken } = await googleTokens();
+  if (!idToken) throw new Error('Google sign-in failed. Try again.');
+  const { session: created } = await request<{ session: string }>('/v1/auth/google', { method: 'POST', body: JSON.stringify({ idToken }) }, null);
+  await SecureStore.setItemAsync(SESSION_KEY, created);
+}
+
+export async function hasLeaderboardSession(): Promise<boolean> {
+  return !usesSession || (await SecureStore.getItemAsync(SESSION_KEY)) != null;
 }
 
 async function googleIdToken(interactive: boolean): Promise<string> {
@@ -95,15 +124,15 @@ async function googleIdToken(interactive: boolean): Promise<string> {
 async function call<T>(path: string, init: RequestInit = {}, interactive = false): Promise<T> {
   if (!API) throw new Error('Leaderboards are not available in this build.');
   if (DEV_TOKEN) return request<T>(path, init, DEV_TOKEN);
-  if (!usesAppleSignIn) return request<T>(path, init, await googleIdToken(interactive));
+  if (!usesSession) return request<T>(path, init, await googleIdToken(interactive));
   try {
-    return await request<T>(path, init, await appleSession(interactive));
+    return await request<T>(path, init, await session(interactive));
   } catch (e) {
     if (!(e instanceof ApiError && e.status === 401)) throw e;
     // The session expired or was signed with an old key: sign in again once.
     await SecureStore.deleteItemAsync(SESSION_KEY);
-    if (!interactive) throw new Error('Sign in with Apple again to see leaderboards.');
-    return request<T>(path, init, await appleSession(true));
+    if (!interactive) throw new Error(`Sign in with ${usesAppleSignIn ? 'Apple' : 'Google'} again to see leaderboards.`);
+    return request<T>(path, init, await session(true));
   }
 }
 
@@ -147,7 +176,7 @@ export async function leaveLeaderboards() {
     if (apple?.authorizationCode) body = JSON.stringify({ appleAuthorizationCode: apple.authorizationCode });
   }
   await call('/v1/me', { method: 'DELETE', body });
-  if (usesAppleSignIn) await SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
+  if (usesSession) await SecureStore.deleteItemAsync(SESSION_KEY).catch(() => {});
   useSettings.getState().set({ leaderboard: DEFAULT_LEADERBOARD });
 }
 

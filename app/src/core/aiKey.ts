@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from './secureStore';
 import { create } from 'zustand';
 
 /** The user's own AI API keys, kept in the OS keystore and never included in backups. */

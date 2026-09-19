@@ -1,5 +1,5 @@
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { File } from 'expo-file-system';
+import { Platform } from 'react-native';
 import { create } from 'zustand';
 
 import { photoDirectory, restoreBackup, snapshotJson } from './backup';
@@ -19,6 +19,8 @@ const API = 'https://www.googleapis.com/drive/v3';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
 /** Wait for edits to settle before uploading. */
 const DEBOUNCE_MS = 20_000;
+/** What the web build's sign-in redirect was for, so the app can finish connecting when it comes back. */
+export const DRIVE_SIGN_IN = 'Google Drive backup';
 
 export type DriveStatus = 'idle' | 'syncing' | 'error';
 // Starts dirty so each launch uploads once, covering edits made just before the app was closed.
@@ -31,17 +33,8 @@ const friendly = (e: unknown) => googleError(e, 'Google Drive backup');
 
 /** Opens Google sign-in and asks for Drive app-folder access. Returns the email, or null if cancelled. */
 export async function connectDrive(): Promise<string | null> {
-  const user = await signInWithGoogle('Google Drive backup');
-  if (!user) return null;
-  try {
-    if (!user.scopes.includes(SCOPE)) {
-      const added = await GoogleSignin.addScopes({ scopes: [SCOPE] });
-      if (!added || added.type !== 'success') return null;
-    }
-    return user.user.email;
-  } catch (e) {
-    throw new Error(friendly(e));
-  }
+  const user = await signInWithGoogle(DRIVE_SIGN_IN, [SCOPE]);
+  return user ? user.email : null;
 }
 
 export async function disconnectDrive() {
@@ -170,7 +163,11 @@ async function runSync(): Promise<void> {
     setDrive({ remoteVersion: dataFile.modifiedTime });
   }
 
-  // 3. Photos: upload new ones, fetch missing ones, remove deleted ones.
+  // 3. Photos: upload new ones, fetch missing ones, remove deleted ones. The web build has no photos.
+  if (Platform.OS === 'web') {
+    setDrive({ lastSyncedAt: new Date().toISOString() });
+    return;
+  }
   const db = getDb();
   const remotePhotos = new Map(files.filter((f) => f.name.startsWith(PHOTO_PREFIX)).map((f) => [f.name.slice(PHOTO_PREFIX.length, -4), f]));
   const rows = db.getAllSync<{ id: string; local_path: string | null; deleted_at: string | null }>('SELECT id, local_path, deleted_at FROM progress_photos');

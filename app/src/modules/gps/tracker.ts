@@ -1,7 +1,8 @@
 import * as Location from 'expo-location';
 import * as Speech from 'expo-speech';
-import Storage from 'expo-sqlite/kv-store';
+import Storage from '../../core/store/kv';
 import * as TaskManager from 'expo-task-manager';
+import { Platform } from 'react-native';
 import { create } from 'zustand';
 
 import { getDb } from '../../core/db/database';
@@ -149,7 +150,8 @@ function ingest(locations: Location.LocationObject[]) {
   if (route.length) useLive.setState((st) => ({ route: [...st.route, ...route] }));
 }
 
-TaskManager.defineTask<{ locations: Location.LocationObject[] }>(GPS_TASK, async ({ data, error }) => {
+// The web build has no GPS recording (browsers stop location when the screen locks).
+if (Platform.OS !== 'web') TaskManager.defineTask<{ locations: Location.LocationObject[] }>(GPS_TASK, async ({ data, error }) => {
   if (error || !data?.locations?.length) return;
   ingest(data.locations);
 });

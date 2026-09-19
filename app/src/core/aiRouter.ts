@@ -1,4 +1,4 @@
-import Storage from 'expo-sqlite/kv-store';
+import Storage from './store/kv';
 
 import { useAiKeys, type AiProvider } from './aiKey';
 import { block, emptyUsage, estimateTokens, nextPacificMidnight, pacificDay, parseDelay, recordUse, waitMs, type ModelLimits, type ModelUsage } from '../lib/rateBudget';

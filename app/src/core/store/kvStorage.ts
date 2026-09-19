@@ -1,4 +1,4 @@
-import Storage from 'expo-sqlite/kv-store';
+import Storage from './kv';
 import type { StateStorage } from 'zustand/middleware';
 
 /** Synchronous SQLite-backed storage so persisted stores hydrate before first render. */

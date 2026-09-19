@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 export type ModuleId =
   | 'food'
   | 'water'
@@ -32,6 +34,8 @@ export interface ModuleDef {
   permissions: Permission[];
   /** Planned modules are hidden until built. */
   status: 'available' | 'planned';
+  /** Needs the phone app (GPS in the background, health data, Bluetooth, files); hidden on the web. */
+  phoneOnly?: boolean;
 }
 
 export const MODULES: Record<ModuleId, ModuleDef> = {
@@ -97,6 +101,7 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
     requires: [],
     permissions: ['camera'],
     status: 'available',
+    phoneOnly: true,
   },
   milestones: {
     id: 'milestones',
@@ -133,6 +138,7 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
     requires: ['cardio'],
     permissions: ['location'],
     status: 'available',
+    phoneOnly: true,
   },
   recovery: {
     id: 'recovery',
@@ -205,12 +211,15 @@ export const MODULES: Record<ModuleId, ModuleDef> = {
     requires: [],
     permissions: ['health', 'bluetooth'],
     status: 'available',
+    phoneOnly: true,
   },
 };
 
 export const GROUP_ORDER: ModuleGroup[] = ['Nutrition', 'Body', 'Training', 'Lifestyle', 'Motivation', 'Coaching', 'Devices'];
 
-export const isAvailable = (id: ModuleId) => MODULES[id].status === 'available';
+/** Built, runnable on this platform, and so is everything it depends on (Run pass needs GPS). */
+export const isAvailable = (id: ModuleId): boolean =>
+  MODULES[id].status === 'available' && !(MODULES[id].phoneOnly && Platform.OS === 'web') && MODULES[id].requires.every(isAvailable);
 
 export type PresetId = 'cut' | 'lean_bulk' | 'recomp' | 'maintain' | 'minimal' | 'everything';
 

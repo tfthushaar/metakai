@@ -1,4 +1,4 @@
-import Storage from 'expo-sqlite/kv-store';
+import Storage from '../../core/store/kv';
 
 import { hasAiKey } from '../../core/aiKey';
 import type { Food } from './foods';

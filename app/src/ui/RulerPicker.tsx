@@ -150,6 +150,7 @@ const styles = StyleSheet.create({
   container: { height: 76 },
   tickWrap: { width: TICK, alignItems: 'center' },
   tick: { width: 2, borderRadius: 1 },
-  label: { position: 'absolute', top: 40, width: 48, textAlign: 'center' },
+  // Explicit left and maxWidth keep the label centred under its tick on the web as well.
+  label: { position: 'absolute', top: 40, left: (TICK - 48) / 2, width: 48, maxWidth: 48, textAlign: 'center' },
   indicator: { position: 'absolute', top: -6, width: 3, height: 46, borderRadius: 1.5 },
 });

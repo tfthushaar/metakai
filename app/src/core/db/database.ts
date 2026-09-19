@@ -1,8 +1,9 @@
 import { randomUUID } from 'expo-crypto';
 import { Directory, Paths } from 'expo-file-system';
-import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
+import { openDb } from './engine';
 
 import { MIGRATIONS } from './migrations';
+import type { Db } from './types';
 
 export type TableName =
   | 'profile'
@@ -59,18 +60,18 @@ export const SYNCED_TABLES: TableName[] = [
   'achievements',
 ];
 
-let db: SQLiteDatabase | null = null;
+let db: Db | null = null;
 
-export function getDb(): SQLiteDatabase {
+export function getDb(): Db {
   if (!db) {
-    db = openDatabaseSync('metakai.db');
+    db = openDb();
     db.execSync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
     migrate(db);
   }
   return db;
 }
 
-function migrate(database: SQLiteDatabase) {
+function migrate(database: Db) {
   const row = database.getFirstSync<{ user_version: number }>('PRAGMA user_version');
   let version = row?.user_version ?? 0;
   for (; version < MIGRATIONS.length; version++) {

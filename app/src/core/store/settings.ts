@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { dependents, PRESETS, withDependencies, type ModuleId, type PresetId } from '../features/registry';
+import { dependents, isAvailable, PRESETS, withDependencies, type ModuleId, type PresetId } from '../features/registry';
 import { DEFAULT_CUSTOM_COLORS, type AccentId, type Appearance, type CustomColors, type DarkStyle } from '../theme/palette';
 import type { UnitSystem } from '../../lib/units';
 import type { LayoutPrefs, LayoutScreen } from './layouts';
@@ -144,7 +144,7 @@ export const useSettings = create<SettingsState>()(
       darkStyle: 'black',
       units: 'metric',
       haptics: true,
-      enabledModules: PRESETS.cut.modules,
+      enabledModules: PRESETS.cut.modules.filter(isAvailable),
       preset: 'cut',
       authMode: 'none',
       onboarded: false,
@@ -166,20 +166,27 @@ export const useSettings = create<SettingsState>()(
       gpsVoice: true,
       watch: DEFAULT_WATCH,
 
-      set: (patch) => set(patch),
+      // Whatever sets the feature list (onboarding, restores), phone-only features stay off on the web.
+      set: (patch) => set(patch.enabledModules ? { ...patch, enabledModules: patch.enabledModules.filter(isAvailable) } : patch),
       toggleModule: (id, on) => {
         const current = get().enabledModules;
+        if (on && !isAvailable(id)) return;
         const next = on
-          ? withDependencies([...current, id])
+          ? withDependencies([...current, id]).filter(isAvailable)
           : current.filter((m) => m !== id && !dependents(id, current).includes(m));
         set({ enabledModules: next, preset: 'custom' });
       },
-      applyPreset: (id) => set({ enabledModules: withDependencies(PRESETS[id].modules), preset: id }),
+      applyPreset: (id) => set({ enabledModules: withDependencies(PRESETS[id].modules).filter(isAvailable), preset: id }),
     }),
     {
       name: 'metakai.settings',
       storage: createJSONStorage(() => kvStorage),
       version: 10,
+      // Drop features this platform can't run (the web build has no GPS, watches or photos).
+      merge: (persisted, current) => {
+        const merged = { ...current, ...(persisted as Partial<SettingsState>) };
+        return { ...merged, enabledModules: (merged.enabledModules ?? []).filter(isAvailable) };
+      },
       migrate: (state, version) => {
         const s = state as Record<string, unknown>;
         if (version < 2) {

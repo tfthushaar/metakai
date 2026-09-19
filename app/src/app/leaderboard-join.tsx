@@ -1,13 +1,14 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { usesAppleSignIn } from '../core/apple';
+import Storage from '../core/store/kv';
 import { useSettings } from '../core/store/settings';
 import { useTheme } from '../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../core/theme/typography';
-import { joinLeaderboards, syncScores } from '../modules/leaderboards/api';
+import { hasLeaderboardSession, joinLeaderboards, syncScores } from '../modules/leaderboards/api';
 import { COUNTRIES, countryName, flag } from '../modules/leaderboards/countries';
 import { currentPhysiqueRank, currentRunRank } from '../modules/ranks/repo';
 import { usePerson } from '../modules/ranks/usePerson';
@@ -21,14 +22,27 @@ import { Text } from '../ui/Text';
 import { TextField } from '../ui/TextField';
 import { toast } from '../ui/Toast';
 
+/** Web: what the user typed, kept across the Google sign-in redirect. */
+const DRAFT_KEY = 'metakai.leaderboardDraft';
+
+function readDraft(): { name: string; country: string | null } | null {
+  if (Platform.OS !== 'web') return null;
+  try {
+    return JSON.parse(Storage.getItemSync(DRAFT_KEY) ?? 'null');
+  } catch {
+    return null;
+  }
+}
+
 export default function LeaderboardJoin() {
   const { colors, dark } = useTheme();
   const router = useRouter();
   const person = usePerson();
   const lb = useSettings((s) => s.leaderboard);
   const editing = lb.joined;
-  const [name, setName] = useState(lb.displayName ?? '');
-  const [country, setCountry] = useState<string | null>(lb.country);
+  const [draft] = useState(readDraft);
+  const [name, setName] = useState(draft?.name ?? lb.displayName ?? '');
+  const [country, setCountry] = useState<string | null>(draft ? draft.country : lb.country);
   const [picking, setPicking] = useState(false);
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
@@ -44,7 +58,9 @@ export default function LeaderboardJoin() {
     setBusy(true);
     setError(null);
     try {
+      if (Platform.OS === 'web') Storage.setItemSync(DRAFT_KEY, JSON.stringify({ name: name.trim(), country }));
       await joinLeaderboards({ displayName: name.trim(), country }, person);
+      Storage.removeItemSync(DRAFT_KEY);
       await syncScores(person, currentPhysiqueRank(person), currentRunRank(person), true).catch(() => false);
       haptic.success();
       toast(editing ? 'Saved' : 'You’re on the leaderboards');
@@ -56,6 +72,15 @@ export default function LeaderboardJoin() {
       setBusy(false);
     }
   };
+
+  // Back from the web sign-in redirect with a session: finish joining with what was typed.
+  useEffect(() => {
+    if (draft && person)
+      hasLeaderboardSession().then((ok) => {
+        if (ok) join();
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (picking) {
     return (
