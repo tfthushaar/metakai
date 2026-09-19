@@ -41,4 +41,5 @@ a { color: var(--accent); }
   font-weight: 600;
 }
 ul { padding-left: 20px; }
+.film { display: block; width: 100%; aspect-ratio: 16 / 9; margin: 40px 0 8px; border-radius: 16px; background: #000; }
 footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--line); }

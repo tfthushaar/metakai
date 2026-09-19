@@ -22,3 +22,6 @@ __pycache__/
 
 # Release builds
 dist/
+
+# Launch video workspace
+brag-output/
