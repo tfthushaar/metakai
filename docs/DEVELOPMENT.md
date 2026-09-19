@@ -49,6 +49,21 @@ The signing config reads these environment variables:
 - Health Connect is built into Android 14 and newer. On older phones the app sends users to the Health Connect app on Google Play.
 - The HealthKit config plugin adds the HealthKit entitlement and the usage strings in `app.json`. Background delivery is off; the app syncs when it opens.
 
+### Web app
+
+The same code builds a web app for iPhone (before the App Store release) and computers, served by GitHub Pages at <https://tfthushaar.github.io/metakai/app/>.
+
+```bash
+bash scripts/build-web.sh   # exports to docs/app and writes the service worker; commit and push to publish
+```
+
+- **Database:** browsers run SQLite through [sql.js](https://sql.js.org) (`app/public/sqljs`), loaded with a script tag so the bundler never sees it. The database lives in memory and is saved to IndexedDB after each write (`src/core/db/engine.web.ts`). Expo's own web SQLite needs cross-origin isolation headers that Safari and GitHub Pages don't support.
+- **Platform files:** `*.web.ts` files replace their native twins on the web: the database engine, the key-value store, secure storage (localStorage) and Google sign-in.
+- **Google sign-in** uses OAuth's browser redirect flow (`src/core/google.web.ts`), which needs `https://tfthushaar.github.io/metakai/app/` as an authorised redirect URI on the web OAuth client. The leaderboard server swaps the Google ID token for a Metakai session at `POST /v1/auth/google`.
+- **Phone-only features** (GPS, watches, progress photos) are marked `phoneOnly` in the feature registry and hidden on the web, along with anything that depends on them.
+- **Offline and routing:** `scripts/web-sw.mjs` writes a service worker that caches the build. `docs/404.html` is a copy of the app, so reloading on any screen works on GitHub Pages.
+- **Sub-path:** `experiments.baseUrl` is `/metakai/app`; files in `app/public` aren't rewritten, so their paths include it.
+
 ### iOS builds
 
 iOS builds run on EAS Build, so no Mac is needed:
@@ -99,10 +114,10 @@ app/
   src/modules/    Feature modules: food, workouts, cardio, gps, ranks, achievements, recovery, health, body, habits, wearables
   src/ui/         Design system components
   plugins/        Expo config plugins (release signing, Health Connect)
-docs/             Website (privacy policy, terms, data deletion), product plan and this guide
+docs/             Website (privacy policy, terms, data deletion), the built web app (docs/app), product plan and this guide
 cloud/            Leaderboard API (Cloudflare Workers + D1)
 store/            Store listing, policy answers and graphics for Google Play and the App Store
-scripts/          Release build, icon, store graphic and exercise data generators
+scripts/          Android release and web builds, icon, store graphic and exercise data generators
 .github/          CI and release workflows
 ```
 

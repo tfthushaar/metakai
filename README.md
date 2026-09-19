@@ -9,7 +9,7 @@
 Food, training, runs, recovery and progress in one private app that works with your watch.<br>
 No ads. No account. Your data stays on your phone.
 
-[**Download for Android**](https://github.com/tfthushaar/metakai/releases/latest) · [Privacy](https://tfthushaar.github.io/metakai/privacy.html) · [Terms](https://tfthushaar.github.io/metakai/terms.html)
+[**Download for Android**](https://github.com/tfthushaar/metakai/releases/latest) · [**Open on iPhone or the web**](https://tfthushaar.github.io/metakai/app/) · [Privacy](https://tfthushaar.github.io/metakai/privacy.html) · [Terms](https://tfthushaar.github.io/metakai/terms.html)
 
 <a href="https://tfthushaar.github.io/metakai/assets/metakai.mp4">
   <img src="docs/assets/metakai-preview.gif" alt="Metakai in under a minute: food, calories and recipes, training and PRs, ranks, GPS runs, watch sync, progress, recovery and themes. Click to watch with sound." width="100%">
@@ -85,6 +85,14 @@ Cutting, bulking, recomposing or maintaining: set a goal and get calorie and mac
 - **Any colour you like:** light, dark or true black, preset accents, or a custom theme with your own accent, second colour and background.
 - **Text size, reduce motion, haptics** and metric or imperial units.
 
+## On iPhone and the web
+
+Until Metakai is on the App Store, the web app gives you the same food logging, training, progress, ranks, recipes, AI and themes on any iPhone or computer. Add it to your home screen and it opens full screen like an app, works offline and updates itself.
+
+- **Your data stays in that browser** on that device, just like on a phone. Connect Google Drive or export a backup file from **You → Backup & sync** to keep a copy.
+- **Phone-only for now:** watch sync and live heart rate, GPS run recording, progress photos, reminders and app lock. These come with the App Store app.
+- **Google sign-in** (for Drive and leaderboards) lasts an hour on the web; after that, **Back up now** signs you in again with one tap.
+
 ## Private by design
 
 - **On your phone, offline.** No account, no ads, no analytics.
@@ -96,7 +104,8 @@ Read the full [privacy policy](https://tfthushaar.github.io/metakai/privacy.html
 
 ## Get started
 
-1. Download the latest APK from [Releases](https://github.com/tfthushaar/metakai/releases/latest), open it and allow installs from that source. Updates install over the previous version and keep your data.
+1. **Android:** download the latest APK from [Releases](https://github.com/tfthushaar/metakai/releases/latest), open it and allow installs from that source. Updates install over the previous version and keep your data.<br>
+   **iPhone:** open [the web app](https://tfthushaar.github.io/metakai/app/) in Safari, tap **Share → Add to Home Screen**, and open Metakai from your home screen.
 2. Tap **Get started** and answer a few questions about your body, activity and goal.
 3. Tap **+** to log food, weigh in, start a workout or record a run.
 4. Head to **You** to connect your watch, switch features off, arrange screens, change the theme, back up, or add a free AI key.
