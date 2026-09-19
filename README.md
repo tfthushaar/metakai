@@ -12,7 +12,7 @@ No ads. No account. Your data stays on your phone.
 [**Download for Android**](https://github.com/tfthushaar/metakai/releases/latest) · [Privacy](https://tfthushaar.github.io/metakai/privacy.html) · [Terms](https://tfthushaar.github.io/metakai/terms.html)
 
 <a href="https://tfthushaar.github.io/metakai/assets/metakai.mp4">
-  <img src="docs/assets/metakai-preview.gif" alt="Metakai in 23 seconds: log a meal in plain words, see your goal date, and rank every muscle group. Click to watch with sound." width="100%">
+  <img src="docs/assets/metakai-preview.gif" alt="Metakai in under a minute: food, calories and recipes, training and PRs, ranks, GPS runs, watch sync, progress, recovery and themes. Click to watch with sound." width="100%">
 </a>
 
 <sub>▶ <a href="https://tfthushaar.github.io/metakai/assets/metakai.mp4">Watch with sound</a></sub>
