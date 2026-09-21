@@ -4,7 +4,6 @@ import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
 import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
 import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
 import { useFonts } from 'expo-font';
-import * as Notifications from 'expo-notifications';
 import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -22,6 +21,7 @@ import { useSettings } from '../core/store/settings';
 import { ThemeProvider, useTheme } from '../core/theme/ThemeProvider';
 import { ToastHost } from '../ui/Toast';
 import { AppLockGate } from '../core/AppLock';
+import { onNotificationOpened } from '../core/notify';
 import { syncReminders } from '../core/reminders';
 import { backfillWorkoutCalories } from '../modules/workouts/repo';
 import { flushDrive, syncDrive, watchForChanges } from '../core/drive';
@@ -67,11 +67,7 @@ function useNotificationLinks() {
   useEffect(() => {
     if (Platform.OS === 'web') return;
     syncReminders().catch(() => {});
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const url = response.notification.request.content.data?.url;
-      if (typeof url === 'string' && url.startsWith('metakai://')) router.push(`/${url.slice('metakai://'.length)}` as never);
-    });
-    return () => sub.remove();
+    return onNotificationOpened((url) => router.push(`/${url.slice('metakai://'.length)}` as never));
   }, [router]);
 }
 

@@ -1,4 +1,3 @@
-import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
@@ -8,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SPACE } from '../core/theme/typography';
 import { useTheme } from '../core/theme/ThemeProvider';
 import { lookupBarcode, useScanHandoff } from '../modules/food/barcode';
+import { BarcodeScanner, useCameraPermission } from '../ui/BarcodeScanner';
 import { Button } from '../ui/Button';
 import { haptic } from '../ui/haptics';
 import { Icon } from '../ui/Icon';
@@ -20,7 +20,7 @@ export default function Scan() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [permission, requestPermission] = useCameraPermissions();
+  const [permission, requestPermission] = useCameraPermission();
   const onFood = useScanHandoff((s) => s.onFood);
   const clear = useScanHandoff((s) => s.clear);
   const [status, setStatus] = useState<'scanning' | 'looking' | 'notFound' | 'error'>('scanning');
@@ -35,16 +35,16 @@ export default function Scan() {
 
   const lineStyle = useAnimatedStyle(() => ({ transform: [{ translateY: line.value * (FRAME * 0.6 - 4) }] }));
 
-  const onScanned = async (result: BarcodeScanningResult) => {
+  const onScanned = async (code: string) => {
     if (busy.current) return;
     busy.current = true;
     haptic.success();
     setStatus('looking');
     try {
-      const food = await lookupBarcode(result.data);
+      const food = await lookupBarcode(code);
       if (!food) {
         setStatus('notFound');
-        setMessage(`No nutrition data for ${result.data}. Try another angle, or use Quick add.`);
+        setMessage(`No nutrition data for ${code}. Try another angle, or use Quick add.`);
         return;
       }
       onFood?.(food);
@@ -82,12 +82,7 @@ export default function Scan() {
 
   return (
     <View style={styles.root}>
-      <CameraView
-        style={StyleSheet.absoluteFill}
-        facing="back"
-        barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128'] }}
-        onBarcodeScanned={status === 'scanning' ? onScanned : undefined}
-      />
+      <BarcodeScanner active={status === 'scanning'} onScanned={onScanned} />
       <View style={[styles.overlay, { paddingTop: insets.top + SPACE.sm, paddingBottom: insets.bottom + SPACE.xl }]} pointerEvents="box-none">
         <View style={styles.header}>
           <PressableScale onPress={() => router.back()} hitSlop={10} style={styles.close}>

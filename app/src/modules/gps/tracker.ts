@@ -1,20 +1,17 @@
-import * as Location from 'expo-location';
 import * as Speech from 'expo-speech';
-import Storage from '../../core/store/kv';
-import * as TaskManager from 'expo-task-manager';
-import { Platform } from 'react-native';
 import { create } from 'zustand';
 
 import { getDb } from '../../core/db/database';
 import { useSettings } from '../../core/store/settings';
+import Storage from '../../core/store/kv';
 import { acceptPoint, distanceM, MAX_ACCURACY_M, MOVING_SPEED, type GeoPoint, type TrackKind } from '../../lib/geo';
+import { ensureLocationPermission, onFixes, startTracking, stopTracking, watchFixes, type Fix } from './location';
 
 /**
- * GPS recording. Fixes arrive in a foreground-service task (so tracking continues with the screen
+ * GPS recording. Fixes arrive from a foreground service (so tracking continues with the screen
  * off), are filtered, written to the local gps_live table and folded into running totals.
  * The totals live in key-value storage so a recording survives the app being closed.
  */
-export const GPS_TASK = 'metakai-gps-tracking';
 const STATE_KEY = 'metakai.gpsLive';
 const MI = 1609.344;
 /** Window for "current pace". */
@@ -108,16 +105,16 @@ function speakSplit(s: LiveState) {
   Speech.speak(text, { rate: 1.0 });
 }
 
-function ingest(locations: Location.LocationObject[]) {
+function ingest(fixes: Fix[]) {
   const s = load();
   const route: [number, number][] = [];
-  for (const loc of locations) {
+  for (const fix of fixes) {
     const p: GeoPoint = {
-      lat: loc.coords.latitude,
-      lon: loc.coords.longitude,
-      t: loc.timestamp,
-      acc: loc.coords.accuracy,
-      alt: loc.coords.altitude != null && (loc.coords.altitudeAccuracy ?? 99) <= 15 ? loc.coords.altitude : null,
+      lat: fix.lat,
+      lon: fix.lon,
+      t: fix.t,
+      acc: fix.accuracy,
+      alt: fix.alt != null && (fix.altAccuracy ?? 99) <= 15 ? fix.alt : null,
     };
     s.fixAt = p.t;
     s.fixAcc = p.acc ?? null;
@@ -150,55 +147,20 @@ function ingest(locations: Location.LocationObject[]) {
   if (route.length) useLive.setState((st) => ({ route: [...st.route, ...route] }));
 }
 
-// The web build has no GPS recording (browsers stop location when the screen locks).
-if (Platform.OS !== 'web') TaskManager.defineTask<{ locations: Location.LocationObject[] }>(GPS_TASK, async ({ data, error }) => {
-  if (error || !data?.locations?.length) return;
-  ingest(data.locations);
-});
+onFixes(ingest);
 
 /* ---------------- controls ---------------- */
 
 export type Readiness = 'ok' | 'denied' | 'services-off';
 
-export async function ensurePermission(): Promise<Readiness> {
-  if (!(await Location.hasServicesEnabledAsync())) return 'services-off';
-  const current = await Location.getForegroundPermissionsAsync();
-  if (current.granted) return 'ok';
-  const asked = await Location.requestForegroundPermissionsAsync();
-  return asked.granted ? 'ok' : 'denied';
-}
-
-async function startUpdates(kind: TrackKind) {
-  if (await Location.hasStartedLocationUpdatesAsync(GPS_TASK).catch(() => false)) return;
-  const label = kind === 'cycle' ? 'ride' : kind;
-  await Location.startLocationUpdatesAsync(GPS_TASK, {
-    accuracy: Location.Accuracy.BestForNavigation,
-    timeInterval: 2000,
-    distanceInterval: 0,
-    activityType: kind === 'cycle' ? Location.ActivityType.OtherNavigation : Location.ActivityType.Fitness,
-    pausesUpdatesAutomatically: false,
-    showsBackgroundLocationIndicator: true,
-    foregroundService: {
-      notificationTitle: `Recording your ${label}`,
-      notificationBody: 'Open Metakai to see your stats.',
-      notificationColor: '#FF453A',
-      killServiceOnDestroy: false,
-    },
-  });
-}
-
-async function stopUpdates() {
-  if (await Location.hasStartedLocationUpdatesAsync(GPS_TASK).catch(() => false)) {
-    await Location.stopLocationUpdatesAsync(GPS_TASK).catch(() => {});
-  }
-}
+export const ensurePermission = ensureLocationPermission;
 
 export async function startRecording(kind: TrackKind) {
   getDb().runSync('DELETE FROM gps_live');
   const s: LiveState = { ...IDLE, status: 'recording', kind, startedAt: Date.now(), nextCueM: cueUnitM(), fixAt: useLive.getState().fixAt, fixAcc: useLive.getState().fixAcc };
   save(s);
   useLive.setState({ route: [] });
-  await startUpdates(kind);
+  await startTracking(kind);
   if (useSettings.getState().gpsVoice) Speech.speak(`${kind === 'cycle' ? 'Ride' : kind[0].toUpperCase() + kind.slice(1)} started`);
 }
 
@@ -213,18 +175,18 @@ export async function resumeRecording() {
   if (s.status !== 'paused') return;
   // A new segment, so the gap while paused isn't counted as distance.
   save({ ...s, status: 'recording', pausedMs: s.pausedMs + (Date.now() - (s.pausedAt ?? Date.now())), pausedAt: null, segment: s.segment + 1, last: null, recent: [] });
-  await startUpdates(s.kind);
+  await startTracking(s.kind);
 }
 
 export async function finishRecording() {
   const s = load();
-  await stopUpdates();
+  await stopTracking();
   const end = s.pausedAt ?? Date.now();
   save({ ...s, status: 'finished', endedAt: end, pausedAt: null });
 }
 
 export async function discardRecording() {
-  await stopUpdates();
+  await stopTracking();
   getDb().runSync('DELETE FROM gps_live');
   save(IDLE);
   useLive.setState({ route: [] });
@@ -241,7 +203,7 @@ export function clearRecording() {
 export async function restoreRecording() {
   const s = load();
   useLive.setState({ ...s, route: loadSegments().flat().map((p) => [p.lat, p.lon] as [number, number]) });
-  if (s.status === 'recording') await startUpdates(s.kind).catch(() => {});
+  if (s.status === 'recording') await startTracking(s.kind).catch(() => {});
 }
 
 export function loadSegments(): GeoPoint[][] {
@@ -279,9 +241,6 @@ export const signalQuality = (acc: number | null, at: number | null, now = Date.
   acc == null || at == null || now - at > 15_000 ? 'none' : acc <= 10 ? 'good' : acc <= MAX_ACCURACY_M ? 'weak' : 'none';
 
 /** Watches position while the record screen is open, so the signal indicator is live before starting. */
-export async function watchSignal(): Promise<() => void> {
-  const sub = await Location.watchPositionAsync({ accuracy: Location.Accuracy.BestForNavigation, timeInterval: 2000, distanceInterval: 0 }, (loc) => {
-    useLive.setState({ fixAt: loc.timestamp, fixAcc: loc.coords.accuracy });
-  });
-  return () => sub.remove();
+export function watchSignal(): Promise<() => void> {
+  return watchFixes((fix) => useLive.setState({ fixAt: fix.t, fixAcc: fix.accuracy }));
 }

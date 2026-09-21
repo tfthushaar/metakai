@@ -1,39 +1,17 @@
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { create } from 'zustand';
 
+import { cancelNotification, notificationsAllowed, scheduleNotification } from '../../core/notify';
 import { haptic } from '../../ui/haptics';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: false,
-    shouldShowList: false,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
-
-const CHANNEL = 'rest-timer';
-let channelReady = false;
 let permissionAsked = false;
 
-async function ensureChannel() {
-  if (channelReady) return;
-  channelReady = true;
-  await Notifications.setNotificationChannelAsync(CHANNEL, {
-    name: 'Rest timer',
-    importance: Notifications.AndroidImportance.HIGH,
-    vibrationPattern: [0, 250, 120, 250],
-  }).catch(() => {});
-}
-
+/** Asks for notification permission once per session, the first time a rest timer could use it. */
 async function canNotify(): Promise<boolean> {
-  const current = await Notifications.getPermissionsAsync();
-  if (current.granted) return true;
-  if (permissionAsked || !current.canAskAgain) return false;
+  if (await notificationsAllowed(false)) return true;
+  if (permissionAsked) return false;
   permissionAsked = true;
-  const asked = await Notifications.requestPermissionsAsync();
-  return asked.granted;
+  return notificationsAllowed(true);
 }
 
 interface RestState {
@@ -51,11 +29,13 @@ async function schedule(endsAt: number, label: string | null): Promise<string | 
   // The web build can't notify from the background, so the in-app timer is all it gets.
   if (Platform.OS === 'web') return null;
   try {
-    await ensureChannel();
     if (!(await canNotify())) return null;
-    return await Notifications.scheduleNotificationAsync({
-      content: { title: 'Rest over', body: label ? `Next set: ${label}` : 'Time for your next set', sound: true },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(endsAt), channelId: CHANNEL },
+    return await scheduleNotification({
+      channel: 'rest-timer',
+      title: 'Rest over',
+      body: label ? `Next set: ${label}` : 'Time for your next set',
+      sound: true,
+      when: { kind: 'at', time: endsAt },
     });
   } catch {
     return null;
@@ -63,7 +43,7 @@ async function schedule(endsAt: number, label: string | null): Promise<string | 
 }
 
 function cancel(id: string | null) {
-  if (id) Notifications.cancelScheduledNotificationAsync(id).catch(() => {});
+  if (id) cancelNotification(id);
 }
 
 export const useRestTimer = create<RestState>((set, get) => ({

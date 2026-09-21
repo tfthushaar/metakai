@@ -1,8 +1,5 @@
-import * as Notifications from 'expo-notifications';
-
+import { cancelNotification, notificationsAllowed, scheduleNotification } from './notify';
 import { useSettings, type Reminder, type ReminderId } from './store/settings';
-
-const CHANNEL = 'reminders';
 
 const CONTENT: Record<ReminderId, { title: string; body: string; url: string }> = {
   weighIn: { title: 'Morning weigh-in', body: 'Step on the scale before breakfast.', url: 'metakai://log-weight' },
@@ -17,27 +14,19 @@ export async function syncReminders(): Promise<boolean> {
   const reminders = useSettings.getState().reminders;
   const anyOn = Object.values(reminders).some((r) => r.on);
 
-  for (const id of Object.keys(CONTENT) as ReminderId[]) {
-    await Notifications.cancelScheduledNotificationAsync(identifier(id)).catch(() => {});
-  }
+  for (const id of Object.keys(CONTENT) as ReminderId[]) await cancelNotification(identifier(id));
   if (!anyOn) return true;
-
-  let permission = await Notifications.getPermissionsAsync();
-  if (!permission.granted && permission.canAskAgain) permission = await Notifications.requestPermissionsAsync();
-  if (!permission.granted) return false;
-
-  await Notifications.setNotificationChannelAsync(CHANNEL, { name: 'Reminders', importance: Notifications.AndroidImportance.DEFAULT }).catch(() => {});
+  if (!(await notificationsAllowed(true))) return false;
 
   for (const [id, r] of Object.entries(reminders) as [ReminderId, Reminder][]) {
     if (!r.on) continue;
-    const trigger: Notifications.NotificationTriggerInput =
-      r.weekday != null
-        ? { type: Notifications.SchedulableTriggerInputTypes.WEEKLY, weekday: r.weekday, hour: r.hour, minute: r.minute, channelId: CHANNEL }
-        : { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: r.hour, minute: r.minute, channelId: CHANNEL };
-    await Notifications.scheduleNotificationAsync({
-      identifier: identifier(id),
-      content: { title: CONTENT[id].title, body: CONTENT[id].body, data: { url: CONTENT[id].url } },
-      trigger,
+    await scheduleNotification({
+      id: identifier(id),
+      channel: 'reminders',
+      title: CONTENT[id].title,
+      body: CONTENT[id].body,
+      url: CONTENT[id].url,
+      when: r.weekday != null ? { kind: 'weekly', weekday: r.weekday, hour: r.hour, minute: r.minute } : { kind: 'daily', hour: r.hour, minute: r.minute },
     });
   }
   return true;
