@@ -105,7 +105,7 @@ The first build asks for your Apple ID and creates the certificates, provisionin
 
 ## F-Droid
 
-F-Droid builds the app from source itself and signs it with its own key, so nothing is uploaded. What it reads lives in this repository: the free-software build (see [docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md#free-software-build-and-f-droid)), the listing in [fastlane/](../fastlane/metadata/android/en-US) and the build recipe [fdroid/com.tfthushaar.metakai.yml](../fdroid/com.tfthushaar.metakai.yml).
+F-Droid builds the app from source itself, checks the result against the signed `-foss.apk` on the GitHub release and publishes that APK, signed by us. What it reads lives in this repository: the free-software build (see [docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md#free-software-build-and-f-droid)), the listing in [fastlane/](../fastlane/metadata/android/en-US) and the build recipe [fdroid/com.tfthushaar.metakai.yml](../fdroid/com.tfthushaar.metakai.yml).
 
 ### First submission
 
@@ -125,6 +125,6 @@ After that, F-Droid notices each new `v*` tag by itself.
 2. Add `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`, the release notes for F-Droid (500 characters or fewer).
 3. `cd app && npm test && npx tsc --noEmit`
 4. Android: `scripts/release-android.sh`, upload the `.aab` to Play, attach the `.apk` to a GitHub release. `scripts/release-foss.sh` builds the free-software `-foss.apk` to attach as well.
-5. Tag the release commit `v<version>` and push the tag; F-Droid builds it from there.
+5. Tag the same commit the `-foss.apk` was built from (`scripts/release-foss.sh` builds HEAD), push the tag and attach the `-foss.apk` to the GitHub release; F-Droid builds it from there and publishes the APK only if it matches.
 6. iOS: `eas build --platform ios --profile production` then `eas submit --platform ios --latest`.
 7. If data collection changed, update the privacy policy, data safety form and App Privacy answers first.
