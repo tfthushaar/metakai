@@ -67,7 +67,15 @@ function useNotificationLinks() {
   useEffect(() => {
     if (Platform.OS === 'web') return;
     syncReminders().catch(() => {});
-    return onNotificationOpened((url) => router.push(`/${url.slice('metakai://'.length)}` as never));
+    // Switching a feature on or off changes which reminders are sent.
+    const unwatch = useSettings.subscribe((state, before) => {
+      if (state.enabledModules !== before.enabledModules) syncReminders().catch(() => {});
+    });
+    const stop = onNotificationOpened((url) => router.push(`/${url.slice('metakai://'.length)}` as never));
+    return () => {
+      unwatch();
+      stop();
+    };
   }, [router]);
 }
 

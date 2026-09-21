@@ -4,12 +4,14 @@ import { Platform, StyleSheet, View } from 'react-native';
 
 import { hasAiKey, useAiKeys } from '../../core/aiKey';
 import { useBody } from '../../core/goals/useBody';
+import { reminderOffered } from '../../core/reminders';
 import { accentName } from '../../core/theme/palette';
 import { useSettings } from '../../core/store/settings';
 import { useTheme } from '../../core/theme/ThemeProvider';
 import { RADIUS, SPACE } from '../../core/theme/typography';
 import { ageFromBirthDate } from '../../lib/energy';
 import { GOALS } from '../../lib/goals';
+import { REMINDER_IDS } from '../../lib/reminders';
 import { cmToFtIn, displayWeight, weightUnit } from '../../lib/units';
 import { Card } from '../../ui/Card';
 import { Icon } from '../../ui/Icon';
@@ -35,6 +37,7 @@ export default function You() {
     : '';
 
   const appearanceLabel = `${settings.appearance[0].toUpperCase()}${settings.appearance.slice(1)} · ${accentName(settings.accent)}`;
+  const remindersOn = REMINDER_IDS.filter((id) => settings.reminders[id]?.on && reminderOffered(id, settings.enabledModules)).length;
 
   return (
     <Screen title="You" tabBar>
@@ -80,7 +83,7 @@ export default function You() {
           <ListRow icon="check" title="Habits" onPress={() => router.push('/habits')} />
         )}
         {Platform.OS !== 'web' && (
-          <ListRow icon="timer" title="Reminders" value={Object.values(settings.reminders).filter((r) => r.on).length ? 'On' : 'Off'} onPress={() => router.push('/settings/reminders')} />
+          <ListRow icon="timer" title="Reminders" value={remindersOn ? `${remindersOn} on` : 'Off'} onPress={() => router.push('/settings/reminders')} />
         )}
         <ListRow icon="user" title="Privacy" value={settings.appLock ? 'Locked' : undefined} onPress={() => router.push('/settings/privacy')} />
         {settings.enabledModules.includes('workouts') && (

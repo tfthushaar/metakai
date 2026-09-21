@@ -55,7 +55,7 @@ CONNECT YOUR WATCH
 RECOVER AND STAY CONSISTENT
 • Readiness from sleep stages, HRV and resting heart rate against your own normal, a quick check-in and your training load
 • Habits, supplements and health markers
-• Reminders that fit your routine
+• Reminders for your weigh-in, meals, water, workouts, check-ins, supplements and habits, only for the features you use
 
 MAKE IT YOURS
 • Home screen widgets on Android: calories left, readiness and sleep, and your own quick actions

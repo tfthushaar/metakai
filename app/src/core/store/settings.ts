@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { dependents, isAvailable, PRESETS, withDependencies, type ModuleId, type PresetId } from '../features/registry';
 import { DEFAULT_CUSTOM_COLORS, type AccentId, type Appearance, type CustomColors, type DarkStyle } from '../theme/palette';
+import { DEFAULT_REMINDERS, type Reminder, type ReminderId } from '../../lib/reminders';
 import type { UnitSystem } from '../../lib/units';
 import type { LayoutPrefs, LayoutScreen } from './layouts';
 import { kvStorage } from './kvStorage';
@@ -20,21 +21,8 @@ export interface GymSettings {
   keepAwake: boolean;
 }
 
-export interface Reminder {
-  on: boolean;
-  hour: number;
-  minute: number;
-  /** 1 = Sunday … 7 = Saturday; only for weekly reminders. */
-  weekday?: number;
-}
-
-export type ReminderId = 'weighIn' | 'logFood' | 'photos';
-
-export const DEFAULT_REMINDERS: Record<ReminderId, Reminder> = {
-  weighIn: { on: false, hour: 7, minute: 30 },
-  logFood: { on: false, hour: 21, minute: 0 },
-  photos: { on: false, hour: 8, minute: 0, weekday: 1 },
-};
+export { DEFAULT_REMINDERS };
+export type { Reminder, ReminderId };
 
 export type StartTab = 'index' | 'food' | 'train' | 'progress';
 export type TextScale = 'small' | 'default' | 'large' | 'xlarge';
@@ -193,7 +181,8 @@ export const useSettings = create<SettingsState>()(
       // Drop features this platform can't run (the web build has no GPS, watches or photos).
       merge: (persisted, current) => {
         const merged = { ...current, ...(persisted as Partial<SettingsState>) };
-        return { ...merged, enabledModules: (merged.enabledModules ?? []).filter(isAvailable) };
+        // Reminders added since the settings were saved start off, with their usual times.
+        return { ...merged, enabledModules: (merged.enabledModules ?? []).filter(isAvailable), reminders: { ...DEFAULT_REMINDERS, ...merged.reminders } };
       },
       migrate: (state, version) => {
         const s = state as Record<string, unknown>;
