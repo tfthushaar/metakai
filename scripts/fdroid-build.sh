@@ -11,6 +11,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 IMAGE=registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie
+# Docker volumes that keep the downloaded Android SDK, NDK, Gradle and npm packages between runs.
+CACHE="${METAKAI_FDROID_CACHE:-metakai-fdroid}"
 
 if [ -n "$(git -C "$ROOT" status --porcelain --untracked-files=no -- . ':!docs/app' ':!docs/404.html')" ]; then
   echo "There are uncommitted changes, and they won't be in this build. Commit them first." >&2
@@ -18,11 +20,15 @@ if [ -n "$(git -C "$ROOT" status --porcelain --untracked-files=no -- . ':!docs/a
 fi
 
 mkdir -p "$ROOT/dist/fdroid"
+# Like F-Droid's own runners, use a few CPUs: the C++ compilers each take a good deal of memory, and one per core adds up.
+CPUS="${METAKAI_FDROID_CPUS:-4}"
+AVAILABLE="$(docker info --format '{{.NCPU}}' 2>/dev/null || echo "$CPUS")"
+[ "$AVAILABLE" -lt "$CPUS" ] && CPUS="$AVAILABLE"
 # Git Bash on Windows would otherwise rewrite the container paths below.
 export MSYS_NO_PATHCONV=1
-docker run --rm --memory="${METAKAI_FDROID_MEMORY:-6500m}" \
+docker run --rm --cpuset-cpus="0-$((CPUS - 1))" --memory="${METAKAI_FDROID_MEMORY:-6500m}" \
   -e "FDROID_STEP=${1:-build}" -e "FDROID_ABIS=${METAKAI_FDROID_ABIS:-}" \
   -v "$ROOT:/src:ro" -v "$ROOT/dist/fdroid:/out" \
-  -v metakai-fdroid-gradle:/home/vagrant/.gradle -v metakai-fdroid-npm:/home/vagrant/.npm -v metakai-fdroid-sdk:/opt/android-sdk \
+  -v "$CACHE-gradle:/home/vagrant/.gradle" -v "$CACHE-npm:/home/vagrant/.npm" -v "$CACHE-sdk:/opt/android-sdk" \
   --entrypoint /bin/bash "$IMAGE" /src/scripts/fdroid-build-container.sh
 echo "Done. The unsigned APK, if any, is in dist/fdroid/."

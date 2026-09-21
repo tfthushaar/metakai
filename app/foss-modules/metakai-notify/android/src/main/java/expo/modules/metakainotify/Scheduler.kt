@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import org.json.JSONObject
 import java.util.Calendar
@@ -28,7 +29,8 @@ object Scheduler {
   private fun alarms(context: Context) = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
   private fun pending(context: Context, id: String): PendingIntent {
-    val intent = Intent(context, AlarmReceiver::class.java).setAction("expo.modules.metakainotify.ALARM").putExtra(EXTRA_ID, id)
+    // The id in the data makes every notification's intent its own, whatever the request codes turn out to be.
+    val intent = Intent(context, AlarmReceiver::class.java).setAction("expo.modules.metakainotify.ALARM").setData(Uri.fromParts("metakai-alarm", id, null)).putExtra(EXTRA_ID, id)
     return PendingIntent.getBroadcast(context, id.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
   }
 
