@@ -14,8 +14,11 @@ SourceCode: https://github.com/tfthushaar/metakai
 IssueTracker: https://github.com/tfthushaar/metakai/issues
 Changelog: https://github.com/tfthushaar/metakai/releases
 
+AutoName: Metakai
+
 RepoType: git
 Repo: https://github.com/tfthushaar/metakai.git
+Binaries: https://github.com/tfthushaar/metakai/releases/download/v%v/metakai-%v-foss.apk
 
 Builds:
   - versionName: 1.5.0
@@ -23,10 +26,9 @@ Builds:
     commit: a4a9a1be8307dc6050588d9fdb0a83bdbda66868
     subdir: app
     sudo:
-      - curl -Lo node.tar.gz https://nodejs.org/dist/v24.16.0/node-v24.16.0-linux-x64.tar.gz
-      - echo "2faf6a387e9b62b888e21c54f01249fb27537ffecf1842f29f4c919d0a59a0ff  node.tar.gz"
-        | sha256sum -c -
-      - tar xzf node.tar.gz --strip-components=1 -C /usr/local/
+      - echo "deb https://deb.debian.org/debian forky main" > /etc/apt/sources.list.d/forky.list
+      - apt-get update
+      - apt-get install -y -t forky npm
     init:
       - node ../scripts/flavor.mjs foss --remove-packages --from-source
       - npm ci --no-audit --no-fund
@@ -64,6 +66,8 @@ Builds:
       - gradle assembleRelease -x lintVitalAnalyzeRelease -x lintVitalReportRelease
         -x lintVitalRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
     ndk: r27b
+
+AllowedAPKSigningKeys: 2eaeaaa655582c8fd9877a0a8ab35336a5fa1370d93480bcaa10b77087434801
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
