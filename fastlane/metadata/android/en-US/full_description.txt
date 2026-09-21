@@ -1,0 +1,45 @@
+Metakai is a private fitness tracker for people who want to change their body without handing over their data. Food, weight, training, runs and progress live together in one clean app that works offline. It is free software (MIT licence), with no ads, no analytics and no tracking.
+
+<b>Eat to your goal</b>
+• Calorie and macro targets for cutting, lean bulking, recomp or maintenance
+• Log meals in plain words, scan barcodes or quick add calories
+• Adaptive targets that learn your real maintenance from your weigh-ins
+• Optional AI food analysis with your own free Gemini or Groq key
+
+<b>Train with intent</b>
+• Fast gym logger with previous sets, rest timer, personal records and estimated 1RM
+• Weekly splits, routines and progressive overload tracking
+• Weekly muscle volume, plate calculator and 870+ exercise demos
+• GPS runs, walks, hikes and rides with pace, splits and route outlines, recording with the screen off
+• Interval timer for HIIT, Tabata and EMOM
+
+<b>See your progress</b>
+• Trend weight, goal date predictions and weekly check-ins
+• Measurements, body fat, progress photos and milestone cards
+• Physique and Run passes that rank your strength and running against people like you
+• Achievements you can share as cards
+• Optional leaderboards by sex, age, weight class, height, country or friends
+
+<b>Connect your watch</b>
+• Steps, active calories, sleep stages, resting heart rate, HRV, VO2 max, blood oxygen, breathing rate, weigh-ins and workouts from Samsung, Pixel, Fitbit, Garmin, Withings, Oura, Polar, Amazfit and more, through Health Connect
+• One overview for every device: wear a ring to bed and a watch to the gym, and pick which app each reading comes from
+• Workouts your watch also recorded are matched to the ones you log, never counted twice
+• Live heart rate during workouts and runs from chest straps and watches that broadcast it
+
+<b>Recover and stay consistent</b>
+• Readiness from sleep stages, HRV and resting heart rate against your own normal, a quick check-in and your training load
+• Habits, supplements and health markers
+• Reminders that fit your routine
+
+<b>Make it yours</b>
+• Home screen widgets: calories left, readiness and sleep, and your own quick actions
+• Turn off any feature you don't use and it disappears everywhere
+• Arrange each screen and choose your start tab, theme, accent and text size
+
+<b>Private by design</b>
+• No account needed; your data stays on your phone
+• This build contains no Google Play services, Firebase or other proprietary libraries
+• Optional online services, only when you turn them on: backup to your own Google Drive (you sign in in your browser), barcode lookups from Open Food Facts, AI food analysis with your own key, and the leaderboards, which share only a display name, rounded stats and scores
+• Exercise demo images load from a public CDN
+
+Metakai gives estimates for general fitness, not medical advice.
