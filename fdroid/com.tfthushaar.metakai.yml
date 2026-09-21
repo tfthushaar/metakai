@@ -24,12 +24,16 @@ Builds:
     subdir: app
     sudo:
       - curl -Lo node.tar.gz https://nodejs.org/dist/v24.16.0/node-v24.16.0-linux-x64.tar.gz
-      - echo "2faf6a387e9b62b888e21c54f01249fb27537ffecf1842f29f4c919d0a59a0ff  node.tar.gz" | sha256sum -c -
+      - echo "2faf6a387e9b62b888e21c54f01249fb27537ffecf1842f29f4c919d0a59a0ff  node.tar.gz"
+        | sha256sum -c -
       - tar xzf node.tar.gz --strip-components=1 -C /usr/local/
     init:
       - node ../scripts/flavor.mjs foss --remove-packages --from-source
       - npm ci --no-audit --no-fund
     output: android/app/build/outputs/apk/release/app-release-unsigned.apk
+    rm:
+      - app/public/sqljs
+      - docs/app
     prebuild:
       - export EXPO_NO_TELEMETRY=1
       - npx expo prebuild --platform android --clean --no-install
@@ -40,10 +44,9 @@ Builds:
       - sed -i 's/jvmToolchain(17)/jvmToolchain(21)/' node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
       - sed -i -e 's/JavaVersion.VERSION_17/JavaVersion.VERSION_21/g' -e 's/fromTarget("17")/fromTarget("21")/'
         node_modules/react-native-reanimated/android/build.gradle.kts node_modules/react-native-worklets/android/build.gradle.kts
-      - printf '\norg.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=768m\nkotlin.daemon.jvmargs=-Xmx1536m\norg.gradle.workers.max=4\n' >> android/gradle.properties
-    rm:
-      - app/public/sqljs
-      - docs/app
+      - printf '\norg.gradle.jvmargs=-Xmx3g 
+        -XX:MaxMetaspaceSize=768m\nkotlin.daemon.jvmargs=-Xmx1536m\norg.gradle.workers.max=4\n'
+        >> android/gradle.properties
     scanignore:
       - app/node_modules/@react-native-masked-view/masked-view/android/build.gradle
       - app/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
@@ -58,7 +61,8 @@ Builds:
     build:
       - export EXPO_NO_TELEMETRY=1
       - cd android
-      - gradle assembleRelease -x lintVitalAnalyzeRelease -x lintVitalReportRelease -x lintVitalRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+      - gradle assembleRelease -x lintVitalAnalyzeRelease -x lintVitalReportRelease
+        -x lintVitalRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
     ndk: r27b
 
 AutoUpdateMode: Version
