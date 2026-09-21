@@ -103,10 +103,28 @@ The first build asks for your Apple ID and creates the certificates, provisionin
 
 ---
 
+## F-Droid
+
+F-Droid builds the app from source itself and signs it with its own key, so nothing is uploaded. What it reads lives in this repository: the free-software build (see [docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md#free-software-build-and-f-droid)), the listing in [fastlane/](../fastlane/metadata/android/en-US) and the build recipe [fdroid/com.tfthushaar.metakai.yml](../fdroid/com.tfthushaar.metakai.yml).
+
+### First submission
+
+1. **Google sign-in for the free build:** create the iOS-type OAuth client described in [docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md#free-software-build-and-f-droid), set `EXPO_PUBLIC_GOOGLE_NATIVE_CLIENT_ID` in `app/.env`, add the ID to `GOOGLE_CLIENT_ID` in `cloud/wrangler.toml` after a comma, and `npx wrangler deploy` from `cloud/`. Without it the free build still works, and Drive backup and the leaderboards say they aren't set up.
+2. **Release and tag:** commit, push, and tag the release commit `v<version>` (`git tag v1.5.0 && git push origin v1.5.0`).
+3. **Recipe:** in `fdroid/com.tfthushaar.metakai.yml`, set the build's `commit` to that commit's full hash.
+4. **Merge request:** sign in at [gitlab.com](https://gitlab.com), fork [fdroid/fdroiddata](https://gitlab.com/fdroid/fdroiddata), add the recipe to your fork as `metadata/com.tfthushaar.metakai.yml` on a new branch, and open a merge request to `fdroid/fdroiddata` with the title *New App: com.tfthushaar.metakai*, ticking the checklist in the merge request template. Its pipeline builds the app the way F-Droid will; `fdroid lint` and the build must pass.
+5. **Review:** F-Droid's volunteers reply on the merge request, usually within days to a few weeks. After the merge, the first build shows up on f-droid.org after a few more days.
+
+After that, F-Droid notices each new `v*` tag by itself.
+
+---
+
 ## Every release
 
 1. Bump `version`, `android.versionCode` and `ios.buildNumber` in `app/app.json`.
-2. `cd app && npm test && npx tsc --noEmit`
-3. Android: `scripts/release-android.sh`, upload the `.aab` to Play, attach the `.apk` to a GitHub release.
-4. iOS: `eas build --platform ios --profile production` then `eas submit --platform ios --latest`.
-5. If data collection changed, update the privacy policy, data safety form and App Privacy answers first.
+2. Add `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`, the release notes for F-Droid (500 characters or fewer).
+3. `cd app && npm test && npx tsc --noEmit`
+4. Android: `scripts/release-android.sh`, upload the `.aab` to Play, attach the `.apk` to a GitHub release. `scripts/release-foss.sh` builds the free-software `-foss.apk` to attach as well.
+5. Tag the release commit `v<version>` and push the tag; F-Droid builds it from there.
+6. iOS: `eas build --platform ios --profile production` then `eas submit --platform ios --latest`.
+7. If data collection changed, update the privacy policy, data safety form and App Privacy answers first.

@@ -1,15 +1,18 @@
+AntiFeatures:
+  NonFreeNet:
+    en-US: Optional online features use Google Drive (backup) and Google sign-in (leaderboards),
+      and the optional AI food analysis uses Google Gemini or Groq with the user's
+      own key.
 Categories:
+  - Diet
   - Sports & Health
+  - Workout
 License: MIT
 AuthorName: tfthushaar
 WebSite: https://tfthushaar.github.io/metakai/
 SourceCode: https://github.com/tfthushaar/metakai
 IssueTracker: https://github.com/tfthushaar/metakai/issues
 Changelog: https://github.com/tfthushaar/metakai/releases
-
-AntiFeatures:
-  NonFreeNet:
-    en-US: Optional online features use Google Drive (backup) and Google sign-in (leaderboards), and the optional AI food analysis uses Google Gemini or Groq with the user's own key.
 
 RepoType: git
 Repo: https://github.com/tfthushaar/metakai.git
@@ -33,11 +36,21 @@ Builds:
       - sed -i '/jvmToolchain/s/17/21/' node_modules/@react-native/gradle-plugin/*/build.gradle.kts
       - sed -i -e 's/JavaVersion.VERSION_17/JavaVersion.VERSION_21/g' -e 's/jvmToolchain(17)/jvmToolchain(21)/g'
         node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/utils/JdkConfiguratorUtils.kt
-      - echo 'org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g' >> android/gradle.properties
+      - printf '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g\n' >> android/gradle.properties
+    rm:
+      - app/public/sqljs
+      - docs/app
     scanignore:
-      - node_modules/hermes-compiler/hermesc
+      - app/node_modules/@react-native-masked-view/masked-view/android/build.gradle
+      - app/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
+      - app/node_modules/hermes-compiler/hermesc
+      - app/node_modules/react-native-safe-area-context/android/build.gradle
+      - app/node_modules/react-native-screens/android/build.gradle
+      - app/node_modules/react-native-svg/android/build.gradle
+      - app/node_modules/react-native-view-shot/android/build.gradle
+      - app/node_modules/react-native/ReactAndroid/publish.gradle
     scandelete:
-      - node_modules
+      - app/node_modules
     build:
       - export EXPO_NO_TELEMETRY=1
       - cd android

@@ -44,6 +44,9 @@
   <h2>Home screen widgets (Android, optional)</h2>
   <p>If you add a Metakai widget, Android draws it on your home screen from the data on your phone: calories left, readiness and sleep, or your quick actions. Nothing is sent anywhere to do this. Anyone who can see your home screen can see what a widget shows, so remove it if you would rather keep those numbers private.</p>
 
+  <h2>Free-software build (Android)</h2>
+  <p>Metakai is also built without Google Play services, Firebase or any other proprietary library, for F-Droid and for the “foss” APK on GitHub. It does the same things, and everything in this policy applies to it. The differences are in how it works inside. Google sign-in, for Drive backup and the leaderboards, opens in your browser and returns to the app instead of using Google Play services, and the long-lived access Google grants is kept in your phone's encrypted storage so backups keep working; disconnecting revokes it at Google. Reminders, rest timer alerts, GPS and barcode scanning use Android itself and your phone's camera, and send nothing anywhere.</p>
+
   <h2>Leaderboards (optional)</h2>
   <p>If you join the leaderboards, Metakai signs you in to confirm you are a real person (with Google on Android and with Apple on iPhone, without asking for your name or email) and sends the following to the Metakai leaderboard server (hosted on Cloudflare):</p>
   <ul>

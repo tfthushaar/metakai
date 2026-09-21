@@ -18,6 +18,7 @@ How Metakai is built, and how to build, sign and publish it yourself.
 - **Several devices:** every sleep night and daily reading keeps the app it came from (`origin`). A night comes from one app (the user's choice, else the one with stages and the most sleep) and each day's reading from one app, so two devices never add up or blend. Watch workouts that overlap a gym session or run logged in Metakai are linked to it (`external_id`) instead of imported again, and aren't sent back to the health app.
 - **Readiness:** `src/lib/recoveryScore.ts` combines sleep (with deep and REM share), HRV (log scale) and resting heart rate against a 30-day baseline from the same app, the check-in, and training load (TRIMP from heart rate, else sets or effort; 7 days against 28). With only a check-in it gives exactly the old `readiness()` score.
 - **Minimal backend:** the optional leaderboard is a small Cloudflare Worker with a D1 (SQLite) database in `cloud/`. It verifies Google or Apple sign-in, stores only derived scores, and precomputes score distributions every six hours to stay within the free tier. Every other network call goes directly from the phone to the service shown.
+- **Two Android builds, one source tree:** the standard build (Play Store, GitHub) uses Google Play services, Firebase and ML Kit for sign-in, notifications, GPS and barcode scanning. The free-software build (F-Droid, and the `-foss` APK on GitHub) has none of them: `*.foss.ts(x)` files stand in for their standard twins, and three small native modules in `app/foss-modules` replace the native parts. Everything else is shared. See [Free-software build](#free-software-build-and-f-droid).
 
 ## Building from source
 
@@ -43,7 +44,50 @@ The signing config reads these environment variables:
 | `METAKAI_KEY_ALIAS` | Key alias |
 | `METAKAI_KEY_PASSWORD` | Key password |
 
-`scripts/release-android.sh` sets them from `~/.metakai-signing` and builds a Play Store bundle and an APK into `dist/`. Tagged pushes (`v*`) also build a signed APK through GitHub Actions when the matching `ANDROID_KEYSTORE_*` secrets are set.
+`scripts/release-android.sh` sets them from `~/.metakai-signing` and builds a Play Store bundle and an APK into `dist/`. `scripts/release-foss.sh` builds the free-software APK the same way (below). Tagged pushes (`v*`) also build a signed APK through GitHub Actions when the matching `ANDROID_KEYSTORE_*` secrets are set.
+
+### Free-software build and F-Droid
+
+F-Droid only accepts apps that are free software all the way down, and the standard build isn't: sign-in, notifications, GPS and the barcode scanner sit on Google Play services, Firebase and ML Kit. The free-software build has none of that and still does everything, including Google Drive backup and the leaderboards.
+
+| | Standard build | Free-software build |
+|---|---|---|
+| Reminders and the rest timer | `expo-notifications` (Firebase) | `foss-modules/metakai-notify`: exact alarms from `AlarmManager`, kept across reboots |
+| GPS recording | `expo-location` and `expo-task-manager` (Play services) | `foss-modules/metakai-location`: Android's `LocationManager` in a foreground service |
+| Barcode scanning | `expo-camera` (ML Kit) | `foss-modules/metakai-scanner`: CameraX and ZXing |
+| Google sign-in | `@react-native-google-signin/google-signin` | OAuth code flow with PKCE in a browser tab: `src/core/google.foss.ts`, `src/lib/oauth.ts`, `src/app/oauth2redirect.tsx` |
+
+How the two builds are told apart:
+
+- **`app/flavor.js`** decides. `METAKAI_FLAVOR=foss` or `standard` wins; without it, a tree that doesn't have the Google-backed packages installed (F-Droid removes them) is the free build. It also lists those packages.
+- **Metro** (`app/metro.config.js`) puts `foss.ts` and `foss.tsx` ahead of the usual extensions in the free build, so `notify.foss.ts` replaces `notify.ts`, `location.foss.ts` replaces `location.ts`, and so on. The free files re-export the standard ones' types, so the rest of the app can't tell.
+- **`app/app.config.js`** drops the Google-backed config plugins and adds the OAuth redirect to the manifest.
+- **`scripts/flavor.mjs`** points `app/package.json` at `foss-modules` (Expo autolinking's `nativeModulesDir`) and keeps the Google-backed packages out of autolinking. `foss` and `standard` undo each other and are safe to repeat.
+
+To try the free build on an emulator:
+
+```bash
+cd app
+node ../scripts/flavor.mjs foss
+METAKAI_FLAVOR=foss npx expo run:android
+node ../scripts/flavor.mjs standard      # afterwards
+```
+
+To release it: commit, then `bash scripts/release-foss.sh`. It builds from a clean copy of what is committed the way F-Droid does (`flavor.mjs foss --remove-packages --from-source` takes the Google-backed packages out of `package.json` and the lock file and compiles every Expo module from source), signs with the upload key, and finishes with `scripts/check-foss-apk.mjs`, which fails if any Google Play services, Firebase or ML Kit class, native library or manifest entry is left in the APK. Run that check on any APK you're unsure about.
+
+**Google sign-in without Play services.** The Android OAuth client type only works through Play services, so the free build signs in with the browser instead. That needs a client that allows a custom URL scheme: create an **iOS** OAuth client with bundle ID `com.tfthushaar.metakai` and set `EXPO_PUBLIC_GOOGLE_NATIVE_CLIENT_ID` to its ID in `app/.env` (`EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` is the fallback). The browser returns to the app on `com.googleusercontent.apps.<client ID>:/oauth2redirect`, which `app.config.js` registers. There's no client secret, and the refresh token is kept in secure storage. Put the client ID after a comma in `GOOGLE_CLIENT_ID` in `cloud/wrangler.toml` and redeploy the Worker so it accepts the ID tokens. A leaderboard user ID comes from the Google account alone, so it's the same on both builds.
+
+**Exact alarms.** The free build declares `USE_EXACT_ALARM` (and `SCHEDULE_EXACT_ALARM` up to Android 12) so the rest timer and reminders arrive on time. Google Play restricts that permission to alarm and calendar apps, which is why the standard build doesn't use it.
+
+#### F-Droid
+
+- **Listing:** `fastlane/metadata/android/en-US` holds `title.txt`, `short_description.txt` (80 characters or fewer, no full stop), `full_description.txt`, the icon, feature graphic and phone screenshots in `images/`, and a `changelogs/<versionCode>.txt` of 500 characters or fewer for every release. Copy new screenshots from `store/assets`.
+- **Recipe:** `fdroid/com.tfthushaar.metakai.yml` is the file that goes into F-Droid's [fdroiddata](https://gitlab.com/fdroid/fdroiddata) repository as `metadata/com.tfthushaar.metakai.yml`. It checks out a tag, removes the Google-backed packages, runs `expo prebuild` and builds an unsigned release APK that F-Droid signs itself. `UpdateCheckMode: Tags` with `AutoUpdateMode: Version` turns every new `v<version>` tag into an F-Droid version by itself, reading `version` and `android.versionCode` from `app/app.json`.
+- **Testing the recipe:** `bash scripts/fdroid-build.sh` lints it and builds the commit you have checked out in F-Droid's own build server image, with the same scanner F-Droid uses. It needs Docker and about 8 GB of memory, and the first run takes an hour or more; `METAKAI_FDROID_ABIS=arm64-v8a` makes it quicker. Run it after changing dependencies, Expo or the way the app is built: F-Droid's scanner rejects prebuilt binaries and unknown Maven repositories, and the recipe's `scanignore` and `scandelete` lists are what let the build through.
+- **Releasing:** raise `version` and `android.versionCode` in `app/app.json`, add `changelogs/<versionCode>.txt`, commit, then tag `v<version>` and push the tag. F-Droid finds it within a few days.
+- **Signing:** F-Droid signs with its own key, so its build and the GitHub or Play build can't update each other. Back up first when switching from one to the other.
+- **Anti-features:** `NonFreeNet` for Google Drive backup, Google sign-in for the leaderboards, and the optional Gemini or Groq key.
+- **Data and assets** are all free: the exercise database ([free-exercise-db](https://github.com/yuhonas/free-exercise-db), Unlicense) and its images, USDA FoodData Central (public domain), the Compendium of Physical Activities MET values, Inter (SIL OFL) and Lucide icons (ISC).
 
 ### Health Connect and Apple Health
 
@@ -98,6 +142,7 @@ Needed for Drive backup, and for leaderboards on Android.
 3. Create a web OAuth client and set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in `app/.env`.
 4. Create an Android OAuth client with package `com.tfthushaar.metakai` and your signing certificate's SHA-1.
 5. For iOS, create an iOS OAuth client and set `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` in `app/.env`.
+6. For the free-software Android build, which signs in through the browser, an iOS-type client works too; see [Free-software build](#free-software-build-and-f-droid).
 
 ### Leaderboard server
 
@@ -112,7 +157,7 @@ npx wrangler secret put SESSION_SECRET   # another long random string
 npm run deploy
 ```
 
-Then set `EXPO_PUBLIC_RANKS_API` in `app/.env` to the Worker URL. `GOOGLE_CLIENT_ID` in `wrangler.toml` and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in `app/.env` must be the same OAuth web client.
+Then set `EXPO_PUBLIC_RANKS_API` in `app/.env` to the Worker URL. `GOOGLE_CLIENT_ID` in `wrangler.toml` lists the OAuth clients the app asks Google ID tokens for: the web client that `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in `app/.env` holds, then, after a comma, the client of the free-software Android build.
 
 On iOS the leaderboards use Sign in with Apple. To revoke Apple sign-in when a profile is deleted, also set `APPLE_TEAM_ID`, `APPLE_KEY_ID` and `APPLE_PRIVATE_KEY` (a Sign in with Apple key).
 
@@ -128,10 +173,13 @@ app/
   src/modules/    Feature modules: food, workouts, cardio, gps, ranks, achievements, recovery, health, body, habits, wearables
   src/ui/         Design system components
   plugins/        Expo config plugins (release signing, Health Connect)
+  foss-modules/   Native modules of the free-software build: notifications, GPS and the barcode scanner
 docs/             Website (privacy policy, terms, data deletion), the built web app (docs/app), product plan and this guide
 cloud/            Leaderboard API (Cloudflare Workers + D1)
 store/            Store listing, policy answers and graphics for Google Play and the App Store
-scripts/          Android release and web builds, icon, store graphic and exercise data generators
+fastlane/         The F-Droid listing: text, screenshots and a changelog per release
+fdroid/           The F-Droid build recipe, kept here and submitted to F-Droid's fdroiddata
+scripts/          Android release and web builds, the free-software build and its checks, icon, store graphic and exercise data generators
 .github/          CI and release workflows
 ```
 
@@ -142,6 +190,6 @@ scripts/          Android release and web builds, icon, store graphic and exerci
 | App | React Native, Expo, Expo Router, TypeScript |
 | UI | Reanimated, Gesture Handler, react-native-svg, Lucide icons, Inter |
 | State and storage | Zustand, expo-sqlite (SQLite and key-value), expo-secure-store |
-| Device | expo-location with task manager, expo-camera, expo-notifications, expo-local-authentication, react-native-view-shot, Health Connect, HealthKit, Bluetooth LE |
+| Device | expo-location with task manager, expo-camera, expo-notifications, expo-local-authentication, react-native-view-shot, Health Connect, HealthKit, Bluetooth LE; in the free build, its own notification, location and scanner modules (AlarmManager, LocationManager, CameraX and ZXing) |
 | Cloud (optional) | Google Sign-In and Drive REST API, Gemini and Groq APIs, Cloudflare Workers + D1 |
 | Quality | Jest, TypeScript strict mode, GitHub Actions |

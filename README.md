@@ -102,12 +102,13 @@ Until Metakai is on the App Store, the web app gives you the same food logging, 
 - **Backups in your own Google Drive,** in a hidden app folder, ready to restore onto a new phone. Or export a file.
 - **App lock** with fingerprint or face unlock, and one tap to erase everything.
 - **AI only when you ask,** with your own key, sending only the meal text or ingredient photos you choose to analyse.
+- **A build with no Google Play services,** for phones without Google's apps and for F-Droid. Reminders, GPS runs, barcode scanning, Google Drive backup and the leaderboards all work without Google Play services, Firebase or any other proprietary library.
 
 Read the full [privacy policy](https://tfthushaar.github.io/metakai/privacy.html).
 
 ## Get started
 
-1. **Android:** download the latest APK from [Releases](https://github.com/tfthushaar/metakai/releases/latest), open it and allow installs from that source. Updates install over the previous version and keep your data.<br>
+1. **Android:** download the latest APK from [Releases](https://github.com/tfthushaar/metakai/releases/latest), open it and allow installs from that source. Updates install over the previous version and keep your data. Choose `metakai-<version>-foss.apk` if you want the build with no Google Play services.<br>
    **iPhone:** open [the web app](https://tfthushaar.github.io/metakai/app/) in Safari, tap **Share → Add to Home Screen**, and open Metakai from your home screen.
 2. Tap **Get started** and answer a few questions about your body, activity and goal.
 3. Tap **+** to log food, weigh in, start a workout or record a run.
