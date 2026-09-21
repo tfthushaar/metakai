@@ -20,7 +20,7 @@ Repo: https://github.com/tfthushaar/metakai.git
 Builds:
   - versionName: 1.5.0
     versionCode: 19
-    commit: v1.5.0
+    commit: a4a9a1be8307dc6050588d9fdb0a83bdbda66868
     subdir: app
     sudo:
       - curl -Lo node.tar.gz https://nodejs.org/dist/v24.16.0/node-v24.16.0-linux-x64.tar.gz
