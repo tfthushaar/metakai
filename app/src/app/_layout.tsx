@@ -143,6 +143,7 @@ function RootStack() {
           <Stack.Screen name="health" />
           <Stack.Screen name="overview" />
           <Stack.Screen name="start-workout" options={{ animation: 'none' }} />
+          <Stack.Screen name="oauth2redirect" options={{ animation: 'none' }} />
           <Stack.Screen name="marker" />
           <Stack.Screen name="log-marker" options={modal} />
           <Stack.Screen name="physique" />

@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Gradle output inside the free-software native modules
+foss-modules/*/android/build/
+foss-modules/*/android/.cxx/

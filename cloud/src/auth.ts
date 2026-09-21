@@ -63,11 +63,22 @@ export async function appleUserId(env: AuthEnv, identityToken: string): Promise<
   }
 }
 
-/** The Metakai user ID behind a Google ID token issued to the Metakai web client. */
+/**
+ * The OAuth client IDs whose Google ID tokens are accepted. GOOGLE_CLIENT_ID holds the web client and,
+ * after a comma, the client the free-software Android build signs in with. A person's Google account
+ * ID is the same whichever client issued the token, so they are one user across both builds.
+ */
+export function googleAudiences(env: Pick<AuthEnv, 'GOOGLE_CLIENT_ID'>): string[] {
+  return env.GOOGLE_CLIENT_ID.split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
+
+/** The Metakai user ID behind a Google ID token issued to one of Metakai's OAuth clients. */
 export async function googleUserId(env: AuthEnv, idToken: string): Promise<string> {
   const { payload } = await jwtVerify(idToken, GOOGLE_JWKS, {
     issuer: ['https://accounts.google.com', 'accounts.google.com'],
-    audience: env.GOOGLE_CLIENT_ID,
+    audience: googleAudiences(env),
   });
   if (!payload.sub) throw new Error('no subject');
   return sha256(`${payload.sub}:${env.ID_PEPPER}`);

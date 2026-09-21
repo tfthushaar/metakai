@@ -7,7 +7,8 @@ compatibility_date = "2026-09-01"
 crons = ["17 */6 * * *"]
 
 [vars]
-# Public OAuth web client ID the app requests Google ID tokens for.
+# Public OAuth client IDs the app requests Google ID tokens for: the web client, then (once the
+# free-software Android build's client exists) its ID after a comma.
 GOOGLE_CLIENT_ID = "510560795620-br9d6gv72om2rfgk4rmrdkjhssebh1ac.apps.googleusercontent.com"
 # iOS bundle ID, the audience of Sign in with Apple tokens.
 APPLE_BUNDLE_ID = "com.tfthushaar.metakai"

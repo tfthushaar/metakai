@@ -1,0 +1,29 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.metakaiscanner'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.metakaiscanner"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  // CameraX (Apache 2.0) shows the camera and hands over frames; ZXing (Apache 2.0) reads the barcodes.
+  implementation "androidx.camera:camera-core:1.4.2"
+  implementation "androidx.camera:camera-camera2:1.4.2"
+  implementation "androidx.camera:camera-lifecycle:1.4.2"
+  implementation "androidx.camera:camera-view:1.4.2"
+  implementation "com.google.zxing:core:3.5.3"
+
+  testImplementation "junit:junit:4.13.2"
+}

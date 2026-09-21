@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { corsHeaders, issueSession, revokeApple, userId, type AuthEnv } from '../src/auth';
+import { corsHeaders, googleAudiences, issueSession, revokeApple, userId, type AuthEnv } from '../src/auth';
 
 const env: AuthEnv = {
   GOOGLE_CLIENT_ID: 'web-client',
@@ -31,6 +31,11 @@ describe('auth', () => {
     await expect(userId(request('dev:alice'), env)).rejects.toMatchObject({ status: 401 });
     const id = await userId(request('dev:alice'), { ...env, DEV_AUTH: '1' });
     expect(id).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('accepts Google ID tokens from the web client and the free-software build', () => {
+    expect(googleAudiences(env)).toEqual(['web-client']);
+    expect(googleAudiences({ GOOGLE_CLIENT_ID: 'web-client, native-client,' })).toEqual(['web-client', 'native-client']);
   });
 
   it('skips Apple revocation when not configured', async () => {
