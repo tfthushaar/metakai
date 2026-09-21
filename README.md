@@ -84,6 +84,7 @@ Cutting, bulking, recomposing or maintaining: set a goal and get calorie and mac
 
 - **Switch off whole features** you don't use; their tabs, cards and shortcuts disappear with them.
 - **Arrange every screen:** reorder or hide cards and shortcuts, and pick the tab the app opens on.
+- **Home screen widgets on Android:** calories left, today's readiness with last night's sleep, and a row of your own quick actions. They follow your theme, refresh as you log, and log a glass of water without opening the app.
 - **Any colour you like:** light, dark or true black, preset accents, or a custom theme with your own accent, second colour and background.
 - **Text size, reduce motion, haptics** and metric or imperial units.
 

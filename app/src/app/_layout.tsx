@@ -25,6 +25,7 @@ import { AppLockGate } from '../core/AppLock';
 import { syncReminders } from '../core/reminders';
 import { backfillWorkoutCalories } from '../modules/workouts/repo';
 import { flushDrive, syncDrive, watchForChanges } from '../core/drive';
+import { useWidgetRefresh } from '../widgets/refresh';
 import { useWatchAutoSync } from '../modules/wearables/sync';
 import { restoreRecording } from '../modules/gps/tracker';
 
@@ -58,6 +59,9 @@ function useDriveBackup() {
   }, [enabled]);
 }
 
+// Links from widgets and notifications that open a screen directly still have the tabs underneath.
+export const unstable_settings = { initialRouteName: '(tabs)' };
+
 function useNotificationLinks() {
   const router = useRouter();
   useEffect(() => {
@@ -77,6 +81,7 @@ function RootStack() {
   useSignInReturn();
   useDriveBackup();
   useWatchAutoSync();
+  useWidgetRefresh();
   const authMode = useSettings((s) => s.authMode);
   const onboarded = useSettings((s) => s.onboarded);
   const reduceMotion = useSettings((s) => s.reduceMotion);
@@ -141,6 +146,7 @@ function RootStack() {
           <Stack.Screen name="recovery" />
           <Stack.Screen name="health" />
           <Stack.Screen name="overview" />
+          <Stack.Screen name="start-workout" options={{ animation: 'none' }} />
           <Stack.Screen name="marker" />
           <Stack.Screen name="log-marker" options={modal} />
           <Stack.Screen name="physique" />

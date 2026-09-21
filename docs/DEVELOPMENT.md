@@ -52,6 +52,16 @@ The signing config reads these environment variables:
 - The HealthKit config plugin adds the HealthKit entitlement and the usage strings in `app.json`. Background delivery is off; the app syncs when it opens.
 - To try sync on an emulator without a watch, install Google's Health Connect Toolbox and write test records (sleep with stages, HRV, resting heart rate, exercise sessions) under different apps.
 
+### Home screen widgets (Android)
+
+`react-native-android-widget` draws widgets from JavaScript, so they show the same data as the app without a separate native codebase.
+
+- **Declared in `app.json`** through the library's config plugin: `Calories`, `Readiness` and `QuickLog`, each with a preview image in `app/assets/widgets`. `app/index.ts` is the app's entry point so `registerWidgets()` runs even when the widget wakes the app in the background.
+- **Code lives in `src/widgets`:** `data.ts` reads from the database (`readBody()` is `useBody()` without React), `Widgets.tsx` draws them with the library's views, `render.tsx` picks light or dark colours from the app's theme, and `refresh.android.ts` redraws them shortly after anything they show changes. iOS and the web get empty stand-ins (`register.ts`, `refresh.ts`, `WidgetGallery.tsx`).
+- **Quick log** mirrors the user's own choices from You → Layout. Actions open a `metakai://` link; the water action is handled in the background by the task handler.
+- **Icons** are lucide paths in `src/widgets/icons.ts`, because widgets draw SVG rather than React components.
+- **Adding to the home screen:** You → Widgets shows a live preview of each and asks the launcher to pin it.
+
 ### Web app
 
 The same code builds a web app for iPhone (before the App Store release) and computers, served by GitHub Pages at <https://tfthushaar.github.io/metakai/app/>.

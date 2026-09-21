@@ -75,6 +75,7 @@ export default function You() {
         <ListRow icon="grid" title="Features" value={settings.preset === 'custom' ? 'Custom' : undefined} onPress={() => router.push('/settings/features')} />
         <ListRow icon="palette" title="Appearance" value={appearanceLabel} onPress={() => router.push('/settings/appearance')} />
         <ListRow icon="home" title="Layout" subtitle="Sections, shortcuts and start screen" onPress={() => router.push('/settings/customize')} />
+        {Platform.OS === 'android' && <ListRow icon="grid" title="Widgets" subtitle="Calories, readiness and quick log on your home screen" onPress={() => router.push('/settings/widgets')} />}
         {settings.enabledModules.includes('habits') && (
           <ListRow icon="check" title="Habits" onPress={() => router.push('/habits')} />
         )}

@@ -3,7 +3,7 @@
     "name": "Metakai",
     "slug": "metakai",
     "scheme": "metakai",
-    "version": "1.4.1",
+    "version": "1.5.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.tfthushaar.metakai",
-      "buildNumber": "8",
+      "buildNumber": "9",
       "usesAppleSignIn": true,
       "config": {
         "usesNonExemptEncryption": false
@@ -51,7 +51,7 @@
     },
     "android": {
       "package": "com.tfthushaar.metakai",
-      "versionCode": 18,
+      "versionCode": 19,
       "adaptiveIcon": {
         "backgroundColor": "#000000",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -165,6 +165,49 @@
           "android": {
             "minSdkVersion": 26
           }
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "Calories",
+              "label": "Calories left",
+              "description": "Calories and protein left today",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000,
+              "previewImage": "./assets/widgets/calories.png"
+            },
+            {
+              "name": "Readiness",
+              "label": "Readiness",
+              "description": "Today's readiness and last night's sleep",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000,
+              "previewImage": "./assets/widgets/readiness.png"
+            },
+            {
+              "name": "QuickLog",
+              "label": "Quick log",
+              "description": "Your quick actions: log food, weigh in, start a workout and more",
+              "minWidth": "180dp",
+              "minHeight": "50dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 1,
+              "resizeMode": "horizontal",
+              "updatePeriodMillis": 1800000,
+              "previewImage": "./assets/widgets/quicklog.png"
+            }
+          ]
         }
       ]
     ],

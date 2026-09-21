@@ -116,12 +116,16 @@ export const featureOn = (s: SectionDef, modules: ModuleId[]) =>
 export const isShown = (s: SectionDef, prefs: LayoutPrefs) => (s.hiddenByDefault ? prefs.shown.includes(s.id) : !prefs.hidden.includes(s.id));
 
 /** Visible section ids for a screen, in the user's order. */
-export function useLayout(screen: LayoutScreen): string[] {
-  const prefs = useSettings((s) => s.layouts[screen]) ?? EMPTY_LAYOUT;
-  const modules = useSettings((s) => s.enabledModules);
+export function visibleSections(screen: LayoutScreen, prefs: LayoutPrefs, modules: ModuleId[]): string[] {
   return orderedSections(screen, prefs.order)
     .filter((s) => featureOn(s, modules) && isShown(s, prefs))
     .map((s) => s.id);
+}
+
+export function useLayout(screen: LayoutScreen): string[] {
+  const prefs = useSettings((s) => s.layouts[screen]) ?? EMPTY_LAYOUT;
+  const modules = useSettings((s) => s.enabledModules);
+  return visibleSections(screen, prefs, modules);
 }
 
 /** True while any feature that fills this screen is on, whatever the user has hidden. */

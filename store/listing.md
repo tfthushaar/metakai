@@ -58,6 +58,7 @@ RECOVER AND STAY CONSISTENT
 • Reminders that fit your routine
 
 MAKE IT YOURS
+• Home screen widgets on Android: calories left, readiness and sleep, and your own quick actions
 • Turn off any feature you don't use and it disappears everywhere
 • Arrange each screen and choose your start tab, theme, accent and text size
 
