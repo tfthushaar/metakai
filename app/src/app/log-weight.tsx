@@ -58,7 +58,7 @@ export default function LogWeight() {
 
       <View style={styles.center} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
         <View style={styles.valueRow}>
-          <PressableScale onPress={() => nudge(-0.1)} feedback="selection" style={[styles.nudge, { backgroundColor: colors.fill }]}>
+          <PressableScale onPress={() => nudge(-0.1)} feedback="selection" accessibilityLabel="Lower by 0.1" style={[styles.nudge, { backgroundColor: colors.fill }]}>
             <Icon name="minus" size={22} color={colors.text} />
           </PressableScale>
           <PressableScale scaleTo={0.97} feedback="selection" onPress={() => setTyping(true)} style={styles.value}>
@@ -70,7 +70,7 @@ export default function LogWeight() {
               <Icon name="pencil" size={15} color={colors.textTertiary} />
             </View>
           </PressableScale>
-          <PressableScale onPress={() => nudge(0.1)} feedback="selection" style={[styles.nudge, { backgroundColor: colors.fill }]}>
+          <PressableScale onPress={() => nudge(0.1)} feedback="selection" accessibilityLabel="Raise by 0.1" style={[styles.nudge, { backgroundColor: colors.fill }]}>
             <Icon name="plus" size={22} color={colors.text} />
           </PressableScale>
         </View>
