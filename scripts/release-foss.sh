@@ -29,7 +29,7 @@ UNSIGNED="$(ls "$ROOT"/dist/fdroid/*.apk | head -1)"
 node "$ROOT/scripts/check-foss-apk.mjs" "$UNSIGNED"
 mkdir -p "$ROOT/dist"
 OUT="$ROOT/dist/metakai-$VERSION-foss.apk"
-"$APKSIGNER" sign --ks "$SIGNING/metakai-release.jks" --ks-key-alias "$ANDROID_KEY_ALIAS" --v4-signing-enabled false \
+"$APKSIGNER" sign --ks "$SIGNING/metakai-release.jks" --ks-key-alias "$ANDROID_KEY_ALIAS" --v4-signing-enabled false --alignment-preserved true \
   --ks-pass env:METAKAI_KEYSTORE_PASSWORD --key-pass env:METAKAI_KEY_PASSWORD --out "$OUT" "$UNSIGNED"
 "$APKSIGNER" verify --print-certs "$OUT" | head -3
 echo "Built $OUT"
