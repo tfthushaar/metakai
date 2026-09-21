@@ -23,6 +23,10 @@ if [ -e .env.local ]; then
   exit 1
 fi
 
+# This is the standard build, with Google Play services. The free-software one is scripts/release-foss.sh.
+unset METAKAI_FLAVOR
+node ../scripts/flavor.mjs standard
+
 VERSION="$(node -p "require('./app.json').expo.version")"
 npx expo prebuild --platform android --clean --no-install
 (cd android && ./gradlew bundleRelease assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a)
